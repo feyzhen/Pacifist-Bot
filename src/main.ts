@@ -5,13 +5,14 @@ import global from "./utils/Global";
 
 // import TerrainDataExporter from "./utils/TerrainDataExporter";
 
-
 import CPUmanager from "Managers/CPUmanager";
 import PowerCreepManager from "Managers/PowerCreepManager";
 import MemoryManager from "Managers/MemoryManager";
 import RunAllCreepsManager from "Managers/RunAllCreepsManager";
 import ExecuteCommandsInNTicks from "Managers/ExecuteCommandsInNTicks";
 import decrementTempBadRooms from "Misc/decrementTempBadRooms";
+import pixelManager from "Misc/pixelManager";
+import "./utils/Whitelist"; // registers global.addAlly / global.removeAlly / global.listAllies
 
 import rooms from "./Rooms/rooms";
 
@@ -172,6 +173,8 @@ export const loop = ErrorMapper.wrapLoop(() => {
   ExecuteCommandsInNTicks();
 
   decrementTempBadRooms();
+
+  pixelManager();
 
   // TerrainDataExporter();
   // console.log(JSON.stringify(Memory.roomStatuses))

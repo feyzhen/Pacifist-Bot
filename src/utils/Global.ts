@@ -14,6 +14,14 @@ declare global {
     }
     interface Memory {
       CPU: any;
+      allies: string[];
+      pixelManager: {
+        enabled?: boolean;
+        bucketThreshold?: number;
+        sellPixels?: boolean;
+        sellPrice?: number;
+        sellMinAmount?: number;
+      };
       AvoidRooms: any;
       AvoidRoomsTemp: { [key: string]: number };
       billtong_rooms: any;
@@ -57,6 +65,7 @@ declare global {
 
     interface RoomMemory {
         safeGuard:number;
+        rampartSearchRadius: number;
         spawn_list: Array<Array<string> | string | object>;
         roomData:any;
         has_hostile_structures: boolean;
@@ -153,6 +162,18 @@ declare global {
           lock_room: any;
           spawn_mosquito: any;
           buildRemoteRoads: any;
+          addAlly: (name: string) => string;
+          removeAlly: (name: string) => string;
+          listAllies: () => string;
+          pixelManager: {
+            enable: () => string;
+            disable: () => string;
+            enableSell: () => string;
+            disableSell: () => string;
+            setSellPrice: (price: number) => string;
+            setBucketThreshold: (threshold: number) => string;
+            status: () => string;
+          };
         }
     }
 }
