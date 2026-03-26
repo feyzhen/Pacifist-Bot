@@ -8,7 +8,8 @@
  */
 
 class MemHack {
-    memory: Memory | undefined
+    /** @type {any} */
+    memory
 
     constructor() {
          this.memory = Memory

@@ -35,7 +35,7 @@ const run = function (creep) {
     }
 
     if(creep.room.name == creep.memory.targetRoom && (creep.room.memory.Structures && creep.room.memory.Structures.storage || creep.room.storage)) {
-        let storage:any = Game.getObjectById(creep.room.memory.Structures.storage) || creep.room.storage;
+        let storage = Game.getObjectById(creep.room.memory.Structures.storage) || creep.room.storage;
         if(creep.memory.full && storage && storage.store.getFreeCapacity() > 100 && creep.store.getUsedCapacity() > 0) {
             if(creep.pos.isNearTo(storage)) {
                 if(creep.transfer(storage, RESOURCE_ENERGY) === 0) {

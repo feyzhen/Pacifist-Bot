@@ -4,12 +4,14 @@ function mosquito_manager() {
 
   for (let u of Memory.e.mosquito) {
     if (u.ts > 0) {
-      function findClosestRooms(roomName: string) {
+      /** @param {string} roomName */
+      function findClosestRooms(roomName) {
         const range = 5;
         let myRoomNames = ["E45N59","E49N59","E49N58","E51N54","E41N58","E42N59"];
         myRoomNames = _.shuffle(myRoomNames);
 
-        let myRooms: Array<Room> = [];
+        /** @type {Array<Room>} */
+        let myRooms = [];
         for (const myRoomName of myRoomNames) {
           if (Game.map.getRoomLinearDistance(roomName, myRoomName) > range) {
             continue;

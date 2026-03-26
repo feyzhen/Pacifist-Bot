@@ -32,6 +32,23 @@ declare global {
     moveToSafePositionToRepairRampart: any;
     MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch: any;
     MoveToSourceSafely: any;
+    
+    // 新增的模块化方法
+    smartMoveTo: (target: any, range?: number) => any;
+    avoidEnemiesMoveTo: (target: any, range?: number) => any;
+    roadMoveTo: (target: any, range?: number) => any;
+    retreat: () => boolean;
+    isStuck: () => boolean;
+    handleStuck: () => boolean;
+    getEnergy: () => any;
+    storeEnergy: () => any;
+    transferEnergy: (target?: Creep) => any;
+    needsEnergy: () => boolean;
+    isFullOfEnergy: () => boolean;
+    getTotalCarry: () => number;
+    getEnergyCarry: () => number;
+    hasEmptyCapacity: () => boolean;
+    getWorkingStatus: () => string;
   }
 
   interface RoomMemory {

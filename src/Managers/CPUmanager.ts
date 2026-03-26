@@ -2,18 +2,24 @@
 // of Memory, which avoids serialising a growing array every single tick.
 // Memory is only written when a 100-tick or 500-tick average is ready.
 
-declare const global: any;
+// 声明全局属性
+declare global {
+  var _cpuBuf100: string[];
+  var _cpuBuf500: string[];
+}
 
 // In-process buffers — reset on code reload, which is fine for rolling averages.
-if (!global._cpuBuf100)  global._cpuBuf100  = [] as string[];
-if (!global._cpuBuf500)  global._cpuBuf500  = [] as string[];
+if (!global._cpuBuf100)  global._cpuBuf100  = [];
+if (!global._cpuBuf500)  global._cpuBuf500  = [];
 
-function calcAverage(data: string[]): string {
+/** @param {string[]} data */
+function calcAverage(data) {
     const total = data.reduce((sum, n) => sum + Number(n), 0);
     return (total / data.length).toFixed(2);
 }
 
-function CPUmanager(tickTotal: string | number): void {
+/** @param {string | number} tickTotal */
+function CPUmanager(tickTotal) {
 
     if (!Memory.CPU) Memory.CPU = {};
 
