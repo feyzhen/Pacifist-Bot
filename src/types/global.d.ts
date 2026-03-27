@@ -32,7 +32,7 @@ declare global {
     moveToSafePositionToRepairRampart: any;
     MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch: any;
     MoveToSourceSafely: any;
-    
+
     // 新增的模块化方法
     smartMoveTo: (target: any, range?: number) => any;
     avoidEnemiesMoveTo: (target: any, range?: number) => any;
@@ -63,6 +63,8 @@ declare global {
     layoutTime?: number;
     lastAutoPlan?: number;
     layoutRCL?: number;
+    containerStats?: { [containerId: string]: { lastFull: number; totalTransferred: number } };
+    linkStats?: { [linkId: string]: { lastTransfer: number; totalTransferred: number } };
   }
 
   interface CreepMemory {

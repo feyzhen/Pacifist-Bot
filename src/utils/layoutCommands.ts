@@ -231,6 +231,471 @@ import layoutManager from '../Rooms/rooms.layoutManager';
 // RP, VP, SP 等命令直接使用全局定义即可
 
 /**
+ * 分析房间迁移需求
+ * 用法: analyzeMigration(roomName)
+ */
+(global as any).analyzeMigration = function(roomName: string): void {
+    try {
+        // 内联迁移分析逻辑，避免模块依赖问题
+        const room = Game.rooms[roomName];
+        if (!room) {
+            console.log(`❌ 房间 ${roomName} 不存在或不可见`);
+            return;
+        }
+
+        if (!Memory.roomPlanner || !Memory.roomPlanner[roomName]) {
+            console.log(`❌ 房间 ${roomName} 没有布局数据`);
+            console.log(`请先运行 RP('${roomName}') 生成布局`);
+            return;
+        }
+
+        const layout = Memory.roomPlanner[roomName].layout;
+        const analysis = {
+            roomName,
+            missing: [],
+            mismatches: [],
+            extras: [],
+            correct: [],
+            riskLevel: 'LOW' as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+            criticalStructures: [],
+            recommendations: []
+        };
+
+        // 1. 扫描现有建筑
+        const existingStructures = new Map<string, Structure>();
+        room.find(FIND_MY_STRUCTURES).forEach(structure => {
+            const key = `${structure.structureType}_${structure.pos.x}_${structure.pos.y}`;
+            existingStructures.set(key, structure);
+        });
+
+        // 2. 对比布局差异
+        for (const [structureType, positions] of Object.entries(layout)) {
+            if (!Array.isArray(positions)) continue;
+
+            for (const pos of positions) {
+                const key = `${structureType}_${pos.x}_${pos.y}`;
+                const existing = existingStructures.get(key);
+
+                if (!existing) {
+                    analysis.missing.push({
+                        existing: null as any,
+                        planned: { structureType, pos },
+                        reason: 'missing'
+                    });
+                } else if (existing.structureType !== structureType) {
+                    analysis.mismatches.push({
+                        existing,
+                        planned: { structureType, pos },
+                        reason: 'type_mismatch'
+                    });
+                } else {
+                    analysis.correct.push({
+                        existing,
+                        planned: { structureType, pos },
+                        reason: 'correct'
+                    });
+                }
+
+                existingStructures.delete(key); // 标记为已处理
+            }
+        }
+
+        // 3. 剩余的都是多余建筑
+        for (const structure of existingStructures.values()) {
+            analysis.extras.push({
+                existing: structure,
+                reason: 'extra'
+            });
+        }
+
+        // 4. 评估风险
+        let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'LOW';
+        const criticalTypes = ['spawn', 'storage', 'terminal'];
+        for (const item of analysis.mismatches) {
+            if (criticalTypes.includes(item.existing.structureType)) {
+                riskLevel = 'CRITICAL';
+                analysis.criticalStructures.push(item);
+            }
+        }
+
+        if (analysis.extras.length > 10) {
+            riskLevel = 'HIGH';
+        } else if (analysis.extras.length > 5) {
+            riskLevel = 'MEDIUM';
+        }
+
+        if (analysis.mismatches.length > 8) {
+            riskLevel = 'HIGH';
+        } else if (analysis.mismatches.length > 3) {
+            riskLevel = 'MEDIUM';
+        }
+
+        analysis.riskLevel = riskLevel;
+
+        // 生成建议
+        if (riskLevel === 'CRITICAL') {
+            analysis.recommendations.push('建议先建造新建筑，再拆除旧建筑');
+            analysis.recommendations.push('确保有可用的spawn');
+        } else if (riskLevel === 'HIGH') {
+            analysis.recommendations.push('建议分批进行迁移');
+            analysis.recommendations.push('注意能量储备');
+        }
+
+        // 输出分析结果
+        console.log(`📊 房间 ${roomName} 迁移分析:`);
+        console.log(`├─ 缺失建筑: ${analysis.missing.length}`);
+        console.log(`├─ 错位建筑: ${analysis.mismatches.length}`);
+        console.log(`├─ 多余建筑: ${analysis.extras.length}`);
+        console.log(`├─ 正确建筑: ${analysis.correct.length}`);
+        console.log(`├─ 风险等级: ${analysis.riskLevel}`);
+        
+        if (analysis.criticalStructures.length > 0) {
+            console.log(`├─ ⚠️ 关键建筑冲突:`);
+            for (const critical of analysis.criticalStructures) {
+                console.log(`│  └─ ${critical.existing.structureType} 在 (${critical.existing.pos.x},${critical.existing.pos.y})`);
+            }
+        }
+        
+        if (analysis.recommendations.length > 0) {
+            console.log(`├─ 💡 建议:`);
+            for (const rec of analysis.recommendations) {
+                console.log(`│  └─ ${rec}`);
+            }
+        }
+        
+        // 显示详细信息
+        if (analysis.missing.length > 0) {
+            console.log(`└─ 🔍 缺失建筑详情:`);
+            const missingByType = {};
+            for (const item of analysis.missing) {
+                const type = item.planned.structureType;
+                missingByType[type] = (missingByType[type] || 0) + 1;
+            }
+            for (const [type, count] of Object.entries(missingByType)) {
+                console.log(`   └─ ${type}: ${count}`);
+            }
+        }
+        
+    } catch (error) {
+        console.log(`❌ 分析失败: ${error}`);
+    }
+};
+
+/**
+ * 执行房间迁移
+ * 用法: migrateRoom(roomName, strategy?)
+ * strategy: 'SAFE' | 'SMART' | 'AGGRESSIVE' (默认: 'SMART')
+ */
+(global as any).migrateRoom = function(roomName: string, strategy: string = 'SMART'): void {
+    try {
+        console.log(`🔍 开始分析房间 ${roomName}...`);
+        
+        // 简化版迁移执行，内联实现
+        const room = Game.rooms[roomName];
+        if (!room) {
+            console.log(`❌ 房间 ${roomName} 不存在或不可见`);
+            return;
+        }
+
+        if (!Memory.roomPlanner || !Memory.roomPlanner[roomName]) {
+            console.log(`❌ 房间 ${roomName} 没有布局数据`);
+            console.log(`请先运行 RP('${roomName}') 生成布局`);
+            return;
+        }
+
+        // 自动备份
+        const backupId = `migration_backup_${roomName}_${Game.time}`;
+        const backup = {
+            timestamp: Game.time,
+            roomName,
+            structures: room.find(FIND_MY_STRUCTURES).map(s => ({
+                id: s.id,
+                type: s.structureType,
+                pos: { x: s.pos.x, y: s.pos.y },
+                hits: s.hits,
+                store: (s as any).store || null
+            })),
+            constructionSites: room.find(FIND_MY_CONSTRUCTION_SITES).map(s => ({
+                id: s.id,
+                type: s.structureType,
+                pos: { x: s.pos.x, y: s.pos.y },
+                progress: s.progress,
+                progressTotal: s.progressTotal
+            }))
+        };
+        Memory[backupId] = backup;
+        
+        console.log(`💾 已备份房间 ${roomName} 状态，备份ID: ${backupId}`);
+        
+        try {
+            const layout = Memory.roomPlanner[roomName].layout;
+            let built = 0;
+            let removed = 0;
+            let errors = 0;
+            
+            // 根据策略执行不同操作
+            if (strategy === 'SAFE' || strategy === 'SMART' || strategy === 'AGGRESSIVE') {
+                // 建造缺失建筑
+                const constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
+                const maxConstructionSites = 3;
+                
+                if (constructionSites.length < maxConstructionSites) {
+                    let sitesPlaced = 0;
+                    const availableSlots = maxConstructionSites - constructionSites.length;
+                    
+                    for (const [structureType, positions] of Object.entries(layout)) {
+                        if (!Array.isArray(positions) || sitesPlaced >= availableSlots) continue;
+                        
+                        for (const pos of positions) {
+                            if (sitesPlaced >= availableSlots) break;
+                            
+                            const roomPos = new RoomPosition(pos.x, pos.y, room.name);
+                            const look = roomPos.look();
+                            const hasStructure = look.some(obj => obj.type === LOOK_STRUCTURES);
+                            const hasConstruction = look.some(obj => obj.type === LOOK_CONSTRUCTION_SITES);
+                            
+                            if (!hasStructure && !hasConstruction) {
+                                const buildResult = room.createConstructionSite(roomPos, structureType as any);
+                                if (buildResult === OK) {
+                                    built++;
+                                    sitesPlaced++;
+                                    console.log(`🔨 建造 ${structureType} 在 (${pos.x},${pos.y})`);
+                                } else {
+                                    errors++;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 智能模式和激进模式可以拆除多余建筑
+                if (strategy === 'SMART' || strategy === 'AGGRESSIVE') {
+                    const existingStructures = room.find(FIND_MY_STRUCTURES);
+                    const layoutPositions = new Set<string>();
+                    
+                    for (const [structureType, positions] of Object.entries(layout)) {
+                        if (!Array.isArray(positions)) continue;
+                        for (const pos of positions) {
+                            layoutPositions.add(`${structureType}_${pos.x}_${pos.y}`);
+                        }
+                    }
+                    
+                    for (const structure of existingStructures) {
+                        const key = `${structure.structureType}_${structure.pos.x}_${structure.pos.y}`;
+                        if (!layoutPositions.has(key)) {
+                            // 这是多余建筑，判断是否应该拆除
+                            const shouldRemove = this.shouldRemoveStructure(structure, layout);
+                            
+                            if (shouldRemove) {
+                                // 安全检查
+                                const safeCheck = this.performSafetyCheck(structure, room);
+                                if (safeCheck.safe) {
+                                    if (structure.destroy()) {
+                                        removed++;
+                                        console.log(`🗑️ 拆除 ${structure.structureType} 在 (${structure.pos.x},${structure.pos.y})`);
+                                    } else {
+                                        errors++;
+                                    }
+                                } else {
+                                    console.log(`⚠️ 安全检查阻止拆除 ${structure.structureType}: ${safeCheck.reason}`);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 激进模式还要处理错位建筑
+                if (strategy === 'AGGRESSIVE') {
+                    // 这里可以添加错位建筑的处理逻辑
+                    console.log(`⚠️ 激进模式暂未完全实现错位建筑处理`);
+                }
+            } else {
+                console.log(`❌ 未知的迁移策略: ${strategy}`);
+                return;
+            }
+            
+            console.log(`✅ 迁移完成:`);
+            console.log(`├─ 建造: ${built}`);
+            console.log(`├─ 拆除: ${removed}`);
+            console.log(`├─ 错误: ${errors}`);
+            console.log(`💾 备份ID: ${backupId} (如需回滚可使用 restoreBackup('${backupId}'))`);
+            
+        } catch (error) {
+            console.log(`❌ 迁移失败: ${error}`);
+            console.log(`💾 可使用备份回滚: restoreBackup('${backupId}')`);
+        }
+        
+    } catch (error) {
+        console.log(`❌ 迁移失败: ${error}`);
+    }
+};
+
+// 辅助函数
+(global as any).shouldRemoveStructure = function(structure: Structure, layout: any): boolean {
+    const reasons = [];
+    
+    // 低价值建筑
+    if (['road', 'container', 'rampart', 'wall'].includes(structure.structureType)) {
+        reasons.push('低价值建筑');
+    }
+    
+    // 位置不佳
+    const pos = structure.pos;
+    const room = structure.room;
+    const storage = room.storage;
+    
+    if (storage) {
+        const distance = pos.getRangeTo(storage);
+        if (distance > 15 || distance < 2) {
+            reasons.push('位置不佳');
+        }
+    }
+    
+    return reasons.length >= 1;
+};
+
+(global as any).performSafetyCheck = function(structure: Structure, room: Room): { safe: boolean; reason: string } {
+    // 确保有可用的spawn
+    if (structure.structureType === STRUCTURE_SPAWN) {
+        const otherSpawns = room.find(FIND_MY_SPAWNS).filter(s => s.id !== structure.id);
+        if (otherSpawns.length === 0) {
+            return { safe: false, reason: '这是唯一的spawn' };
+        }
+    }
+    
+    // 确保storage不为空（如果要拆除）
+    if (structure.structureType === STRUCTURE_STORAGE) {
+        const storage = structure as StructureStorage;
+        if (storage.store) {
+            const totalResources = Object.values(storage.store).reduce((a, b) => a + b, 0);
+            if (totalResources > 100000) { // 超过10万资源
+                return { safe: false, reason: 'storage中有大量资源' };
+            }
+        }
+    }
+    
+    // 确保terminal不为空（如果要拆除）
+    if (structure.structureType === STRUCTURE_TERMINAL) {
+        const terminal = structure as StructureTerminal;
+        if (terminal.store) {
+            const totalResources = Object.values(terminal.store).reduce((a, b) => a + b, 0);
+            if (totalResources > 50000) { // 超过5万资源
+                return { safe: false, reason: 'terminal中有大量资源' };
+            }
+        }
+    }
+    
+    // 确保能量充足
+    const totalEnergy = room.energyAvailable;
+    if (totalEnergy < room.energyCapacityAvailable * 0.3) {
+        return { safe: false, reason: '房间能量不足30%' };
+    }
+    
+    return { safe: true, reason: '' };
+};
+
+/**
+ * 恢复备份
+ * 用法: restoreBackup(backupId)
+ */
+(global as any).restoreBackup = function(backupId: string): void {
+    try {
+        const backup = Memory[backupId] as any;
+        if (!backup) {
+            console.log(`❌ 备份 ${backupId} 不存在`);
+            return;
+        }
+        
+        const room = Game.rooms[backup.roomName];
+        if (!room) {
+            console.log(`❌ 房间 ${backup.roomName} 不存在或不可见`);
+            return;
+        }
+        
+        console.log(`🔄 开始恢复房间 ${backup.roomName} 状态...`);
+        
+        // 清除所有工地
+        const currentSites = room.find(FIND_MY_CONSTRUCTION_SITES);
+        for (const site of currentSites) {
+            site.remove();
+        }
+        
+        // 重新创建工地（注意：不能恢复已建成的建筑）
+        let restoredSites = 0;
+        for (const site of backup.constructionSites) {
+            const roomPos = new RoomPosition(site.pos.x, site.pos.y, room.name);
+            const result = room.createConstructionSite(roomPos, site.type as any);
+            if (result === OK) {
+                restoredSites++;
+            }
+        }
+        
+        console.log(`✅ 恢复完成，重建了 ${restoredSites} 个工地`);
+        
+        // 清理备份
+        delete Memory[backupId];
+        
+    } catch (error) {
+        console.log(`❌ 恢复失败: ${error}`);
+    }
+};
+
+/**
+ * 列出所有备份
+ * 用法: listBackups()
+ */
+(global as any).listBackups = function(): void {
+    const backups = [];
+    for (const key in Memory) {
+        if (key.startsWith('migration_backup_')) {
+            const backup = Memory[key] as any;
+            backups.push({
+                id: key,
+                roomName: backup.roomName,
+                timestamp: backup.timestamp,
+                timeAgo: Game.time - backup.timestamp
+            });
+        }
+    }
+    
+    if (backups.length === 0) {
+        console.log(`📋 没有找到备份`);
+        return;
+    }
+    
+    console.log(`📋 找到 ${backups.length} 个备份:`);
+    backups.sort((a, b) => b.timestamp - a.timestamp);
+    
+    for (const backup of backups) {
+        console.log(`├─ ${backup.id}`);
+        console.log(`│  ├─ 房间: ${backup.roomName}`);
+        console.log(`│  └─ ${backup.timeAgo} tick前`);
+    }
+    console.log(`└─ 使用 restoreBackup(backupId) 恢复备份`);
+};
+
+/**
+ * 清理过期备份
+ * 用法: cleanupBackups()
+ */
+(global as any).cleanupBackups = function(): void {
+    let cleaned = 0;
+    const maxAge = 100000; // 100k tick后自动清理
+    
+    for (const key in Memory) {
+        if (key.startsWith('migration_backup_')) {
+            const backup = Memory[key] as any;
+            if (Game.time - backup.timestamp > maxAge) {
+                delete Memory[key];
+                cleaned++;
+            }
+        }
+    }
+    
+    console.log(`🧹 清理了 ${cleaned} 个过期备份`);
+};
+
+/**
  * 手动触发布局建造
  * 用法: buildLayout(roomName)
  */
@@ -275,6 +740,13 @@ console.log('- enableRooms(roomNames)');
 console.log('- checkPerformance(roomName)');
 console.log('- enableAllAutoPlanner()');
 console.log('- buildLayout(roomName) // 手动触发布局建造');
+console.log('');
+console.log('🔄 智能迁移系统:');
+console.log('- analyzeMigration(roomName) // 分析房间迁移需求');
+console.log('- migrateRoom(roomName, strategy) // 执行迁移 (SAFE/SMART/AGGRESSIVE)');
+console.log('- restoreBackup(backupId) // 恢复备份');
+console.log('- listBackups() // 列出所有备份');
+console.log('- cleanupBackups() // 清理过期备份');
 console.log('');
 console.log('直接使用PlannerWrapper:');
 console.log('- RP(roomName)  // 运行规划+可视化+保存缓存');
