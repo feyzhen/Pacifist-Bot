@@ -57,6 +57,7 @@ declare global {
       nuke?: boolean;
       evacuate?: boolean;
     };
+    defenceRadius?: number;
     blown_fuse?: boolean;
     layout?: { [structureType: string]: { x: number; y: number }[] };
     layoutVersion?: string;

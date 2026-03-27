@@ -167,5 +167,64 @@ Creep.prototype.roadlessLocation = function (repairTarget: any): RoomPosition | 
     return null;
 };
 
+// ── 逃离相关函数 ─────────────────────────────────────────────────────────────
+
+/** 构建逃离用的 CostMatrix */
+function buildFleeCostMatrix(creep: any, room: Room): CostMatrix {
+    const isCarrier = creep.memory.role === "carry" || creep.memory.role === "filler";
+    const costs = new PathFinder.CostMatrix();
+    
+    // 地形基础权重
+    const terrain = new Room.Terrain(room.name);
+    for (let y = 0; y < 50; y++) {
+        for (let x = 0; x < 50; x++) {
+            const t = terrain.get(x, y);
+            costs.set(x, y,
+                t === TERRAIN_MASK_WALL  ? 255 :
+                t === TERRAIN_MASK_SWAMP ? (isCarrier ? 1 : 5) : (isCarrier ? 2 : 1)
+            );
+        }
+    }
+    
+    // 结构物处理
+    room.find(FIND_STRUCTURES).forEach((s: any) => {
+        if (s.structureType === STRUCTURE_RAMPART && s.my && s.pos.lookFor(LOOK_STRUCTURES).length === 1) { 
+            costs.set(s.pos.x, s.pos.y, 2); return; 
+        }
+        if (s.structureType === STRUCTURE_ROAD) { 
+            costs.set(s.pos.x, s.pos.y, 1); return; 
+        }
+        if (s.structureType !== STRUCTURE_CONTAINER) costs.set(s.pos.x, s.pos.y, 255);
+    });
+    
+    return costs;
+}
+
+/** 远程攻击时从近战单位逃离 */
+Creep.prototype.RangedAttackFleeFromMelee = function (fleeTarget: any): void {
+    const path = PathFinder.search(this.pos, { pos: fleeTarget.pos, range: 3 }, { flee: true });
+    if (path.path.length > 0) {
+        this.move(this.pos.getDirectionTo(path.path[0]));
+    }
+};
+
+/** 从近战单位逃离 */
+Creep.prototype.fleeFromMelee = function (fleeTarget: Creep): void {
+    const costs = buildFleeCostMatrix(this, this.room);
+    const path = PathFinder.search(this.pos, { pos: fleeTarget.pos, range: 5 }, { flee: true, roomCallback: () => costs });
+    if (path.path.length > 0) {
+        this.move(this.pos.getDirectionTo(path.path[0]));
+    }
+};
+
+/** 从远程单位逃离 */
+Creep.prototype.fleeFromRanged = function (fleeTarget: Creep): void {
+    const costs = buildFleeCostMatrix(this, this.room);
+    const path = PathFinder.search(this.pos, { pos: fleeTarget.pos, range: 7 }, { flee: true, roomCallback: () => costs });
+    if (path.path.length > 0) {
+        this.move(this.pos.getDirectionTo(path.path[0]));
+    }
+};
+
 // 导出空对象以使此文件成为一个模块
 export {};

@@ -12,42 +12,33 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** 移动到指定房间 */
-Creep.prototype.moveToRoom = function(roomName: string): any {
-    if (this.room.name === roomName) return false;
-    
-    const exitDir = Game.map.findExit(this.room.name, roomName);
-    if (exitDir === -2) return false; // 没有路径
-    
-    const exit = this.pos.findClosestByPath(exitDir);
-    if (!exit) return false;
-    
-    this.moveTo(exit);
-    return true;
+Creep.prototype.moveToRoom = function(roomName: string, tx = 25, ty = 25, ignoreRoads = false, swampCost = 5, range = 20): void {
+    this.moveTo(new RoomPosition(tx, ty, roomName), { range, reusePath: 200, ignoreRoads, swampCost });
 };
 
 /** 智能移动到目标 */
 Creep.prototype.smartMoveTo = function(target: any, range = 1): any {
     if (!target) return false;
-    
+
     const currentRange = this.pos.getRangeTo(target);
     if (currentRange <= range) return false;
-    
+
     return this.moveTo(target, { range });
 };
 
 /** 避开敌人移动 */
 Creep.prototype.avoidEnemiesMoveTo = function(target: any, range = 1): any {
     if (!target) return false;
-    
+
     const enemies = this.room.find(FIND_HOSTILE_CREEPS);
     if (enemies.length === 0) {
         return this.moveTo(target, { range });
     }
-    
+
     // 创建避开敌人的路径回调
     const avoidCallback = (roomName: string) => {
         const costs = new PathFinder.CostMatrix();
-        
+
         // 标记敌人位置为高成本
         enemies.forEach(enemy => {
             if (enemy.room.name === roomName) {
@@ -58,11 +49,11 @@ Creep.prototype.avoidEnemiesMoveTo = function(target: any, range = 1): any {
                 });
             }
         });
-        
+
         return costs;
     };
-    
-    return this.moveTo(target, { 
+
+    return this.moveTo(target, {
         range,
         costCallback: avoidCallback,
         swampCost: 5,
@@ -73,11 +64,11 @@ Creep.prototype.avoidEnemiesMoveTo = function(target: any, range = 1): any {
 /** 沿着道路移动 */
 Creep.prototype.roadMoveTo = function(target: any, range = 1): any {
     if (!target) return false;
-    
+
     const roadCallback = (roomName: string) => {
         const costs = new PathFinder.CostMatrix();
         const terrain = new Room.Terrain(roomName);
-        
+
         for (let x = 0; x < 50; x++) {
             for (let y = 0; y < 50; y++) {
                 const terrainType = terrain.get(x, y);
@@ -88,19 +79,19 @@ Creep.prototype.roadMoveTo = function(target: any, range = 1): any {
                 }
             }
         }
-        
+
         // 道路设为低优先级
         const roads = this.room.find(FIND_STRUCTURES, {
             filter: (s: any) => s.structureType === STRUCTURE_ROAD
         });
-        
+
         roads.forEach(road => {
             costs.set(road.pos.x, road.pos.y, 1);
         });
-        
+
         return costs;
     };
-    
+
     return this.moveTo(target, {
         range,
         costCallback: roadCallback,
@@ -113,23 +104,23 @@ Creep.prototype.roadMoveTo = function(target: any, range = 1): any {
 Creep.prototype.retreat = function(): any {
     const enemies = this.room.find(FIND_HOSTILE_CREEPS);
     if (enemies.length === 0) return false;
-    
+
     // 找到最近的敌人
     const closestEnemy = this.pos.findClosestByPath(enemies);
     if (!closestEnemy) return false;
-    
+
     // 计算远离敌人的方向
     const fleePath = PathFinder.search(this.pos, closestEnemy.pos, {
         flee: true,
         maxRooms: 1
     });
-    
+
     if (fleePath.path.length > 0) {
         const nextPos = fleePath.path[0];
         this.moveTo(nextPos.x, nextPos.y);
         return true;
     }
-    
+
     return false;
 };
 
@@ -140,34 +131,34 @@ Creep.prototype.isStuck = function(): boolean {
         this.memory.stuckCounter = 0;
         return false;
     }
-    
-    const samePosition = this.memory.lastPosition.x === this.pos.x && 
+
+    const samePosition = this.memory.lastPosition.x === this.pos.x &&
                         this.memory.lastPosition.y === this.pos.y;
-    
+
     if (samePosition) {
         this.memory.stuckCounter = (this.memory.stuckCounter || 0) + 1;
     } else {
         this.memory.stuckCounter = 0;
         this.memory.lastPosition = { x: this.pos.x, y: this.pos.y };
     }
-    
+
     return this.memory.stuckCounter > 3;
 };
 
 /** 处理卡住情况 */
 Creep.prototype.handleStuck = function(): boolean {
     if (!this.isStuck()) return false;
-    
+
     // 随机移动尝试解卡
     const directions = [TOP, TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM, BOTTOM_LEFT, LEFT, TOP_LEFT];
     const randomDir = directions[Math.floor(Math.random() * directions.length)];
-    
+
     const result = this.move(randomDir);
     if (result === OK) {
         this.memory.stuckCounter = 0;
         return true;
     }
-    
+
     return false;
 };
 
@@ -255,31 +246,31 @@ Creep.prototype.moveToRoomAvoidEnemyRooms = function (targetRoom: string): void 
 
 Creep.prototype.MoveCostMatrixRoadPrio = function (target: any, range: number, role?: string): void {
     if (!target || this.fatigue !== 0 || this.pos.getRangeTo(target) <= range) return;
-    
+
     // 简化版本：使用标准的 moveTo，优先道路
-    this.moveTo(target, { 
-        range, 
-        reusePath: 50, 
+    this.moveTo(target, {
+        range,
+        reusePath: 50,
         ignoreCreeps: false,
         costCallback: (roomName: string, costMatrix: CostMatrix) => {
             const room = Game.rooms[roomName];
             if (!room) return false;
-            
+
             // 优先道路
             const roads = room.find(FIND_STRUCTURES, { filter: (s: any) => s.structureType === STRUCTURE_ROAD });
             roads.forEach((road: any) => {
                 costMatrix.set(road.pos.x, road.pos.y, 1);
             });
-            
+
             // 其他建筑不可通过
             room.find(FIND_STRUCTURES).forEach((s: any) => {
-                if (s.structureType !== STRUCTURE_ROAD && 
-                    s.structureType !== STRUCTURE_CONTAINER && 
+                if (s.structureType !== STRUCTURE_ROAD &&
+                    s.structureType !== STRUCTURE_CONTAINER &&
                     s.structureType !== STRUCTURE_RAMPART) {
                     costMatrix.set(s.pos.x, s.pos.y, 255);
                 }
             });
-            
+
             return true;
         }
     });
@@ -287,10 +278,10 @@ Creep.prototype.MoveCostMatrixRoadPrio = function (target: any, range: number, r
 
 Creep.prototype.MoveCostMatrixSwampPrio = function (target: any, range: number): void {
     if (!target || this.fatigue !== 0 || this.pos.getRangeTo(target) <= range) return;
-    
+
     // 优先沼泽移动
-    this.moveTo(target, { 
-        range, 
+    this.moveTo(target, {
+        range,
         reusePath: 50,
         swampCost: 1,
         plainCost: 2
@@ -299,10 +290,10 @@ Creep.prototype.MoveCostMatrixSwampPrio = function (target: any, range: number):
 
 Creep.prototype.MoveCostMatrixIgnoreRoads = function (target: any, range: number): void {
     if (!target || this.fatigue !== 0 || this.pos.getRangeTo(target) <= range) return;
-    
+
     // 忽略道路的移动
-    this.moveTo(target, { 
-        range, 
+    this.moveTo(target, {
+        range,
         reusePath: 50,
         ignoreRoads: true
     });
@@ -310,23 +301,23 @@ Creep.prototype.MoveCostMatrixIgnoreRoads = function (target: any, range: number
 
 Creep.prototype.MoveToSourceSafely = function (target: any, range: number): void {
     if (!target || this.fatigue !== 0 || this.pos.getRangeTo(target) <= range) return;
-    
+
     // 优先移动到 source 附近的 rampart
-    const ramparts = this.room.find(FIND_MY_STRUCTURES, { 
-        filter: (s: any) => s.structureType === STRUCTURE_RAMPART 
+    const ramparts = this.room.find(FIND_MY_STRUCTURES, {
+        filter: (s: any) => s.structureType === STRUCTURE_RAMPART
     });
     const nearRamparts = target.pos.findInRange(ramparts, 1);
     let finalTarget = target, finalRange = range;
-    
+
     for (const r of nearRamparts) {
         const structs = r.pos.lookFor(LOOK_STRUCTURES);
         if (!structs.some((s: any) => [STRUCTURE_LINK, STRUCTURE_EXTENSION, STRUCTURE_TOWER].includes(s.structureType))) {
-            finalTarget = r; 
-            finalRange = 0; 
+            finalTarget = r;
+            finalRange = 0;
             break;
         }
     }
-    
+
     this.moveTo(finalTarget, { range: finalRange, reusePath: 50 });
 };
 
@@ -370,7 +361,7 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
             const room = Game.rooms[roomName];
             if (!room) return false;
             const costs = new PathFinder.CostMatrix();
-            
+
             // 基础地形权重 - 满载carrier
             costs.set(this.pos.x, this.pos.y, 255);
             const terrain = new Room.Terrain(roomName);
@@ -380,7 +371,7 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
                     costs.set(x, y, t === TERRAIN_MASK_WALL ? 255 : t === TERRAIN_MASK_SWAMP ? 30 : 10);
                 }
             }
-            
+
             // 敌人creep高成本
             room.find(FIND_HOSTILE_CREEPS).forEach((c: Creep) => {
                 costs.set(c.pos.x, c.pos.y, 255);
@@ -394,14 +385,14 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
                     }
                 }
             });
-            
+
             return costs;
         };
         else if (this.memory.role === "carry" && !this.memory.full) cb = (roomName: string) => {
             const room = Game.rooms[roomName];
             if (!room) return false;
             const costs = new PathFinder.CostMatrix();
-            
+
             // 基础地形权重 - 空载carrier
             costs.set(this.pos.x, this.pos.y, 255);
             const terrain = new Room.Terrain(roomName);
@@ -411,7 +402,7 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
                     costs.set(x, y, t === TERRAIN_MASK_WALL ? 255 : t === TERRAIN_MASK_SWAMP ? 2 : 2);
                 }
             }
-            
+
             // 敌人creep高成本
             room.find(FIND_HOSTILE_CREEPS).forEach((c: Creep) => {
                 costs.set(c.pos.x, c.pos.y, 255);
@@ -425,14 +416,14 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
                     }
                 }
             });
-            
+
             return costs;
         };
         else if (this.memory.role === "ram" || this.memory.role === "Solomon") cb = (roomName: string) => {
             const room = Game.rooms[roomName];
             if (!room) return false;
             const costs = new PathFinder.CostMatrix();
-            
+
             // 基础地形权重 - ram角色
             costs.set(this.pos.x, this.pos.y, 255);
             const terrain = new Room.Terrain(roomName);
@@ -442,7 +433,7 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
                     costs.set(x, y, t === TERRAIN_MASK_WALL ? 254 : t === TERRAIN_MASK_SWAMP ? 10 : 2);
                 }
             }
-            
+
             // 敌人creep高成本
             room.find(FIND_HOSTILE_CREEPS).forEach((c: Creep) => {
                 costs.set(c.pos.x, c.pos.y, 255);
@@ -456,14 +447,14 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
                     }
                 }
             });
-            
+
             return costs;
         };
         else cb = (roomName: string) => {
             const room = Game.rooms[roomName];
             if (!room) return false;
             const costs = new PathFinder.CostMatrix();
-            
+
             // 基础地形权重 - 默认
             costs.set(this.pos.x, this.pos.y, 255);
             const terrain = new Room.Terrain(roomName);
@@ -473,7 +464,7 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
                     costs.set(x, y, t === TERRAIN_MASK_WALL ? 255 : t === TERRAIN_MASK_SWAMP ? 10 : 2);
                 }
             }
-            
+
             // 敌人creep高成本
             room.find(FIND_HOSTILE_CREEPS).forEach((c: Creep) => {
                 costs.set(c.pos.x, c.pos.y, 255);
@@ -487,7 +478,7 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
                     }
                 }
             });
-            
+
             return costs;
         };
 
@@ -502,6 +493,185 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: a
     this.move(this.pos.getDirectionTo(next));
     this.memory.moving = true;
     this.memory.path.shift();
+};
+
+// ── 防御者相关回调函数 ─────────────────────────────────────────────────────
+
+/** 构建防御者基础 CostMatrix */
+function buildDefenderBase(roomName: string, roadCost: number): CostMatrix | false {
+    const room = Game.rooms[roomName];
+    if (!room) return false;
+    const costs = new PathFinder.CostMatrix();
+
+    // 地形基础权重
+    const terrain = new Room.Terrain(roomName);
+    for (let y = 0; y < 50; y++) {
+        for (let x = 0; x < 50; x++) {
+            const t = terrain.get(x, y);
+            costs.set(x, y,
+                t === TERRAIN_MASK_WALL  ? 255 :
+                t === TERRAIN_MASK_SWAMP ? 25 : 5
+            );
+        }
+    }
+
+    // 结构物处理
+    room.find(FIND_STRUCTURES).forEach((s: any) => {
+        if (s.structureType === STRUCTURE_ROAD) {
+            if (costs.get(s.pos.x, s.pos.y) !== 255) costs.set(s.pos.x, s.pos.y, roadCost);
+            return;
+        }
+        if (s.structureType === STRUCTURE_RAMPART) {
+            const others = s.pos.lookFor(LOOK_STRUCTURES).filter((b: any) => b.structureType !== STRUCTURE_RAMPART);
+            if (others.length === 0) costs.set(s.pos.x, s.pos.y, 4);
+            return;
+        }
+        if (s.structureType === STRUCTURE_CONTAINER) return;
+        costs.set(s.pos.x, s.pos.y, 255);
+    });
+
+    // 防御半径排除区域
+    const defenceRadius = room.memory.defenceRadius || 11;
+    if (room.memory.Structures?.storage) {
+        const storage = Game.getObjectById(room.memory.Structures.storage) as any;
+        if (storage) {
+            for (let x = storage.pos.x - defenceRadius; x <= storage.pos.x + defenceRadius; x++) {
+                for (let y = storage.pos.y - defenceRadius; y <= storage.pos.y + defenceRadius; y++) {
+                    if (x >= 0 && x <= 49 && y >= 0 && y <= 49) {
+                        if (x !== storage.pos.x || y !== storage.pos.y) {
+                            costs.set(x, y, 255);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return costs;
+}
+
+/** 躲避入侵者回调 */
+const roomCallbackAvoidInvaders = (roomName: string): boolean | CostMatrix => {
+    const result = buildDefenderBase(roomName, 5);
+    if (!result) return false;
+    const room = Game.rooms[roomName];
+
+    // 阻挡每个敌人附近的格子 (±3 硬阻挡)
+    room.find(FIND_HOSTILE_CREEPS).forEach((eCreep: Creep) => {
+        for (let i = -3; i <= 3; i++) {
+            for (let o = -3; o <= 3; o++) {
+                const nx = eCreep.pos.x + i, ny = eCreep.pos.y + o;
+                if (nx >= 0 && nx <= 49 && ny >= 0 && ny <= 49) result.set(nx, ny, 255);
+            }
+        }
+    });
+
+    // 阻挡 SpecialCarry 格子
+    room.find(FIND_MY_CREEPS).forEach((c: any) => {
+        if (c.memory.role === "SpecialCarry") result.set(c.pos.x, c.pos.y, 25);
+    });
+
+    return result;
+};
+
+/** RampartDefender 回调 */
+const roomCallbackForRampartDefender = (roomName: string): boolean | CostMatrix => {
+    return buildDefenderBase(roomName, 3) || false;
+};
+
+/** 远程 RampartDefender 回调 */
+const roomCallbackForRangedRampartDefender = (roomName: string): boolean | CostMatrix => {
+    const result = buildDefenderBase(roomName, 0); // 道路可通过 (不惩罚)
+    if (!result) return false;
+    const room = Game.rooms[roomName];
+
+    // 在高 RANGED_ATTACK 敌人附近添加惩罚
+    room.find(FIND_HOSTILE_CREEPS).forEach((c: Creep) => {
+        if (c.getActiveBodyparts(RANGED_ATTACK) > 15) {
+            for (let dx = -3; dx <= 3; dx++) {
+                for (let dy = -3; dy <= 3; dy++) {
+                    const nx = c.pos.x + dx, ny = c.pos.y + dy;
+                    if (nx > 0 && nx < 49 && ny > 0 && ny < 49) {
+                        const cur = result.get(nx, ny);
+                        if (cur + 25 <= 255) result.set(nx, ny, cur + 25);
+                    }
+                }
+            }
+        }
+    });
+
+    return result;
+};
+
+/** 共享路径移动函数 */
+function moveWithPath(
+    creep: any,
+    target: any,
+    range: number,
+    callbackFn: (rn: string) => boolean | CostMatrix,
+    maxRooms = 1
+): void {
+    if (!target || creep.fatigue !== 0 || creep.pos.getRangeTo(target) <= range) return;
+
+    // 使过期的缓存路径无效
+    if (creep.memory.path?.length > 0) {
+        const step = creep.memory.path[0];
+        if (Math.abs(creep.pos.x - step.x) > 1 || Math.abs(creep.pos.y - step.y) > 1)
+            creep.memory.path = false;
+    }
+
+    if (!creep.memory.path?.length || creep.memory.MoveTargetId !== target.id) {
+        const result = PathFinder.search(
+            creep.pos, { pos: target.pos ?? target, range },
+            { maxOps: 1000, maxRooms, roomCallback: (rn) => callbackFn(rn) }
+        );
+        const pos = result.path[0];
+        if (pos) {
+            creep.SwapPositionWithCreep(creep.pos.getDirectionTo(pos));
+            creep.memory.path = result.path;
+            creep.memory.MoveTargetId = target.id;
+        }
+    }
+
+    const next = creep.memory.path?.[0];
+    if (next) {
+        creep.move(creep.pos.getDirectionTo(next));
+        creep.memory.moving = true;
+    }
+}
+
+/** 交换位置与 Creep */
+Creep.prototype.SwapPositionWithCreep = function (direction: DirectionConstant): void {
+    // [dx, dy, opposite direction]
+    const TABLE: Record<number, [number, number, DirectionConstant]> = {
+        1: [ 0, -1, 5], 2: [ 1, -1, 6], 3: [ 1,  0, 7],
+        4: [ 1,  1, 8], 5: [ 0,  1, 1], 6: [-1,  1, 2],
+        7: [-1,  0, 3], 8: [-1, -1, 4],
+    };
+    const entry = TABLE[direction];
+    if (!entry) return;
+    const [dx, dy, opposite] = entry;
+    const nx = this.pos.x + dx, ny = this.pos.y + dy;
+    if (nx < 0 || nx > 49 || ny < 0 || ny > 49) return;
+    const pos = new RoomPosition(nx, ny, this.room.name);
+    let targets = pos.lookFor(LOOK_CREEPS) as any[];
+    if (!targets.length) {
+        this.move(direction);
+        return;
+    }
+    const target = targets[0];
+    if (!target.my || target.memory.role === "SpecialCarry") return;
+    if (target.fatigue > 0) return;
+    if (target.move(opposite) === OK) this.move(direction);
+};
+
+/** 移动到安全位置修复 Rampart */
+Creep.prototype.moveToSafePositionToRepairRampart = function (target: any, range: number): void {
+    let cb: (rn: string) => any;
+    if (this.memory.role === "RampartDefender")   cb = roomCallbackForRampartDefender;
+    else if (this.memory.role === "RRD")          cb = roomCallbackForRangedRampartDefender;
+    else                                          cb = roomCallbackAvoidInvaders;
+    moveWithPath(this, target, range, cb);
 };
 
 // 导出空对象以使此文件成为一个模块

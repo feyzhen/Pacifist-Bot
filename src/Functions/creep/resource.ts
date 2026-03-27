@@ -439,8 +439,8 @@ Creep.prototype.findSource = function () {
     if (!source) {
         let sources = this.room.find(FIND_SOURCES, { filter: (s: any) => s.energy > 0 });
         if (sources.length) {
-            source = this.pos.findClosestByPath(sources);
-            if (!source) source = this.pos.findClosestByRange(sources);
+            sources = sources.filter((s: any) => s.pos.getOpenPositions().length > 0);
+            source = this.pos.findClosestByRange(sources);
         }
     }
     if (source) { this.memory.source = source.id; return source; }
@@ -455,9 +455,15 @@ Creep.prototype.findStorage = function () {
     if (this.room.controller?.level >= 4) {
         const st = this.room.find(FIND_MY_STRUCTURES, { filter: (s: any) => s.structureType === STRUCTURE_STORAGE });
         if (st.length) { this.memory.storage = st[0].id; return st[0]; }
+    } else if (this.room.controller?.level > 0) {
+        const spawn: any = Game.getObjectById(this.memory.spawn) || this.findSpawn();
+        if (spawn && spawn.pos.y >= 2) {
+            const pos = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, this.room.name);
+            for (const s of pos.lookFor(LOOK_STRUCTURES)) {
+                if ((s as any).structureType === STRUCTURE_CONTAINER) { this.memory.storage = (s as any).id; return s; }
+            }
+        }
     }
-    const bins = this.room.find(FIND_MY_STRUCTURES, { filter: (s: any) => s.structureType === STRUCTURE_CONTAINER });
-    if (bins.length) { this.memory.storage = bins[0].id; return bins[0]; }
 };
 
 Creep.prototype.findClosestLink = function () {
@@ -516,30 +522,31 @@ Creep.prototype.Speak = function Speak(): void {
 // ── Sweep ─────────────────────────────────────────────────────────────────────
 Creep.prototype.Sweep = function Sweep(): any {
     if (!this.memory.lockedDropped || Game.getObjectById(this.memory.lockedDropped) == null) {
-        const dropped = this.room.find(FIND_DROPPED_RESOURCES, {
-            filter: (r: any) => r.resourceType === RESOURCE_ENERGY && r.amount >= 50
-        });
-        if (dropped.length) {
-            const closest = this.pos.findClosestByPath(dropped);
-            if (closest) {
-                this.memory.lockedDropped = closest.id;
-            } else {
-                const byRange = this.pos.findClosestByRange(dropped);
-                if (byRange) this.memory.lockedDropped = byRange.id;
-            }
-        }
+        const sources = this.room.find(FIND_SOURCES);
+        if (!sources.length) return "nothing to sweep";
+
+        let dropped = this.room.find(FIND_DROPPED_RESOURCES);
+        if (this.room.controller?.level <= 3)
+            dropped = dropped.filter((r: any) => r.pos.getRangeTo(r.pos.findClosestByRange(sources)) > 1);
+
+        const tombs = this.room.find(FIND_TOMBSTONES, { filter: (t: any) => _.keys(t.store).length > 0 });
+        if (!dropped.length && !tombs.length) return "nothing to sweep";
+
+        const nearbyDropped = dropped.filter((r: any) => r.pos.getRangeTo(this) < 6);
+        const nearbyTombs   = tombs.filter((t: any) => t.pos.getRangeTo(this) < 6);
+
+        if (nearbyDropped.length)   { nearbyDropped.sort((a: any, b: any) => a.amount - b.amount);   this.memory.lockedDropped = nearbyDropped[0].id; }
+        else if (nearbyTombs.length){ nearbyTombs.sort((a: any, b: any) => a.amount - b.amount);     this.memory.lockedDropped = nearbyTombs[0].id; }
+        else if (dropped.length)    { dropped.sort((a: any, b: any) => a.amount - b.amount);         this.memory.lockedDropped = dropped[0].id; }
+        else                        { this.memory.lockedDropped = tombs[tombs.length - 1].id; }
     }
-    
-    const target = Game.getObjectById(this.memory.lockedDropped);
-    if (target) {
-        if (this.pos.isNearTo(target)) {
-            return this.pickup(target);
-        } else {
-            this.MoveCostMatrixRoadPrio(target, 1);
-        }
-    } else {
-        delete this.memory.lockedDropped;
-    }
+
+    const target: any = Game.getObjectById(this.memory.lockedDropped);
+    if (this.pickup(target) === OK) return "picked up";
+    if (this.pickup(target) === ERR_NOT_IN_RANGE) { this.moveTo(target, { reusePath: 25, ignoreRoads: true, swampCost: 1 }); return false; }
+    if (this.withdraw(target, RESOURCE_ENERGY) === OK) return "picked up";
+    if (this.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) { this.MoveCostMatrixSwampPrio(target, 1); }
+    return false;
 };
 
 // ── recycle ───────────────────────────────────────────────────────────────────
@@ -549,29 +556,63 @@ Creep.prototype.recycle = function recycle(): void {
 
     // Unboost if boosted and near end of life
     if (this.ticksToLive < 600 && this.room.memory.labs) {
-        for (const labType of ["unboostLab1", "unboostLab2", "unboostLab3", "unboostLab4", "unboostLab5"]) {
-            if (this.room.memory.labs[labType]) {
-                const lab: any = Game.getObjectById(this.room.memory.labs[labType]);
-                if (lab && lab.mineralType && lab.mineralType === this.body[0].type) {
-                    if (this.pos.isNearTo(lab)) {
-                        lab.unboost(this);
-                        return;
-                    } else {
-                        this.MoveCostMatrixRoadPrio(lab, 1);
-                        return;
+        const boosted = this.body.some((p: BodyPartDefinition) => p.boost);
+        if (boosted) {
+            const labKeys = ["inputLab1","inputLab2","outputLab1","outputLab2","outputLab3","outputLab4","outputLab5","outputLab6","outputLab7","outputLab8"];
+            let lab: any = null;
+            for (const key of labKeys) {
+                const l: any = this.room.memory.labs[key] ? Game.getObjectById(this.room.memory.labs[key]) : null;
+                if (l && l.cooldown <= 20) { lab = l; break; }
+            }
+            if (lab) {
+                if (!this.room.memory.labs.paused) this.room.memory.labs.paused = [];
+                const existing = this.room.memory.labs.paused.find((p: any) => p.id === lab.id);
+                if (!existing) this.room.memory.labs.paused.push({ timer: 21, id: lab.id });
+                else existing.timer = 50;
+
+                if (this.pos.isNearTo(lab)) {
+                    if (lab.unboostCreep(this) === OK) {
+                        const entry = this.room.memory.labs.paused.find((p: any) => p.id === lab.id);
+                        if (entry) entry.timer = 1;
                     }
+                } else {
+                    this.room.find(FIND_MY_CREEPS, { filter: (c: any) => c.memory.role === "sweeper" && !c.memory.full })
+                        .forEach((sw: any) => sw.MoveCostMatrixIgnoreRoads(lab, 3));
+                    this.MoveCostMatrixRoadPrio(lab, 1);
                 }
+                if (!this.memory.spawnedSweeper && this.room.find(FIND_MY_CREEPS, { filter: (c: any) => c.memory.role === "sweeper" }).length < 1) {
+                    const name = "Sweeper-" + Math.floor(Math.random() * Game.time) + "-" + this.room.name;
+                    this.room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE], name, { memory: { role: "sweeper" } });
+                    this.memory.spawnedSweeper = true;
+                }
+                return;
             }
         }
     }
 
-    const spawn = Game.getObjectById(this.memory.spawn) || this.findSpawn();
-    if (spawn) {
-        if (this.pos.isNearTo(spawn)) {
-            spawn.recycleCreep(this);
-        } else {
-            this.MoveCostMatrixRoadPrio(spawn, 1);
+    const SO = this.room.memory.Structures;
+    if (!SO) { this.room.memory.Structures = {}; return; }
+    const bin: any = SO.bin ? this.room.find(FIND_STRUCTURES, { filter: (s: any) => s.id === SO.bin })[0] : null;
+
+    if (bin) {
+        if (this.pos.isEqualTo(bin)) {
+            const spawnPos = new RoomPosition(this.pos.x, this.pos.y + 1, this.room.name);
+            const spawn: any = spawnPos.lookFor(LOOK_STRUCTURES).find((s: any) => s.structureType === STRUCTURE_SPAWN);
+            if (spawn) spawn.recycleCreep(this); else this.suicide();
+        } else { this.MoveCostMatrixRoadPrio(bin, 0); }
+    } else if (!SO.bin) {
+        const storage: any = Game.getObjectById(SO.storage) || this.room.storage;
+        if (storage) {
+            const binPos = new RoomPosition(storage.pos.x, storage.pos.y + 1, storage.room.name);
+            for (const s of binPos.lookFor(LOOK_STRUCTURES)) {
+                if ((s as any).structureType === STRUCTURE_CONTAINER) { SO.bin = (s as any).id; break; }
+            }
         }
+        const spawns = this.room.find(FIND_MY_SPAWNS);
+        if (spawns.length) {
+            if (this.pos.isNearTo(spawns[0])) spawns[0].recycleCreep(this);
+            else this.MoveCostMatrixRoadPrio(spawns[0], 1);
+        } else { this.suicide(); }
     }
 };
 
