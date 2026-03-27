@@ -9,6 +9,7 @@ import data from "./rooms.data";
 import remotes from "./rooms.remotes";
 import powerSpawning from "./rooms.powerSpawning";
 import supportOtherRooms from "./rooms.supportOtherRooms";
+import layoutManager, { manageRoomLayout } from "./rooms.layoutManager";
 
 function rooms() {
   /* */
@@ -269,8 +270,9 @@ function rooms() {
         room.memory.data.DOGug == 2
       ) {
         const start = Game.cpu.getUsed();
-        construction(room);
-        console.log("BASE Construction Ran in", Game.cpu.getUsed() - start, "ms");
+        // 使用布局管理器来处理建筑
+        manageRoomLayout(room);
+        console.log("Layout Management Ran in", Game.cpu.getUsed() - start, "ms");
       }
 
       if (Game.time % 2000 == 0 && bucket > 3500 && room.controller.level >= 3) {

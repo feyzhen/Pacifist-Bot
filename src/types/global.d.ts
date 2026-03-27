@@ -58,11 +58,49 @@ declare global {
       evacuate?: boolean;
     };
     blown_fuse?: boolean;
+    layout?: { [structureType: string]: { x: number; y: number }[] };
+    layoutVersion?: string;
+    layoutTime?: number;
+    lastAutoPlan?: number;
+    layoutRCL?: number;
   }
 
   interface CreepMemory {
     fleeing?: boolean;
+    homeRoom?: string;
+    targetRoom?: string;
+    targetBuildingId?: string;
+    targetPos?: RoomPosition;
+  }
+// 布局管理全局函数
+  interface Global {
+    enableAutoPlanner: (roomName?: string) => void;
+    disableAutoPlanner: (roomName?: string) => void;
+    forceReplan: (roomName: string) => void;
+    layoutStatus: (roomName: string) => void;
+    clearLayout: (roomName: string) => void;
+    setLayoutConfig: (config: any) => void;
+    getLayoutConfig: () => void;
+    batchReplan: (roomNames: string[]) => void;
+    allLayoutStatus: () => void;
+    enableRooms: (roomNames: string[]) => void;
+    checkPerformance: (roomName: string) => void;
+    enableAllAutoPlanner: () => void;
+    RP: (roomName: string) => void;
+    VP: (roomName: string) => void;
+    SP: (roomName: string) => void;
   }
 }
 
 export {};
+
+// Memory类型扩展
+declare global {
+  interface Memory {
+    layoutConfig?: {
+      forceReplan: boolean;
+      minControllerLevel: number;
+      enabledRooms: string[];
+    };
+  }
+}

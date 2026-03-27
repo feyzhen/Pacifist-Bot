@@ -83,8 +83,11 @@ import roleRoomLocker from "Roles/RoomLocker";
 import roleEscort from "Roles/Escort";
 
 import mosquito from "Roles/mosquito";
+import roleResourceHauler from "Roles/resourceHauler";
 
 import mosquito_attack from "Misc/mosquito_attack";
+import "utils/layoutCommands"; // 加载布局管理命令
+import "./planner-wrapper.js"; // 加载自动规划包装器
 import mosquito_manager from "Misc/mosquito_manager";
 import { Build_Remote_Roads } from "Rooms/rooms.construction";
 
@@ -148,6 +151,7 @@ global.ROLES = {
   RoomLocker: roleRoomLocker,
   Escort: roleEscort,
   mosquito: mosquito,
+  resourceHauler: roleResourceHauler,
 };
 
 export const loop = ErrorMapper.wrapLoop(() => {

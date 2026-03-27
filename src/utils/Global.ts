@@ -112,8 +112,8 @@ declare global {
         full: boolean;
         claim: boolean;
         locked: any;
-        homeRoom: string;
-        targetRoom: string;
+        homeRoom?: string;
+        targetRoom?: string;
         suicide: boolean;
         storage: any;
         source: any;

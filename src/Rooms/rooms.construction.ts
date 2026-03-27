@@ -1249,6 +1249,9 @@ function construction(room) {
             }
         }
     }
+    
+    // 处理需要搬运资源的建筑拆除任务
+    handleResourceDismantling(room);
 }
 
 
@@ -1258,6 +1261,51 @@ function DestroyAndBuild(room, LocationsList, StructureType:string) {
         if(lookForExistingStructures.length > 0) {
             for(let existingstructure of lookForExistingStructures) {
                 if(existingstructure.structureType !== StructureType && existingstructure.structureType !== STRUCTURE_RAMPART) {
+                    // 检查是否是需要特殊处理的建筑
+                    if(existingstructure.structureType === STRUCTURE_STORAGE || existingstructure.structureType === STRUCTURE_TERMINAL) {
+                        // 检查建筑是否有资源
+                        let hasResources = false;
+                        if(existingstructure.structureType === STRUCTURE_STORAGE) {
+                            let storage = existingstructure as StructureStorage;
+                            if(storage.store && Object.keys(storage.store).length > 0) {
+                                hasResources = true;
+                            }
+                        } else if(existingstructure.structureType === STRUCTURE_TERMINAL) {
+                            let terminal = existingstructure as StructureTerminal;
+                            if(terminal.store && Object.keys(terminal.store).length > 0) {
+                                hasResources = true;
+                            }
+                        }
+                        
+                        // 检查是否属于其他房间（通过位置判断）
+                        let isOtherRoomBuilding = false;
+                        if(existingstructure.pos.roomName !== room.name) {
+                            isOtherRoomBuilding = true;
+                        }
+                        
+                        if(hasResources && isOtherRoomBuilding) {
+                            // 标记需要搬运的建筑，而不是立即摧毁
+                            if(!room.memory.buildingsToDismantle) {
+                                room.memory.buildingsToDismantle = [];
+                            }
+                            
+                            let existingTask = room.memory.buildingsToDismantle.find(task => task.id === existingstructure.id);
+                            if(!existingTask) {
+                                room.memory.buildingsToDismantle.push({
+                                    id: existingstructure.id,
+                                    pos: existingstructure.pos,
+                                    structureType: existingstructure.structureType,
+                                    hasResources: true,
+                                    markedTime: Game.time,
+                                    targetStructureType: StructureType
+                                });
+                                console.log(`标记需要搬运的建筑: ${existingstructure.structureType} 在 ${location.roomName} 位置 ${existingstructure.pos.x},${existingstructure.pos.y}`);
+                            }
+                            continue; // 跳过摧毁，等待搬运
+                        }
+                    }
+                    
+                    // 对于普通建筑或无资源的特殊建筑，直接摧毁
                     existingstructure.destroy();
                 }
             }
@@ -1997,7 +2045,109 @@ function Situational_Building(room) {
 }
 
 
-export { Build_Remote_Roads, Situational_Building };
+function handleResourceDismantling(room) {
+    if(!room.memory.buildingsToDismantle || room.memory.buildingsToDismantle.length === 0) {
+        return;
+    }
+    
+    // 清理过期的任务（超过1000tick的任务）
+    room.memory.buildingsToDismantle = room.memory.buildingsToDismantle.filter(task => {
+        return Game.time - task.markedTime < 1000;
+    });
+    
+    for(let task of room.memory.buildingsToDismantle) {
+        let structure = Game.getObjectById(task.id);
+        if(!structure) {
+            // 建筑已经被摧毁，移除任务
+            room.memory.buildingsToDismantle = room.memory.buildingsToDismantle.filter(t => t.id !== task.id);
+            continue;
+        }
+        
+        // 检查是否还有资源
+        let hasResources = false;
+        let anyStructure = structure as AnyStructure;
+        if(anyStructure.structureType === STRUCTURE_STORAGE) {
+            let storage = structure as StructureStorage;
+            if(storage.store && Object.keys(storage.store).length > 0) {
+                hasResources = true;
+            }
+        } else if(anyStructure.structureType === STRUCTURE_TERMINAL) {
+            let terminal = structure as StructureTerminal;
+            if(terminal.store && Object.keys(terminal.store).length > 0) {
+                hasResources = true;
+            }
+        }
+        
+        if(!hasResources) {
+            // 没有资源了，可以安全摧毁
+            let destructibleStructure = structure as AnyStructure;
+            if(destructibleStructure.destroy) {
+                destructibleStructure.destroy();
+            }
+            room.memory.buildingsToDismantle = room.memory.buildingsToDismantle.filter(t => t.id !== task.id);
+            console.log(`已摧毁空建筑: ${task.structureType} 在 ${task.pos.roomName} 位置 ${task.pos.x},${task.pos.y}`);
+            
+            // 尝试在原位置建造目标建筑
+            if(task.pos.roomName === room.name) {
+                room.createConstructionSite(task.pos.x, task.pos.y, task.targetStructureType);
+            }
+        } else {
+            // 检查是否需要派遣搬运creep
+            let haulersNeeded = calculateHaulersNeeded(structure);
+            let existingHaulers = countExistingHaulers(room, task.id);
+            
+            if(existingHaulers < haulersNeeded) {
+                // 派遣搬运creep
+                spawnHauler(room, task);
+            }
+        }
+    }
+}
+
+function calculateHaulersNeeded(structure): number {
+    let totalResources = 0;
+    if(structure.structureType === STRUCTURE_STORAGE) {
+        let storage = structure as StructureStorage;
+        for(let resourceType in storage.store) {
+            totalResources += storage.store[resourceType];
+        }
+    } else if(structure.structureType === STRUCTURE_TERMINAL) {
+        let terminal = structure as StructureTerminal;
+        for(let resourceType in terminal.store) {
+            totalResources += terminal.store[resourceType];
+        }
+    }
+    
+    // 每2000资源需要一个搬运工
+    return Math.ceil(totalResources / 2000);
+}
+
+function countExistingHaulers(room, buildingId): number {
+    let haulers = Object.values(Game.creeps).filter(creep => 
+        creep.memory.homeRoom === room.name && 
+        creep.memory.role === 'resourceHauler' && 
+        creep.memory.targetBuildingId === buildingId
+    );
+    return haulers.length;
+}
+
+function spawnHauler(room, task) {
+    let body = [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE];
+    let newName = 'ResourceHauler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+    
+    room.memory.spawn_list.push([body, newName, {
+        memory: { 
+            role: 'resourceHauler', 
+            homeRoom: room.name, 
+            targetRoom: task.pos.roomName,
+            targetBuildingId: task.id,
+            targetPos: task.pos
+        }
+    }]);
+    console.log(`派遣资源搬运工: ${newName} 到 ${task.pos.roomName}`);
+}
+
+export { Build_Remote_Roads, Situational_Building, handleResourceDismantling };
 
 export default construction;
 
