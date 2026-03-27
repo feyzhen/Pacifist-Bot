@@ -1,6 +1,6 @@
 import roomDefence from "./rooms.defence";
 import spawning from "./rooms.spawning";
-import construction, { Build_Remote_Roads, Situational_Building } from "./rooms.construction";
+import construction, { Build_Remote_Roads, Situational_Building, buildFromLayout } from "./rooms.construction";
 import market from "./rooms.market";
 import labs from "./rooms.labs";
 import factory from "./rooms.factory";
@@ -281,6 +281,13 @@ function rooms() {
         console.log("REMOTE Construction Ran in", Game.cpu.getUsed() - start, "ms");
       }
       Situational_Building(room);
+      
+      // 根据布局建造建筑
+      if (Game.time % 50 == 0) { // 每50tick检查一次
+        const start = Game.cpu.getUsed();
+        buildFromLayout(room);
+        console.log("Layout Construction Ran in", Game.cpu.getUsed() - start, "ms");
+      }
     }
 
     // const establishMemoryTime = Game.cpu.getUsed()

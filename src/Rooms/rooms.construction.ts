@@ -2147,7 +2147,76 @@ function spawnHauler(room, task) {
     console.log(`派遣资源搬运工: ${newName} 到 ${task.pos.roomName}`);
 }
 
-export { Build_Remote_Roads, Situational_Building, handleResourceDismantling };
+/**
+ * 根据布局建造建筑
+ */
+function buildFromLayout(room: Room): void {
+    if (!Memory.roomPlanner || !Memory.roomPlanner[room.name]) {
+        return;
+    }
+    
+    const layout = Memory.roomPlanner[room.name].layout;
+    if (!layout) {
+        return;
+    }
+    
+    const constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
+    const maxConstructionSites = 3; // 限制同时建造的工地数量
+    
+    if (constructionSites.length >= maxConstructionSites) {
+        return;
+    }
+    
+    let sitesPlaced = 0;
+    
+    // 按优先级建造：道路 -> 基础建筑 -> 高级建筑
+    const buildOrder = [
+        STRUCTURE_ROAD,
+        STRUCTURE_EXTENSION,
+        STRUCTURE_CONTAINER,
+        STRUCTURE_STORAGE,
+        STRUCTURE_TERMINAL,
+        STRUCTURE_LINK,
+        STRUCTURE_TOWER,
+        STRUCTURE_SPAWN,
+        STRUCTURE_POWER_SPAWN,
+        STRUCTURE_EXTRACTOR,
+        STRUCTURE_LAB,
+        STRUCTURE_FACTORY,
+        STRUCTURE_NUKER
+    ];
+    
+    for (const structureType of buildOrder) {
+        if (sitesPlaced >= maxConstructionSites - constructionSites.length) {
+            break;
+        }
+        
+        if (layout[structureType] && layout[structureType].length > 0) {
+            for (const pos of layout[structureType]) {
+                if (sitesPlaced >= maxConstructionSites - constructionSites.length) {
+                    break;
+                }
+                
+                const roomPos = new RoomPosition(pos.x, pos.y, room.name);
+                
+                // 检查位置是否可以建造
+                const look = roomPos.look();
+                const hasStructure = look.some(obj => obj.type === LOOK_STRUCTURES);
+                const hasConstruction = look.some(obj => obj.type === LOOK_CONSTRUCTION_SITES);
+                
+                if (!hasStructure && !hasConstruction) {
+                    const result = room.createConstructionSite(pos.x, pos.y, structureType);
+                    if (result === OK) {
+                        sitesPlaced++;
+                        console.log(`[建造] 在 ${room.name}(${pos.x},${pos.y}) 建造 ${structureType}`);
+                    }
+                }
+            }
+        }
+    }
+}
+
+export { Build_Remote_Roads, Situational_Building, handleResourceDismantling, buildFromLayout };
 
 export default construction;
 

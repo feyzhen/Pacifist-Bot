@@ -230,6 +230,35 @@ import layoutManager from '../Rooms/rooms.layoutManager';
 // 注意：这些命令已经在planner-wrapper.js中定义为全局函数，这里不需要重新定义
 // RP, VP, SP 等命令直接使用全局定义即可
 
+/**
+ * 手动触发布局建造
+ * 用法: buildLayout(roomName)
+ */
+(global as any).buildLayout = function(roomName: string): void {
+    const room = Game.rooms[roomName];
+    if (!room) {
+        console.log(`❌ 房间 ${roomName} 不存在或不可见`);
+        return;
+    }
+    
+    if (!Memory.roomPlanner || !Memory.roomPlanner[roomName]) {
+        console.log(`❌ 房间 ${roomName} 没有布局数据`);
+        console.log(`请先运行 RP('${roomName}') 生成布局`);
+        return;
+    }
+    
+    console.log(`🔨 开始根据布局建造房间 ${roomName}`);
+    
+    // 导入建造函数
+    try {
+        const { buildFromLayout } = require("../Rooms/rooms.construction");
+        buildFromLayout(room);
+        console.log(`✅ 布局建造检查完成`);
+    } catch (error) {
+        console.log(`❌ 布局建造失败: ${error}`);
+    }
+};
+
 console.log('布局管理命令已加载');
 console.log('可用命令:');
 console.log('- testPlannerWrapper() // 测试PlannerWrapper是否正确加载');
@@ -245,6 +274,7 @@ console.log('- allLayoutStatus()');
 console.log('- enableRooms(roomNames)');
 console.log('- checkPerformance(roomName)');
 console.log('- enableAllAutoPlanner()');
+console.log('- buildLayout(roomName) // 手动触发布局建造');
 console.log('');
 console.log('直接使用PlannerWrapper:');
 console.log('- RP(roomName)  // 运行规划+可视化+保存缓存');

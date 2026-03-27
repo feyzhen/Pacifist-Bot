@@ -102,5 +102,12 @@ declare global {
       minControllerLevel: number;
       enabledRooms: string[];
     };
+    roomPlanner?: {
+      [roomName: string]: {
+        layout: { [structureType: string]: { x: number; y: number }[] };
+        timestamp: number;
+        savedAt: number;
+      };
+    };
   }
 }
