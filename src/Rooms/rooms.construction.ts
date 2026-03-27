@@ -1249,7 +1249,7 @@ function construction(room) {
             }
         }
     }
-    
+
     // 处理需要搬运资源的建筑拆除任务
     handleResourceDismantling(room);
 }
@@ -1276,19 +1276,19 @@ function DestroyAndBuild(room, LocationsList, StructureType:string) {
                                 hasResources = true;
                             }
                         }
-                        
+
                         // 检查是否属于其他房间（通过位置判断）
                         let isOtherRoomBuilding = false;
                         if(existingstructure.pos.roomName !== room.name) {
                             isOtherRoomBuilding = true;
                         }
-                        
+
                         if(hasResources && isOtherRoomBuilding) {
                             // 标记需要搬运的建筑，而不是立即摧毁
                             if(!room.memory.buildingsToDismantle) {
                                 room.memory.buildingsToDismantle = [];
                             }
-                            
+
                             let existingTask = room.memory.buildingsToDismantle.find(task => task.id === existingstructure.id);
                             if(!existingTask) {
                                 room.memory.buildingsToDismantle.push({
@@ -1304,7 +1304,7 @@ function DestroyAndBuild(room, LocationsList, StructureType:string) {
                             continue; // 跳过摧毁，等待搬运
                         }
                     }
-                    
+
                     // 对于普通建筑或无资源的特殊建筑，直接摧毁
                     existingstructure.destroy();
                 }
@@ -2049,12 +2049,12 @@ function handleResourceDismantling(room) {
     if(!room.memory.buildingsToDismantle || room.memory.buildingsToDismantle.length === 0) {
         return;
     }
-    
+
     // 清理过期的任务（超过1000tick的任务）
     room.memory.buildingsToDismantle = room.memory.buildingsToDismantle.filter(task => {
         return Game.time - task.markedTime < 1000;
     });
-    
+
     for(let task of room.memory.buildingsToDismantle) {
         let structure = Game.getObjectById(task.id);
         if(!structure) {
@@ -2062,7 +2062,7 @@ function handleResourceDismantling(room) {
             room.memory.buildingsToDismantle = room.memory.buildingsToDismantle.filter(t => t.id !== task.id);
             continue;
         }
-        
+
         // 检查是否还有资源
         let hasResources = false;
         let anyStructure = structure as AnyStructure;
@@ -2077,7 +2077,7 @@ function handleResourceDismantling(room) {
                 hasResources = true;
             }
         }
-        
+
         if(!hasResources) {
             // 没有资源了，可以安全摧毁
             let destructibleStructure = structure as AnyStructure;
@@ -2086,7 +2086,7 @@ function handleResourceDismantling(room) {
             }
             room.memory.buildingsToDismantle = room.memory.buildingsToDismantle.filter(t => t.id !== task.id);
             console.log(`已摧毁空建筑: ${task.structureType} 在 ${task.pos.roomName} 位置 ${task.pos.x},${task.pos.y}`);
-            
+
             // 尝试在原位置建造目标建筑
             if(task.pos.roomName === room.name) {
                 room.createConstructionSite(task.pos.x, task.pos.y, task.targetStructureType);
@@ -2095,7 +2095,7 @@ function handleResourceDismantling(room) {
             // 检查是否需要派遣搬运creep
             let haulersNeeded = calculateHaulersNeeded(structure);
             let existingHaulers = countExistingHaulers(room, task.id);
-            
+
             if(existingHaulers < haulersNeeded) {
                 // 派遣搬运creep
                 spawnHauler(room, task);
@@ -2117,15 +2117,15 @@ function calculateHaulersNeeded(structure): number {
             totalResources += terminal.store[resourceType];
         }
     }
-    
+
     // 每2000资源需要一个搬运工
     return Math.ceil(totalResources / 2000);
 }
 
 function countExistingHaulers(room, buildingId): number {
-    let haulers = Object.values(Game.creeps).filter(creep => 
-        creep.memory.homeRoom === room.name && 
-        creep.memory.role === 'resourceHauler' && 
+    let haulers = Object.values(Game.creeps).filter(creep =>
+        creep.memory.homeRoom === room.name &&
+        creep.memory.role === 'resourceHauler' &&
         creep.memory.targetBuildingId === buildingId
     );
     return haulers.length;
@@ -2134,11 +2134,11 @@ function countExistingHaulers(room, buildingId): number {
 function spawnHauler(room, task) {
     let body = [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE];
     let newName = 'ResourceHauler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-    
+
     room.memory.spawn_list.push([body, newName, {
-        memory: { 
-            role: 'resourceHauler', 
-            homeRoom: room.name, 
+        memory: {
+            role: 'resourceHauler',
+            homeRoom: room.name,
             targetRoom: task.pos.roomName,
             targetBuildingId: task.id,
             targetPos: task.pos
@@ -2154,56 +2154,56 @@ function buildFromLayout(room: Room): void {
     if (!Memory.roomPlanner || !Memory.roomPlanner[room.name]) {
         return;
     }
-    
+
     const layout = Memory.roomPlanner[room.name].layout;
     if (!layout) {
         return;
     }
-    
+
     const constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
     const maxConstructionSites = 3; // 限制同时建造的工地数量
-    
+
     if (constructionSites.length >= maxConstructionSites) {
         return;
     }
-    
+
     let sitesPlaced = 0;
-    
+
     // 按优先级建造：道路 -> 基础建筑 -> 高级建筑
     const buildOrder = [
-        STRUCTURE_ROAD,
+        STRUCTURE_SPAWN,
         STRUCTURE_EXTENSION,
         STRUCTURE_CONTAINER,
         STRUCTURE_STORAGE,
         STRUCTURE_TERMINAL,
         STRUCTURE_LINK,
         STRUCTURE_TOWER,
-        STRUCTURE_SPAWN,
+        STRUCTURE_ROAD,
         STRUCTURE_POWER_SPAWN,
         STRUCTURE_EXTRACTOR,
         STRUCTURE_LAB,
         STRUCTURE_FACTORY,
         STRUCTURE_NUKER
     ];
-    
+
     for (const structureType of buildOrder) {
         if (sitesPlaced >= maxConstructionSites - constructionSites.length) {
             break;
         }
-        
+
         if (layout[structureType] && layout[structureType].length > 0) {
             for (const pos of layout[structureType]) {
                 if (sitesPlaced >= maxConstructionSites - constructionSites.length) {
                     break;
                 }
-                
+
                 const roomPos = new RoomPosition(pos.x, pos.y, room.name);
-                
+
                 // 检查位置是否可以建造
                 const look = roomPos.look();
                 const hasStructure = look.some(obj => obj.type === LOOK_STRUCTURES);
                 const hasConstruction = look.some(obj => obj.type === LOOK_CONSTRUCTION_SITES);
-                
+
                 if (!hasStructure && !hasConstruction) {
                     const result = room.createConstructionSite(pos.x, pos.y, structureType);
                     if (result === OK) {
