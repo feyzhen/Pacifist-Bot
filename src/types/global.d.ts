@@ -111,5 +111,13 @@ declare global {
         savedAt: number;
       };
     };
+    buildingStrategy?: {
+      [roomName: string]: {
+        mode: 'AUTO' | 'SAFE' | 'SMART' | 'AGGRESSIVE';
+        enabled: boolean;
+        lastMigration: number;
+        backupId: string;
+      };
+    };
   }
 }

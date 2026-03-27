@@ -2148,11 +2148,20 @@ function spawnHauler(room, task) {
 }
 
 /**
- * 根据布局建造建筑
+ * 根据布局建造建筑（支持策略配置）
  */
 function buildFromLayout(room: Room): void {
     if (!Memory.roomPlanner || !Memory.roomPlanner[room.name]) {
         return;
+    }
+
+    // 🔍 检查策略配置
+    const strategy = Memory.buildingStrategy?.[room.name];
+    const mode = strategy?.mode || 'AUTO';
+    const enabled = strategy?.enabled !== false; // 默认启用
+
+    if (!enabled) {
+        return; // 策略禁用时跳过建造
     }
 
     const layout = Memory.roomPlanner[room.name].layout;
@@ -2169,7 +2178,7 @@ function buildFromLayout(room: Room): void {
 
     let sitesPlaced = 0;
 
-    // 按优先级建造：道路 -> 基础建筑 -> 高级建筑
+    // 🎯 使用优先级建造（统一逻辑）
     const buildOrder = [
         STRUCTURE_SPAWN,
         STRUCTURE_EXTENSION,
@@ -2186,6 +2195,7 @@ function buildFromLayout(room: Room): void {
         STRUCTURE_NUKER
     ];
 
+    // 建造缺失建筑
     for (const structureType of buildOrder) {
         if (sitesPlaced >= maxConstructionSites - constructionSites.length) {
             break;
@@ -2208,12 +2218,142 @@ function buildFromLayout(room: Room): void {
                     const result = room.createConstructionSite(pos.x, pos.y, structureType);
                     if (result === OK) {
                         sitesPlaced++;
-                        console.log(`[建造] 在 ${room.name}(${pos.x},${pos.y}) 建造 ${structureType}`);
+                        console.log(`🔨 [${mode}] 建造 ${structureType} → ${room.name}(${pos.x},${pos.y})`);
                     }
                 }
             }
         }
     }
+
+    // 🗑️ 根据策略执行拆除（SMART/AGGRESSIVE）
+    if (mode === 'SMART' || mode === 'AGGRESSIVE') {
+        executeDemolition(room, layout, mode);
+    }
+}
+
+/**
+ * 执行拆除逻辑
+ */
+function executeDemolition(room: Room, layout: any, mode: string): void {
+    const existingStructures = room.find(FIND_MY_STRUCTURES);
+    const layoutPositions = new Set<string>();
+    
+    // 构建布局位置集合
+    for (const [structureType, positions] of Object.entries(layout)) {
+        if (!Array.isArray(positions)) continue;
+        for (const pos of positions) {
+            layoutPositions.add(`${structureType}_${pos.x}_${pos.y}`);
+        }
+    }
+    
+    let removedCount = 0;
+    
+    // 识别和处理多余建筑
+    for (const structure of existingStructures) {
+        const key = `${structure.structureType}_${structure.pos.x}_${structure.pos.y}`;
+        if (!layoutPositions.has(key)) {
+            // 这是多余建筑
+            const shouldRemove = shouldRemoveStructure(structure, layout);
+            
+            if (shouldRemove) {
+                const safeCheck = performSafetyCheck(structure, room);
+                if (safeCheck.safe) {
+                    if (structure.destroy()) {
+                        removedCount++;
+                        console.log(`🗑️ [${mode}] 拆除 ${structure.structureType} ← ${room.name}(${structure.pos.x},${structure.pos.y})`);
+                    }
+                } else {
+                    console.log(`⚠️ [${mode}] 安全检查阻止拆除 ${structure.structureType}: ${safeCheck.reason}`);
+                }
+            }
+        }
+    }
+    
+    if (removedCount > 0) {
+        console.log(`📊 [${mode}] 拆除完成: ${removedCount} 个建筑`);
+    }
+    
+    // AGGRESSIVE 模式处理错位建筑
+    if (mode === 'AGGRESSIVE') {
+        handleMismatchedStructures(room, layout);
+    }
+}
+
+/**
+ * 判断是否应该拆除建筑
+ */
+function shouldRemoveStructure(structure: Structure, layout: any): boolean {
+    const reasons = [];
+    
+    // 低价值建筑
+    if (['road', 'container', 'rampart', 'wall'].includes(structure.structureType)) {
+        reasons.push('低价值建筑');
+    }
+    
+    // 位置不佳
+    const pos = structure.pos;
+    const room = structure.room;
+    const storage = room.storage;
+    
+    if (storage) {
+        const distance = pos.getRangeTo(storage);
+        if (distance > 15 || distance < 2) {
+            reasons.push('位置不佳');
+        }
+    }
+    
+    return reasons.length >= 1;
+}
+
+/**
+ * 执行安全检查
+ */
+function performSafetyCheck(structure: Structure, room: Room): { safe: boolean; reason: string } {
+    // 确保有可用的spawn
+    if (structure.structureType === STRUCTURE_SPAWN) {
+        const otherSpawns = room.find(FIND_MY_SPAWNS).filter(s => s.id !== structure.id);
+        if (otherSpawns.length === 0) {
+            return { safe: false, reason: '这是唯一的spawn' };
+        }
+    }
+    
+    // 确保storage不为空（如果要拆除）
+    if (structure.structureType === STRUCTURE_STORAGE) {
+        const storage = structure as StructureStorage;
+        if (storage.store) {
+            const totalResources = Object.values(storage.store).reduce((a, b) => a + b, 0);
+            if (totalResources > 100000) { // 超过10万资源
+                return { safe: false, reason: 'storage中有大量资源' };
+            }
+        }
+    }
+    
+    // 确保terminal不为空（如果要拆除）
+    if (structure.structureType === STRUCTURE_TERMINAL) {
+        const terminal = structure as StructureTerminal;
+        if (terminal.store) {
+            const totalResources = Object.values(terminal.store).reduce((a, b) => a + b, 0);
+            if (totalResources > 50000) { // 超过5万资源
+                return { safe: false, reason: 'terminal中有大量资源' };
+            }
+        }
+    }
+    
+    // 确保能量充足
+    const totalEnergy = room.energyAvailable;
+    if (totalEnergy < room.energyCapacityAvailable * 0.3) {
+        return { safe: false, reason: '房间能量不足30%' };
+    }
+    
+    return { safe: true, reason: '' };
+}
+
+/**
+ * 处理错位建筑（AGGRESSIVE模式）
+ */
+function handleMismatchedStructures(room: Room, layout: any): void {
+    console.log(`[错位处理] AGGRESSIVE模式暂未完全实现错位建筑处理`);
+    // TODO: 实现错位建筑处理逻辑
 }
 
 export { Build_Remote_Roads, Situational_Building, handleResourceDismantling, buildFromLayout };
