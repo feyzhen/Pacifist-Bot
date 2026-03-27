@@ -163,6 +163,9 @@ const colours = {
     亮蓝: '#00BFFF',
 };
 
+// 将颜色设置到全局，供可视化函数使用
+global.colours = colours;
+
 
 
 /**
@@ -2573,7 +2576,7 @@ function showBetter(layout, rv) {
             let num = 1;
             for (let s of layout[type]) {
                 rv.structure(s.x, s.y, type);
-                rv.text(num, +s.x, +s.y, { color: global.colours.金色, opacity: 1, font: 0.6 });
+                // rv.text(num, +s.x, +s.y, { color: global.colours.金色, opacity: 1, font: 0.6 });
                 num++;
             }
         } else if (type == STRUCTURE_LAB && layout[type].length) {
@@ -2825,12 +2828,34 @@ function savePlanToMemory(roomName) {
 }
 
 // 挂载到全局
-global.RP = plan;  // 原始函数（运行+可视化）
+global.RP = function(room) {
+    // 运行规划并显示可视化，同时保存到缓存
+    let roomName = typeof room === 'string' ? room : room.name;
+    
+    // 清除旧缓存
+    clearRoomPlanCache(roomName);
+    
+    // 运行规划（显示可视化）
+    let layout = plan(room, true);
+    
+    if (!layout) {
+        console.log(`[RP] 规划失败：房间 ${roomName}`);
+        return false;
+    }
+    
+    // 保存到缓存
+    saveToPlanCache(roomName, layout);
+    
+    console.log(`[RP] 房间 ${roomName} 规划完成并已保存到缓存`);
+    return layout;
+};  // 运行规划+可视化+保存缓存
 global.runPlan = runPlan;  // 只运行，保存到缓存
 global.visualizePlan = visualizePlan;  // 从缓存可视化
+global.VP = visualizePlan;  // VP别名
 global.listPlanCache = listPlanCache;  // 列出缓存
 global.clearRoomPlanCache = clearRoomPlanCache;  // 清除缓存
 global.savePlanToMemory = savePlanToMemory;  // 保存到 Memory
+global.SP = savePlanToMemory;  // SP别名
 
 module.exports = {
     plan,
@@ -2844,6 +2869,16 @@ module.exports = {
 // 导出给main.js使用
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { plan, runPlan, visualizePlan, savePlanToMemory };
-} else {
-    global.PlannerWrapper = { plan, runPlan, visualizePlan, savePlanToMemory };
 }
+
+// 强制设置到全局，确保在Screeps环境中可用
+global.PlannerWrapper = {
+    plan,
+    runPlan,
+    visualizePlan,
+    savePlanToMemory,
+    applyLayout: function(roomName) {
+        // 应用布局就是保存到Memory
+        return savePlanToMemory(roomName);
+    }
+};

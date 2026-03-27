@@ -32,6 +32,30 @@ import layoutManager from '../Rooms/rooms.layoutManager';
 };
 
 /**
+ * 测试PlannerWrapper是否正确加载
+ * 用法: testPlannerWrapper()
+ */
+(global as any).testPlannerWrapper = function(): void {
+    const plannerWrapper = (global as any).PlannerWrapper;
+    if (!plannerWrapper) {
+        console.log('❌ PlannerWrapper 未加载');
+        console.log('可用的全局属性:', Object.keys(global).filter(key => key.toLowerCase().includes('plan')));
+        return;
+    }
+    
+    console.log('✅ PlannerWrapper 已加载');
+    console.log('可用方法:', Object.keys(plannerWrapper));
+    
+    // 测试RoomVisual
+    try {
+        const rv = new RoomVisual();
+        console.log('✅ RoomVisual 可用');
+    } catch (e) {
+        console.log('❌ RoomVisual 不可用:', e.message);
+    }
+};
+
+/**
  * 强制重新规划房间
  * 用法: forceReplan('W1N1')
  */
@@ -203,48 +227,12 @@ import layoutManager from '../Rooms/rooms.layoutManager';
 };
 
 // 直接使用PlannerWrapper的命令
-(global as any).RP = function(roomName: string): void {
-    const plannerWrapper = (global as any).PlannerWrapper;
-    if (!plannerWrapper) {
-        console.log('PlannerWrapper 未加载');
-        return;
-    }
-    
-    console.log(`[RP] 运行规划并可视化房间 ${roomName}`);
-    const success = plannerWrapper.runPlan(roomName);
-    if (success) {
-        plannerWrapper.visualizePlan(roomName);
-        console.log(`[RP] 房间 ${roomName} 规划完成`);
-    } else {
-        console.log(`[RP] 房间 ${roomName} 规划失败`);
-    }
-};
-
-(global as any).VP = function(roomName: string): void {
-    const plannerWrapper = (global as any).PlannerWrapper;
-    if (!plannerWrapper) {
-        console.log('PlannerWrapper 未加载');
-        return;
-    }
-    
-    console.log(`[VP] 可视化房间 ${roomName}`);
-    plannerWrapper.visualizePlan(roomName);
-};
-
-(global as any).SP = function(roomName: string): void {
-    const plannerWrapper = (global as any).PlannerWrapper;
-    if (!plannerWrapper) {
-        console.log('PlannerWrapper 未加载');
-        return;
-    }
-    
-    console.log(`[SP] 保存房间 ${roomName} 到Memory`);
-    const success = plannerWrapper.savePlanToMemory(roomName);
-    console.log(`[SP] 保存${success ? '成功' : '失败'}`);
-};
+// 注意：这些命令已经在planner-wrapper.js中定义为全局函数，这里不需要重新定义
+// RP, VP, SP 等命令直接使用全局定义即可
 
 console.log('布局管理命令已加载');
 console.log('可用命令:');
+console.log('- testPlannerWrapper() // 测试PlannerWrapper是否正确加载');
 console.log('- enableAutoPlanner([roomName])');
 console.log('- disableAutoPlanner(roomName)');
 console.log('- forceReplan(roomName)');
@@ -259,6 +247,9 @@ console.log('- checkPerformance(roomName)');
 console.log('- enableAllAutoPlanner()');
 console.log('');
 console.log('直接使用PlannerWrapper:');
-console.log('- RP(roomName)  // 运行规划并可视化');
-console.log('- VP(roomName)  // 可视化');
+console.log('- RP(roomName)  // 运行规划+可视化+保存缓存');
+console.log('- VP(roomName)  // 从缓存可视化');
 console.log('- SP(roomName)  // 保存到Memory');
+console.log('- runPlan(roomName)  // 只运行规划并保存缓存');
+console.log('- listPlanCache()  // 列出所有缓存');
+console.log('- clearRoomPlanCache(roomName)  // 清除指定房间缓存');
