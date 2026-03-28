@@ -94,14 +94,38 @@ const run = function (creep) {
         }
 
     }
-    else {
-        if(creep.pos.isNearTo(storage)) {
-            creep.withdraw(storage, RESOURCE_ENERGY);
-        }
-        else {
-            creep.MoveCostMatrixRoadPrio(storage, 1)
-        }
-    }
+  else {
+      // 尝试多个能量源
+      let energySource = storage;
+
+      // 如果没有 Storage，尝试其他能量源
+      if(!energySource) {
+          // 尝试从容器获取能量
+          let containers = creep.room.find(FIND_STRUCTURES, {
+              filter: s => s.structureType === STRUCTURE_CONTAINER &&
+                         s.store[RESOURCE_ENERGY] > creep.store.getFreeCapacity()
+          });
+          if(containers.length > 0) {
+              energySource = containers[0];
+          }
+      }
+
+      if(energySource) {
+          if(creep.pos.isNearTo(energySource)) {
+              creep.withdraw(energySource, RESOURCE_ENERGY);
+          }
+          else {
+              creep.MoveCostMatrixRoadPrio(energySource, 1);
+          }
+      }
+      else {
+          // 如果没有找到能量源，转换为修复者
+          creep.say("⚡修复");
+          creep.memory.role = "repair";
+          creep.memory.suicide = false;
+          return;  // 立即退出，让修复者逻辑接管
+      }
+  }
 
 
 }

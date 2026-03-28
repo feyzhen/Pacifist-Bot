@@ -305,133 +305,233 @@ Creep.prototype.roadlessLocation = function (repairTarget: any): RoomPosition | 
     return null;
 };
 
-// ── findFillerTarget ──────────────────────────────────────────────────────────
-Creep.prototype.findFillerTarget = function findFillerTarget(): any {
-    const reserveFill = this.room.memory.reserveFill;
+Creep.prototype.findFillerTarget = function findFillerTarget():any {
 
-    // Helper: detect and cache controller link/container
-    const refreshControllerLink = (role: string) => {
-        if (this.memory.role !== role) return;
-        if (this.room.memory.Structures.controllerLink && Game.time % 10000 !== 0) return;
-        if (!this.room.controller || this.room.controller.level < 2) return;
-        if (this.room.controller.level < 7) {
-            let containers = this.room.find(FIND_STRUCTURES, {
-                filter: (b: any) => b.structureType === STRUCTURE_CONTAINER &&
-                    b.id !== this.room.memory.Structures.bin &&
-                    b.id !== this.room.memory.Structures.storage &&
-                    b.pos.getRangeTo(this.room.controller) === 3
-            });
-            if (!containers.length) return;
-            let best = this.room.controller.pos.findClosestByRange(containers);
-            if (containers.length > 1) {
-                const sources = this.room.find(FIND_SOURCES);
-                if (best.pos.findInRange(sources, 1).length > 0) {
-                    containers = containers.filter((c: any) => c.id !== best.id);
-                    best = this.room.controller.pos.findClosestByRange(containers);
+    let reserveFill = this.room.memory.reserveFill;
+
+
+    if(this.memory.role == "ControllerLinkFiller" && (!this.room.memory.Structures.controllerLink || Game.time % 10000 == 0) && this.room.controller && this.room.controller.level >= 2) {
+        if(this.room.controller && this.room.controller.level < 7) {
+            let containers = this.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_CONTAINER && building.id !== this.room.memory.Structures.bin && building.id !== this.room.memory.Structures.storage && building.pos.getRangeTo(this.room.controller) == 3});
+            if(containers.length > 0) {
+                let controllerLink = this.room.controller.pos.findClosestByRange(containers);
+                if(containers.length > 1) {
+                    let sources = this.room.find(FIND_SOURCES);
+                    if(controllerLink.pos.findInRange(sources, 1).length > 0) {
+                        containers = containers.filter(function(con) {return con.id !== controllerLink.id;});
+                        let newControllerLink = this.room.controller.pos.findClosestByRange(containers);
+                        this.room.memory.Structures.controllerLink = newControllerLink.id;
+                    }
+                }
+                else {
+                    this.room.memory.Structures.controllerLink = controllerLink.id;
+                }
+
+            }
+        }
+        else {
+            let links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
+            if(links.length > 0) {
+                let controllerLink = this.room.controller.pos.findClosestByRange(links);
+                if(controllerLink.pos.getRangeTo(this.room.controller) <= 4)  {
+                    this.room.memory.Structures.controllerLink = controllerLink.id;
                 }
             }
-            this.room.memory.Structures.controllerLink = best.id;
-        } else {
-            const links = this.room.find(FIND_MY_STRUCTURES, {
-                filter: (b: any) => b.structureType === STRUCTURE_LINK && b.pos.getRangeTo(this.room.controller) <= 3
-            });
-            if (!links.length) return;
-            const cl = this.room.controller.pos.findClosestByRange(links);
-            if (cl.pos.getRangeTo(this.room.controller) <= 4) this.room.memory.Structures.controllerLink = cl.id;
         }
-    };
+    }
 
-    refreshControllerLink("ControllerLinkFiller");
-
-    // Controller link / container fill
-    if ((this.memory.role === "ControllerLinkFiller" || this.memory.role === "filler") &&
-        this.room.controller && this.room.memory.Structures.controllerLink) {
-        const cl: any = Game.getObjectById(this.room.memory.Structures.controllerLink);
-        if (cl) {
-            const isContainer = cl.structureType === STRUCTURE_CONTAINER;
-            const isLink      = cl.structureType === STRUCTURE_LINK;
-            const needFill    = isContainer
-                ? (this.memory.role === "ControllerLinkFiller" ? cl.store.getFreeCapacity() >= 200 : cl.store.getFreeCapacity() > 1800)
-                : (isLink && cl.store[RESOURCE_ENERGY] <= (this.memory.role === "ControllerLinkFiller" ? 600 : 400));
-            if (needFill) {
-                if (isContainer && this.room.controller.level >= 7) { this.room.memory.Structures.controllerLink = false; }
-                else { this.memory.t = cl.id; return cl; }
+    if(this.memory.role == "ControllerLinkFiller" && this.room.controller && this.room.memory.Structures.controllerLink) {
+        let controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
+        if(controllerLink) {
+            if(controllerLink.structureType == STRUCTURE_CONTAINER && controllerLink.store.getFreeCapacity() >= 200) {
+                if(this.room.controller.level >= 7) {
+                    this.room.memory.Structures.controllerLink = false;
+                }
+                else {
+                    this.memory.t = controllerLink.id;
+                    return controllerLink;
+                }
             }
-        } else {
+            else if(controllerLink.structureType == STRUCTURE_LINK && controllerLink.store[RESOURCE_ENERGY] <= 600) {
+                this.memory.t = controllerLink.id;
+                return controllerLink;
+            }
+        }
+        else {
             this.room.memory.Structures.controllerLink = false;
         }
     }
+    if(this.room.memory.labs && Object.keys(this.room.memory.labs).length >= 4) {
+        let outputLab1;
+        let outputLab2;
+        let outputLab3;
+        let outputLab4;
+        let outputLab5;
+        let outputLab6;
+        let outputLab7;
+        let outputLab8;
 
-    // Output labs (loop replaces 8 individual variables)
-    if (this.room.memory.labs && Object.keys(this.room.memory.labs).length >= 4) {
-        const labKeys = ["outputLab1","outputLab2","outputLab3","outputLab4","outputLab5","outputLab6","outputLab7","outputLab8"];
-        for (const key of labKeys) {
-            if (!this.room.memory.labs[key]) continue;
-            const lab: any = Game.getObjectById(this.room.memory.labs[key]);
-            if (lab && (lab.store[RESOURCE_ENERGY] <= 2000 - this.memory.MaxStorage * 2 || lab.store[RESOURCE_ENERGY] < 1200) && !reserveFill.includes(lab.id)) {
-                if (!this.room.memory.reserveFill.includes(lab.id)) this.room.memory.reserveFill.push(lab.id);
-                this.memory.t = lab.id; return lab;
+        let Labs = [];
+
+        if(this.room.memory.labs.outputLab1) {
+            outputLab1 = Game.getObjectById(this.room.memory.labs.outputLab1)
+            Labs.push(outputLab1)
+        }
+        if(this.room.memory.labs.outputLab2) {
+            outputLab2 = Game.getObjectById(this.room.memory.labs.outputLab2)
+            Labs.push(outputLab2)
+        }
+        if(this.room.memory.labs.outputLab3) {
+            outputLab3 = Game.getObjectById(this.room.memory.labs.outputLab3)
+            Labs.push(outputLab3)
+        }
+        if(this.room.memory.labs.outputLab4) {
+            outputLab4 = Game.getObjectById(this.room.memory.labs.outputLab4)
+            Labs.push(outputLab4)
+        }
+        if(this.room.memory.labs.outputLab5) {
+            outputLab5 = Game.getObjectById(this.room.memory.labs.outputLab5)
+            Labs.push(outputLab5)
+        }
+        if(this.room.memory.labs.outputLab6) {
+            outputLab6 = Game.getObjectById(this.room.memory.labs.outputLab6)
+            Labs.push(outputLab6)
+        }
+        if(this.room.memory.labs.outputLab7) {
+            outputLab7 = Game.getObjectById(this.room.memory.labs.outputLab7)
+            Labs.push(outputLab7)
+        }
+        if(this.room.memory.labs.outputLab8) {
+            outputLab8 = Game.getObjectById(this.room.memory.labs.outputLab8)
+            Labs.push(outputLab8)
+        }
+
+        for(let lab of Labs) {
+            if(lab && (lab.store[RESOURCE_ENERGY] <= 2000 - this.memory.MaxStorage*2 || lab.store[RESOURCE_ENERGY] < 1200) && !reserveFill.includes(lab.id)) {
+                if(!this.room.memory.reserveFill.includes(lab.id)) {
+                    this.room.memory.reserveFill.push(lab.id);
+                }
+                this.memory.t = lab.id;
+                return lab;
+            }
+        }
+    }
+    if(this.room.energyAvailable < this.room.energyCapacityAvailable) {
+
+        let spawnAndExtensions = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_SPAWN || building.structureType == STRUCTURE_EXTENSION) && building.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && !reserveFill.includes(building.id)});
+        if(spawnAndExtensions.length > 0) {
+            let t = this.pos.findClosestByRange(spawnAndExtensions);
+            if(!this.room.memory.reserveFill.includes(t.id)) {
+                this.room.memory.reserveFill.push(t.id);
+            }
+            this.memory.t = t.id;
+            return t;
+        }
+
+    }
+
+
+    let towers2 = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store.getFreeCapacity(RESOURCE_ENERGY) >= 100 && !reserveFill.includes(building.id))});
+    if(towers2.length > 0) {
+        let t = this.pos.findClosestByRange(towers2);
+        if(!this.room.memory.reserveFill.includes(t.id)) {
+            this.room.memory.reserveFill.push(t.id);
+        }        this.memory.t = t.id;
+        return t;
+    }
+
+    let storage = Game.getObjectById(this.memory.storage) || this.findStorage() || this.room.storage;
+    if(this.room.memory.Structures.factory) {
+        let factory:any = Game.getObjectById(this.room.memory.Structures.factory);
+        if(factory && factory.store[RESOURCE_ENERGY] < 20000 && storage && storage.store[RESOURCE_ENERGY] > 450000 && storage.store[RESOURCE_BATTERY] < 200 && !reserveFill.includes(factory.id)) {
+            if(!this.room.memory.reserveFill.includes(factory.id)) {
+                this.room.memory.reserveFill.push(factory.id);
+            }            this.memory.t = factory.id;
+            return factory;
+        }
+    }
+
+    if(this.room.memory.Structures.extraLinks) {
+        for(let linkID of this.room.memory.Structures.extraLinks) {
+            let extraLink:any = Game.getObjectById(linkID);
+            if(extraLink && extraLink.store[RESOURCE_ENERGY] < 800 && storage && storage.store[RESOURCE_ENERGY] > 100000 && !reserveFill.includes(extraLink.id)) {
+                if(!this.room.memory.reserveFill.includes(extraLink.id)) {
+                    this.room.memory.reserveFill.push(extraLink.id);
+                }                this.memory.t = extraLink.id;
+                return extraLink;
             }
         }
     }
 
-    // Spawns & extensions
-    if (this.room.energyAvailable < this.room.energyCapacityAvailable) {
-        const targets = this.room.find(FIND_MY_STRUCTURES, {
-            filter: (b: any) => (b.structureType === STRUCTURE_SPAWN || b.structureType === STRUCTURE_EXTENSION) &&
-                b.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && !reserveFill.includes(b.id)
-        });
-        if (targets.length) {
-            const t = this.pos.findClosestByRange(targets);
-            if (!this.room.memory.reserveFill.includes(t.id)) this.room.memory.reserveFill.push(t.id);
-            this.memory.t = t.id; return t;
+
+
+    if(this.room.memory.Structures.powerSpawn) {
+        let powerSpawn:any = Game.getObjectById(this.room.memory.Structures.powerSpawn);
+        if(powerSpawn && powerSpawn.store[RESOURCE_ENERGY] < 2500 && storage && storage.store[RESOURCE_ENERGY] > 280000 && !reserveFill.includes(powerSpawn.id)) {
+            if(!this.room.memory.reserveFill.includes(powerSpawn.id)) {
+                this.room.memory.reserveFill.push(powerSpawn.id);
+            }
+            this.memory.t = powerSpawn.id;
+            return powerSpawn;
         }
     }
 
-    // Towers
-    const towers = this.room.find(FIND_MY_STRUCTURES, {
-        filter: (b: any) => b.structureType === STRUCTURE_TOWER && b.store.getFreeCapacity(RESOURCE_ENERGY) >= 100 && !reserveFill.includes(b.id)
-    });
-    if (towers.length) {
-        const t = this.pos.findClosestByRange(towers);
-        if (!this.room.memory.reserveFill.includes(t.id)) this.room.memory.reserveFill.push(t.id);
-        this.memory.t = t.id; return t;
-    }
 
-    const storage = Game.getObjectById(this.memory.storage) || this.findStorage() || this.room.storage;
 
-    // Factory
-    if (this.room.memory.Structures.factory) {
-        const factory: any = Game.getObjectById(this.room.memory.Structures.factory);
-        if (factory && factory.store[RESOURCE_ENERGY] < 20000 && storage && storage.store[RESOURCE_ENERGY] > 450000 && storage.store[RESOURCE_BATTERY] < 200 && !reserveFill.includes(factory.id)) {
-            if (!this.room.memory.reserveFill.includes(factory.id)) this.room.memory.reserveFill.push(factory.id);
-            this.memory.t = factory.id; return factory;
+
+    if(this.memory.role == "filler" && (!this.room.memory.Structures.controllerLink || Game.time % 10000 == 0) && this.room.controller.level >= 2) {
+        if(this.room.controller.level < 7) {
+            let containers = this.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_CONTAINER && building.id !== this.room.memory.Structures.bin && building.id !== this.room.memory.Structures.storage && building.pos.getRangeTo(this.room.controller) == 3});
+            if(containers.length > 0) {
+                let controllerLink = this.room.controller.pos.findClosestByRange(containers);
+                if(containers.length > 1) {
+                    let sources = this.room.find(FIND_SOURCES);
+                    if(controllerLink.pos.findInRange(sources, 1).length > 0) {
+                        containers = containers.filter(function(con) {return con.id !== controllerLink.id;});
+                        let newControllerLink = this.room.controller.pos.findClosestByRange(containers);
+                        this.room.memory.Structures.controllerLink = newControllerLink.id;
+                    }
+                }
+                else {
+                    this.room.memory.Structures.controllerLink = controllerLink.id;
+                }
+
+            }
         }
-    }
-
-    // Extra links
-    if (this.room.memory.Structures.extraLinks) {
-        for (const linkID of this.room.memory.Structures.extraLinks) {
-            const el: any = Game.getObjectById(linkID);
-            if (el && el.store[RESOURCE_ENERGY] < 800 && storage && storage.store[RESOURCE_ENERGY] > 100000 && !reserveFill.includes(el.id)) {
-                if (!this.room.memory.reserveFill.includes(el.id)) this.room.memory.reserveFill.push(el.id);
-                this.memory.t = el.id; return el;
+        else {
+            let links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
+            if(links.length > 0) {
+                let controllerLink = this.room.controller.pos.findClosestByRange(links);
+                if(controllerLink.pos.getRangeTo(this.room.controller) <= 4)  {
+                    this.room.memory.Structures.controllerLink = controllerLink.id;
+                }
             }
         }
     }
 
-    // PowerSpawn
-    if (this.room.memory.Structures.powerSpawn) {
-        const ps: any = Game.getObjectById(this.room.memory.Structures.powerSpawn);
-        if (ps && ps.store[RESOURCE_ENERGY] < 2500 && storage && storage.store[RESOURCE_ENERGY] > 280000 && !reserveFill.includes(ps.id)) {
-            if (!this.room.memory.reserveFill.includes(ps.id)) this.room.memory.reserveFill.push(ps.id);
-            this.memory.t = ps.id; return ps;
+    if(this.memory.role == "filler" && this.room.energyAvailable == this.room.energyCapacityAvailable && this.room.controller && this.room.memory.Structures.controllerLink) {
+        let controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
+        if(controllerLink) {
+            if(controllerLink.structureType == STRUCTURE_CONTAINER && controllerLink.store.getFreeCapacity() > 1800) {
+                if(this.room.controller.level >= 7) {
+                    this.room.memory.Structures.controllerLink = false;
+                }
+                else {
+                    this.memory.t = controllerLink.id;
+                    return controllerLink;
+                }
+            }
+            else if(controllerLink.structureType == STRUCTURE_LINK && controllerLink.store[RESOURCE_ENERGY] <= 400) {
+                this.memory.t = controllerLink.id;
+                return controllerLink;
+            }
+        }
+        else {
+            this.room.memory.Structures.controllerLink = false;
         }
     }
-
-    refreshControllerLink("filler");
     return false;
-};
+}
 
 // ── findSource / findSpawn / findStorage / findClosestLink ────────────────────
 Creep.prototype.findSource = function () {

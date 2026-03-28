@@ -842,9 +842,9 @@
         }
 
 
-        // if(!creep.memory.target) {
-        //     creep.MoveCostMatrixRoadPrio(storage, 5);
-        // }
+        if(!creep.memory.target) {
+            creep.MoveCostMatrixRoadPrio(storage, 5);
+        }
 
     }
 

@@ -593,9 +593,12 @@ function add_creeps_to_spawn_list(room, spawn) {
             maintain_creep: {
 
                 amount: 1,
-                body:[WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
-                    MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,
-                    CARRY,CARRY,CARRY,CARRY],
+                // body:[WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
+                //     MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,
+                //     CARRY,CARRY,CARRY,CARRY],
+                body:[WORK,WORK,
+                    MOVE,MOVE,
+                    CARRY,CARRY],
 
             },
 
@@ -924,7 +927,21 @@ function add_creeps_to_spawn_list(room, spawn) {
                 room.memory.spawn_list.push(spawnrules[3].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
                 console.log('Adding Upgrader to Spawn List: ' + name);
             }
-            if(maintainers < spawnrules[3].maintain_creep.amount && !room.memory.danger && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
+            // 检查是否有可用的能量源
+            let hasEnergySource = false;
+            if(storage) {
+                hasEnergySource = true;
+            } else {
+                // 检查容器
+                let containers = room.find(FIND_STRUCTURES, {
+                    filter: s => s.structureType === STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > 200
+                });
+                if(containers.length > 0) {
+                    hasEnergySource = true;
+                }
+            }
+
+            if(maintainers < spawnrules[3].maintain_creep.amount && !room.memory.danger && hasEnergySource && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
                 if(spawnMaintainer) {
                     let name = 'Maintainer-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(spawnrules[3].maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});
@@ -971,7 +988,22 @@ function add_creeps_to_spawn_list(room, spawn) {
                 room.memory.spawn_list.push(spawnrules[4].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
                 console.log('Adding Upgrader to Spawn List: ' + name);
             }
-            if(maintainers < spawnrules[4].maintain_creep.amount && !room.memory.danger && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
+            // 检查是否有可用的能量源 (RCL 4)
+            let hasEnergySourceRCL4 = false;
+            let storageRCL4 = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+            if(storageRCL4) {
+                hasEnergySourceRCL4 = true;
+            } else {
+                // 检查容器
+                let containersRCL4 = room.find(FIND_STRUCTURES, {
+                    filter: s => s.structureType === STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > 200
+                });
+                if(containersRCL4.length > 0) {
+                    hasEnergySourceRCL4 = true;
+                }
+            }
+
+            if(maintainers < spawnrules[4].maintain_creep.amount && !room.memory.danger && hasEnergySourceRCL4 && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
                 if(spawnMaintainer) {
                     let name = 'Maintainer-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(spawnrules[4].maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});
@@ -1022,7 +1054,22 @@ function add_creeps_to_spawn_list(room, spawn) {
                 room.memory.spawn_list.push(spawnrules[5].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
                 console.log('Adding Upgrader to Spawn List: ' + name);
             }
-            if(maintainers < spawnrules[5].maintain_creep.amount && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
+            // 检查是否有可用的能量源 (RCL 5)
+            let hasEnergySourceRCL5 = false;
+            let storageRCL5 = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+            if(storageRCL5) {
+                hasEnergySourceRCL5 = true;
+            } else {
+                // 检查容器
+                let containersRCL5 = room.find(FIND_STRUCTURES, {
+                    filter: s => s.structureType === STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > 200
+                });
+                if(containersRCL5.length > 0) {
+                    hasEnergySourceRCL5 = true;
+                }
+            }
+
+            if(maintainers < spawnrules[5].maintain_creep.amount && hasEnergySourceRCL5 && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
                 if(spawnMaintainer) {
                     let name = 'Maintainer-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(spawnrules[5].maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});
@@ -1105,7 +1152,22 @@ function add_creeps_to_spawn_list(room, spawn) {
             }
 
 
-            if(maintainers < spawnrules[6].maintain_creep.amount && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
+            // 检查是否有可用的能量源 (RCL 6)
+            let hasEnergySourceRCL6 = false;
+            let storageRCL6 = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+            if(storageRCL6) {
+                hasEnergySourceRCL6 = true;
+            } else {
+                // 检查容器
+                let containersRCL6 = room.find(FIND_STRUCTURES, {
+                    filter: s => s.structureType === STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > 200
+                });
+                if(containersRCL6.length > 0) {
+                    hasEnergySourceRCL6 = true;
+                }
+            }
+
+            if(maintainers < spawnrules[6].maintain_creep.amount && hasEnergySourceRCL6 && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
                 if(spawnMaintainer) {
                     let name = 'Maintainer-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(spawnrules[6].maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});
@@ -1194,7 +1256,22 @@ function add_creeps_to_spawn_list(room, spawn) {
             }
 
 
-            if(maintainers < spawnrules[7].maintain_creep.amount && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
+            // 检查是否有可用的能量源 (RCL 7)
+            let hasEnergySourceRCL7 = false;
+            let storageRCL7 = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+            if(storageRCL7) {
+                hasEnergySourceRCL7 = true;
+            } else {
+                // 检查容器
+                let containersRCL7 = room.find(FIND_STRUCTURES, {
+                    filter: s => s.structureType === STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > 200
+                });
+                if(containersRCL7.length > 0) {
+                    hasEnergySourceRCL7 = true;
+                }
+            }
+
+            if(maintainers < spawnrules[7].maintain_creep.amount && hasEnergySourceRCL7 && (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer)) {
                 if(spawnMaintainer) {
                     let name = 'Maintainer-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(spawnrules[7].maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});

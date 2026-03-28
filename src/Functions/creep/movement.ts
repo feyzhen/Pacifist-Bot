@@ -163,81 +163,142 @@ Creep.prototype.handleStuck = function(): boolean {
 };
 
 // ── moveToRoomAvoidEnemyRooms ─────────────────────────────────────────────────
-Creep.prototype.moveToRoomAvoidEnemyRooms = function (targetRoom: string): void {
-    function isHighwayAdjacent(roomName: string): boolean {
-        const m = roomName.match(/^[EW](\d+)[NS](\d+)$/);
-        if (!m) return false;
-        const ex = parseInt(m[1]) % 10, ey = parseInt(m[2]) % 10;
-        return (ex >= 4 && ex <= 6) && (ey >= 4 && ey <= 6);
-    }
+Creep.prototype.moveToRoomAvoidEnemyRooms = function (targetRoom) {
 
-    // Guard: flee if dangerous
-    if (this.memory.role === "Guard" && this.memory.targetRoom !== targetRoom) {
-        const strongHostiles = this.room.find(FIND_HOSTILE_CREEPS).filter((c: Creep) =>
-            c.getActiveBodyparts(ATTACK) > 25 || c.getActiveBodyparts(RANGED_ATTACK) > 25);
-        if (strongHostiles.length && this.pos.getRangeTo(this.pos.findClosestByRange(strongHostiles)) <= 9) {
-            this.moveToRoomAvoidEnemyRooms(this.memory.homeRoom); return;
+    function isValidRoomName(roomName) {
+        const match = roomName.match(/^(E|W)(\d+)(N|S)(\d+)$/);
+        if (!match) {
+            return false; // Invalid room name format
         }
+
+        const [_, eastWestDirection, eastWestCoord, northSouthDirection, northSouthCoord] = match;
+
+        const isValidNumber = (num) => {
+            const remainder = num % 10;
+            return remainder >= 4 && remainder <= 6;
+        };
+
+        return isValidNumber(eastWestCoord) && isValidNumber(northSouthCoord);
     }
 
-    // Auto-add hostile rooms to avoid list
-    if (this.room.name !== this.memory.homeRoom) {
-        if (this.room.controller && !this.room.controller.my && this.room.controller.level > 2 &&
-            this.room.find(FIND_HOSTILE_STRUCTURES, { filter: (s: any) => s.structureType === STRUCTURE_TOWER }).length > 0 &&
-            !Memory.AvoidRooms?.includes(this.room.name)) {
-            Memory.AvoidRooms.push(this.room.name);
-        } else if (isHighwayAdjacent(this.room.name) && Game.time % 2 === 0) {
-            const cores = this.room.find(FIND_HOSTILE_STRUCTURES, {
-                filter: (s: any) => s.structureType === STRUCTURE_INVADER_CORE && (s as any).level > 0
-            });
-            if (cores.length && (cores[0] as any).effects?.[0]?.effect === EFFECT_COLLAPSE_TIMER) {
-                if (!Memory.AvoidRoomsTemp) Memory.AvoidRoomsTemp = {};
-                const ticks = (cores[0] as any).effects[0].ticksRemaining;
-                if (!Memory.AvoidRoomsTemp[this.room.name]) Memory.AvoidRoomsTemp[this.room.name] = ticks;
+    if(this.memory.role === "Guard" && this.memory.targetRoom !== targetRoom) {
+        let hostileCreeps = this.room.find(FIND_HOSTILE_CREEPS);
+        let hostileCreepsWithAttack = hostileCreeps.filter(creep => creep.getActiveBodyparts(ATTACK) > 25 || creep.getActiveBodyparts(RANGED_ATTACK) > 25);
+        if(hostileCreepsWithAttack.length > 0) {
+            let closestHostileCreep = this.pos.findClosestByRange(hostileCreepsWithAttack);
+            if(this.pos.getRangeTo(closestHostileCreep) <= 9) {
+                this.moveToRoomAvoidEnemyRooms(this.memory.homeRoom);
+                return;
             }
         }
     }
 
-    // Shift completed route step
-    if (this.memory.route?.length > 0 && this.memory.route[0].room === this.room.name) this.memory.route.shift();
+    if (this.room.name !== this.memory.homeRoom) {
+        if (this.room.controller && !this.room.controller.my && this.room.controller.level > 2 && this.room.find(FIND_HOSTILE_STRUCTURES, {filter: s => s.structureType === STRUCTURE_TOWER}).length > 0 && !_.includes(Memory.AvoidRooms, this.room.name, 0)) {
+            Memory.AvoidRooms.push(this.room.name);
+        }
 
-    const needReroute = !this.memory.route || this.memory.route === -2 || this.memory.route.length === 0 ||
-        (this.memory.route.length === 1 && this.memory.route[0].room === this.room.name) ||
-        this.memory.route[this.memory.route.length - 1].room !== targetRoom;
+        else if (isValidRoomName(this.room.name) && (Game.time % 2 === 0 || this.hitsMax <= 4500)) {
 
-    if (needReroute) {
+            let strongholds = this.room.find(FIND_HOSTILE_STRUCTURES, {filter: s => s.structureType === STRUCTURE_INVADER_CORE && s.level > 0});
+            if(strongholds.length && strongholds[0].effects && strongholds[0].effects.length &&
+                strongholds[0].effects[0].effect === EFFECT_COLLAPSE_TIMER) {
+
+                let timerUntilGone = strongholds[0].effects[0].ticksRemaining;
+
+                if (!Memory.AvoidRoomsTemp) {
+                    Memory.AvoidRoomsTemp = {};
+                }
+                if (typeof Memory.AvoidRoomsTemp[this.room.name] === 'number') {
+                    const roomValue = Memory.AvoidRoomsTemp[this.room.name];
+                    if (roomValue === 0) {
+                        Memory.AvoidRoomsTemp[this.room.name] = timerUntilGone;
+                    }
+                } else {
+                    Memory.AvoidRoomsTemp[this.room.name] = timerUntilGone;
+                }
+            }
+
+        }
+
+    }
+
+    if (this.memory.route && this.memory.route.length > 0 && this.memory.route[0].room === this.room.name) {
+        this.memory.route.shift();
+    }
+
+    if (!this.memory.route || this.memory.route === -2 || this.memory.route && this.memory.route.length === 0 || (this.memory.route.length === 1 && this.memory.route[0].room === this.room.name) || (this.memory.route && this.memory.route.length > 0 && this.memory.route[this.memory.route.length - 1].room !== targetRoom)) {
         this.memory.route = Game.map.findRoute(this.room.name, targetRoom, {
-            routeCallback(roomName: string) {
-                if (Game.map.getRoomStatus(roomName).status !== "normal") return Infinity;
-                if ((Memory.AvoidRooms?.includes(roomName) || Memory.AvoidRoomsTemp?.[roomName]) && roomName !== targetRoom) return 24;
-                if (roomName.length >= 4) {
-                    const m = roomName.match(/^[EW](\d+)[NS](\d+)$/);
-                    if (m) {
-                        if (parseInt(m[1]) % 10 === 0 || parseInt(m[2]) % 10 === 0) return 2;
-                        const ex = parseInt(m[1]) % 10, ey = parseInt(m[2]) % 10;
-                        if (ex >= 4 && ex <= 6 && ey >= 4 && ey <= 6) return 24;
+            routeCallback(roomName, fromRoomName) {
+                if (Game.map.getRoomStatus(roomName).status !== "normal") {
+                    return Infinity;
+                }
+                if ((Memory.AvoidRooms && Memory.AvoidRooms.includes(roomName)) || (Memory.AvoidRoomsTemp && Memory.AvoidRoomsTemp[roomName]) && roomName !== targetRoom) {
+                    return 24;
+                }
+
+                if (this && this.memory) {
+                    if (roomName.length === 6) {
+                        if (parseInt(roomName[1] + roomName[2]) % 10 === 0) {
+                            return 2;
+                        }
+                        if (parseInt(roomName[4] + roomName[5]) % 10 === 0) {
+                            return 2;
+                        }
+                        if (parseInt(roomName[1]) >= 4 && parseInt(roomName[1]) <= 6 && parseInt(roomName[2]) >= 4 && parseInt(roomName[2]) <= 6 && parseInt(roomName[4]) >= 4 && parseInt(roomName[4]) <= 6 && parseInt(roomName[5]) >= 4 && parseInt(roomName[5]) <= 6) {
+                            return 24;
+                        }
+                    } else if (roomName.length === 4) {
+                        if (parseInt(roomName[1]) >= 4 && parseInt(roomName[1]) <= 6 && parseInt(roomName[3]) >= 4 && parseInt(roomName[3]) <= 6) {
+                            return 24;
+                        }
+                    } else if (roomName.length === 5) {
+                        const numberPart = roomName.substring(1, 3);
+                        const lastNumberPart = roomName.substring(3);
+
+                        if ((parseInt(numberPart) >= 4 && parseInt(numberPart) <= 6) || (parseInt(lastNumberPart) >= 4 && parseInt(lastNumberPart) <= 6)) {
+                            return 24;
+                        }
                     }
                 }
+
                 return 4;
             }
         });
     }
+        if(this.memory.route && this.memory.route != 2 && this.memory.route.length > 0) {
+        // console.log('Now heading to room '+route[0].room, "and I'm in" ,this.room.name, "and I'm a", this.memory.role);
+        let exit;
+        let position;
 
-    if (!this.memory.route || this.memory.route === -2 || !this.memory.route.length) return;
 
-    if (!this.memory.exit || this.memory.exit.roomName !== this.room.name) {
-        const routeData = this.memory.route[0];
-        const exits = this.room.find(routeData.exit).filter((p: RoomPosition) =>
-            !p.lookFor(LOOK_STRUCTURES).some((s: any) => s.structureType === STRUCTURE_WALL));
-        this.memory.exit = this.pos.findClosestByPath(exits, { ignoreCreeps: true });
-    }
+        if(!this.memory.exit || this.memory.exit.roomName !== this.room.name) {
+            const routeData = this.memory.route[0];
 
-    let exit = this.memory.exit;
-    if (!exit) exit = this.pos.findClosestByRange(this.memory.route[0].exit);
-    if (exit && typeof exit.x === "number" && typeof exit.y === "number") {
-        const position = new RoomPosition(exit.x, exit.y, this.room.name);
+            const exitPositions = this.room.find(routeData.exit);
+            const exitsWithoutWalls = exitPositions.filter(position => {
+              const structuresAtExit = position.lookFor(LOOK_STRUCTURES);
+              return !structuresAtExit.some(structure => structure.structureType === STRUCTURE_WALL);
+            });
+
+            this.memory.exit = this.pos.findClosestByPath(exitsWithoutWalls, {ignoreCreeps:true});
+        }
+        exit = this.memory.exit;
+        if(!exit) {
+            exit = this.pos.findClosestByRange(this.memory.route[0].exit);
+        }
+        if(exit && typeof exit.x === 'number' && typeof exit.y === 'number') {
+            // Exit coordinates should be in current room, not exit.roomName which might be undefined
+            position = new RoomPosition(exit.x, exit.y, this.room.name);
+        }
+        console.log(position);
+        // exit = this.pos.findClosestByRange(this.memory.route[0].exit);
+
         this.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch(position, 0);
+
+        return;
     }
+
 };
 
 // ── CostMatrix 移动函数 ───────────────────────────────────────────────────────
@@ -322,29 +383,7 @@ Creep.prototype.MoveToSourceSafely = function (target: any, range: number): void
 };
 
 // ── SwapPositionWithCreep (数据驱动表替换8个分支) ──────────────────────────
-Creep.prototype.SwapPositionWithCreep = function (direction: DirectionConstant): void {
-    // [dx, dy, opposite direction]
-    const TABLE: Record<number, [number, number, DirectionConstant]> = {
-        1: [ 0, -1, 5], 2: [ 1, -1, 6], 3: [ 1,  0, 7],
-        4: [ 1,  1, 8], 5: [ 0,  1, 1], 6: [-1,  1, 2],
-        7: [-1,  0, 3], 8: [-1, -1, 4],
-    };
-    const entry = TABLE[direction];
-    if (!entry) return;
-    const [dx, dy, opposite] = entry;
-    const nx = this.pos.x + dx, ny = this.pos.y + dy;
-    if (nx < 0 || nx > 49 || ny < 0 || ny > 49) return;
-    const pos = new RoomPosition(nx, ny, this.room.name);
-    let targets = pos.lookFor(LOOK_CREEPS) as any[];
-    if (!targets.length) {
-        const pcs: any[] = pos.lookFor(LOOK_POWER_CREEPS);
-        if (pcs.length) targets = pcs;
-    }
-    if (targets.length > 0 && targets[0].my && !targets[0].memory.moving) {
-        if (targets[0].ticksToLive % 2 < 1) targets[0].move(opposite);
-        else if (targets[0].move(direction) !== OK) targets[0].move(opposite);
-    }
-};
+// 注意：此函数在第644行有更新的实现，此处删除重复定义
 
 Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function (target: any, range: number): void {
     if (!target || this.fatigue !== 0 || this.pos.getRangeTo(target) <= range) return;
@@ -641,28 +680,195 @@ function moveWithPath(
 }
 
 /** 交换位置与 Creep */
-Creep.prototype.SwapPositionWithCreep = function (direction: DirectionConstant): void {
-    // [dx, dy, opposite direction]
-    const TABLE: Record<number, [number, number, DirectionConstant]> = {
-        1: [ 0, -1, 5], 2: [ 1, -1, 6], 3: [ 1,  0, 7],
-        4: [ 1,  1, 8], 5: [ 0,  1, 1], 6: [-1,  1, 2],
-        7: [-1,  0, 3], 8: [-1, -1, 4],
-    };
-    const entry = TABLE[direction];
-    if (!entry) return;
-    const [dx, dy, opposite] = entry;
-    const nx = this.pos.x + dx, ny = this.pos.y + dy;
-    if (nx < 0 || nx > 49 || ny < 0 || ny > 49) return;
-    const pos = new RoomPosition(nx, ny, this.room.name);
-    let targets = pos.lookFor(LOOK_CREEPS) as any[];
-    if (!targets.length) {
-        this.move(direction);
-        return;
+Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction) {
+    if(direction == 1) {
+        if(this.pos.y != 0) {
+            let targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y - 1, this.room.name)
+            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            if(lookCreep.length == 0) {
+                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                if(powerCreeps.length > 0) {
+                    lookCreep.push(powerCreeps[0]);
+                }
+            }
+            if(lookCreep.length > 0 && lookCreep[0].my && !lookCreep[0].memory.moving) {
+                if(lookCreep[0].ticksToLive % 2 < 1) {
+                    lookCreep[0].move(5);
+                }
+                else {
+                    if(lookCreep[0].move(1) !== 0) {
+                        lookCreep[0].move(5);
+                    }
+                }
+            }
+        }
+
     }
-    const target = targets[0];
-    if (!target.my || target.memory.role === "SpecialCarry") return;
-    if (target.fatigue > 0) return;
-    if (target.move(opposite) === OK) this.move(direction);
+    else if(direction == 2) {
+        if(this.pos.x != 49 && this.pos.y != 0) {
+            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y - 1, this.room.name)
+            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            if(lookCreep.length == 0) {
+                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                if(powerCreeps.length > 0) {
+                    lookCreep.push(powerCreeps[0]);
+                }
+            }
+            if(lookCreep.length > 0 && lookCreep[0].my && !lookCreep[0].memory.moving) {
+                if(lookCreep[0].ticksToLive % 2 < 1) {
+                    lookCreep[0].move(6);
+                }
+                else {
+                    if(lookCreep[0].move(2) !== 0) {
+                        lookCreep[0].move(6);
+                    }
+                }
+            }
+        }
+
+    }
+    else if(direction == 3) {
+        if(this.pos.x != 49) {
+            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y, this.room.name)
+            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            if(lookCreep.length == 0) {
+                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                if(powerCreeps.length > 0) {
+                    lookCreep.push(powerCreeps[0]);
+                }
+            }
+
+            if(lookCreep.length > 0 && lookCreep[0].my && !lookCreep[0].memory.moving) {
+                if(lookCreep[0].ticksToLive % 2 < 1) {
+                    lookCreep[0].move(7);
+                }
+                else {
+                    if(lookCreep[0].move(3) !== 0) {
+                        lookCreep[0].move(7);
+                    }
+                }
+            }
+        }
+
+    }
+    else if(direction == 4) {
+        if(this.pos.x != 49 && this.pos.y != 49) {
+            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y + 1, this.room.name)
+            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            if(lookCreep.length == 0) {
+                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                if(powerCreeps.length > 0) {
+                    lookCreep.push(powerCreeps[0]);
+                }
+            }
+
+            if(lookCreep.length > 0 && lookCreep[0].my && lookCreep[0] && !lookCreep[0].memory.moving) {
+                if(lookCreep[0].ticksToLive % 2 < 1) {
+                    lookCreep[0].move(8);
+                }
+                else {
+                    if(lookCreep[0].move(4) !== 0) {
+                        lookCreep[0].move(8);
+                    }
+                }
+            }
+        }
+
+    }
+    else if(direction == 5) {
+        if(this.pos.y != 49) {
+            let targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y + 1, this.room.name)
+            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            if(lookCreep.length == 0) {
+                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                if(powerCreeps.length > 0) {
+                    lookCreep.push(powerCreeps[0]);
+                }
+            }
+            if(lookCreep.length > 0 && lookCreep[0].my && !lookCreep[0].memory.moving) {
+                if(lookCreep[0].ticksToLive % 2 < 1) {
+                    lookCreep[0].move(1);
+                }
+                else {
+                    if(lookCreep[0].move(5) !== 0) {
+                        lookCreep[0].move(1);
+                    }
+                }
+            }
+        }
+
+    }
+    else if(direction == 6) {
+        if(this.pos.y != 49 && this.pos.x != 0) {
+            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y + 1, this.room.name)
+            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            if(lookCreep.length == 0) {
+                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                if(powerCreeps.length > 0) {
+                    lookCreep.push(powerCreeps[0]);
+                }
+            }
+            if(lookCreep.length > 0 && lookCreep[0].my && !lookCreep[0].memory.moving) {
+                if(lookCreep[0].ticksToLive % 2 < 1) {
+                    lookCreep[0].move(2);
+                }
+                else {
+                    if(lookCreep[0].move(6) !== 0) {
+                        lookCreep[0].move(2);
+                    }
+                }
+            }
+        }
+
+    }
+    else if(direction == 7) {
+        if(this.pos.x != 0) {
+            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y, this.room.name)
+            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            if(lookCreep.length == 0) {
+                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                if(powerCreeps.length > 0) {
+                    lookCreep.push(powerCreeps[0]);
+                }
+            }
+
+            if(lookCreep.length > 0 && lookCreep[0].my && !lookCreep[0].memory.moving) {
+                if(lookCreep[0].ticksToLive % 2 < 1) {
+                    lookCreep[0].move(3);
+                }
+                else {
+                    if(lookCreep[0].move(7) !== 0) {
+                        lookCreep[0].move(3);
+                    }
+                }
+            }
+        }
+
+    }
+    else if(direction == 8) {
+        if(this.pos.x != 0 && this.pos.y != 0) {
+            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y - 1, this.room.name)
+            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            if(lookCreep.length == 0) {
+                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                if(powerCreeps.length > 0) {
+                    lookCreep.push(powerCreeps[0]);
+                }
+            }
+
+            if(lookCreep.length > 0 && lookCreep[0].my && !lookCreep[0].memory.moving) {
+                if(lookCreep[0].ticksToLive % 2 < 1) {
+                    lookCreep[0].move(4);
+                }
+                else {
+                    if(lookCreep[0].move(8) !== 0) {
+                        lookCreep[0].move(4);
+                    }
+                }
+            }
+        }
+
+    }
 };
 
 /** 移动到安全位置修复 Rampart */

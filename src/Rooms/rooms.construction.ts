@@ -2106,16 +2106,16 @@ function handleResourceDismantling(room) {
 
 function calculateHaulersNeeded(structure): number {
     let totalResources = 0;
-    if(structure.structureType === STRUCTURE_STORAGE) {
-        let storage = structure as StructureStorage;
-        for(let resourceType in storage.store) {
-            totalResources += storage.store[resourceType];
-        }
-    } else if(structure.structureType === STRUCTURE_TERMINAL) {
-        let terminal = structure as StructureTerminal;
-        for(let resourceType in terminal.store) {
-            totalResources += terminal.store[resourceType];
-        }
+    if (structure.structureType === STRUCTURE_STORAGE) {
+      let storage = structure as StructureStorage;
+      for (let resourceType in storage.store) {
+        totalResources += storage.store[resourceType];
+      }
+    } else if (structure.structureType === STRUCTURE_TERMINAL) {
+      let terminal = structure as StructureTerminal;
+      for (let resourceType in terminal.store) {
+        totalResources += terminal.store[resourceType];
+      }
     }
 
     // 每2000资源需要一个搬运工
@@ -2182,11 +2182,11 @@ function buildFromLayout(room: Room): void {
     const buildOrder = [
         STRUCTURE_SPAWN,
         STRUCTURE_EXTENSION,
-        STRUCTURE_CONTAINER,
         STRUCTURE_STORAGE,
         STRUCTURE_TERMINAL,
         STRUCTURE_LINK,
         STRUCTURE_TOWER,
+        STRUCTURE_CONTAINER,
         STRUCTURE_ROAD,
         STRUCTURE_POWER_SPAWN,
         STRUCTURE_EXTRACTOR,
@@ -2237,7 +2237,7 @@ function buildFromLayout(room: Room): void {
 function executeDemolition(room: Room, layout: any, mode: string): void {
     const existingStructures = room.find(FIND_MY_STRUCTURES);
     const layoutPositions = new Set<string>();
-    
+
     // 构建布局位置集合
     for (const [structureType, positions] of Object.entries(layout)) {
         if (!Array.isArray(positions)) continue;
@@ -2245,16 +2245,16 @@ function executeDemolition(room: Room, layout: any, mode: string): void {
             layoutPositions.add(`${structureType}_${pos.x}_${pos.y}`);
         }
     }
-    
+
     let removedCount = 0;
-    
+
     // 识别和处理多余建筑
     for (const structure of existingStructures) {
         const key = `${structure.structureType}_${structure.pos.x}_${structure.pos.y}`;
         if (!layoutPositions.has(key)) {
             // 这是多余建筑
             const shouldRemove = shouldRemoveStructure(structure, layout);
-            
+
             if (shouldRemove) {
                 const safeCheck = performSafetyCheck(structure, room);
                 if (safeCheck.safe) {
@@ -2268,11 +2268,11 @@ function executeDemolition(room: Room, layout: any, mode: string): void {
             }
         }
     }
-    
+
     if (removedCount > 0) {
         console.log(`📊 [${mode}] 拆除完成: ${removedCount} 个建筑`);
     }
-    
+
     // AGGRESSIVE 模式处理错位建筑
     if (mode === 'AGGRESSIVE') {
         handleMismatchedStructures(room, layout);
@@ -2284,24 +2284,24 @@ function executeDemolition(room: Room, layout: any, mode: string): void {
  */
 function shouldRemoveStructure(structure: Structure, layout: any): boolean {
     const reasons = [];
-    
+
     // 低价值建筑
     if (['road', 'container', 'rampart', 'wall'].includes(structure.structureType)) {
         reasons.push('低价值建筑');
     }
-    
+
     // 位置不佳
     const pos = structure.pos;
     const room = structure.room;
     const storage = room.storage;
-    
+
     if (storage) {
         const distance = pos.getRangeTo(storage);
         if (distance > 15 || distance < 2) {
             reasons.push('位置不佳');
         }
     }
-    
+
     return reasons.length >= 1;
 }
 
@@ -2316,7 +2316,7 @@ function performSafetyCheck(structure: Structure, room: Room): { safe: boolean; 
             return { safe: false, reason: '这是唯一的spawn' };
         }
     }
-    
+
     // 确保storage不为空（如果要拆除）
     if (structure.structureType === STRUCTURE_STORAGE) {
         const storage = structure as StructureStorage;
@@ -2327,7 +2327,7 @@ function performSafetyCheck(structure: Structure, room: Room): { safe: boolean; 
             }
         }
     }
-    
+
     // 确保terminal不为空（如果要拆除）
     if (structure.structureType === STRUCTURE_TERMINAL) {
         const terminal = structure as StructureTerminal;
@@ -2338,13 +2338,13 @@ function performSafetyCheck(structure: Structure, room: Room): { safe: boolean; 
             }
         }
     }
-    
+
     // 确保能量充足
     const totalEnergy = room.energyAvailable;
     if (totalEnergy < room.energyCapacityAvailable * 0.3) {
         return { safe: false, reason: '房间能量不足30%' };
     }
-    
+
     return { safe: true, reason: '' };
 }
 

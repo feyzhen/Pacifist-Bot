@@ -13,67 +13,117 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** 增强creep */
-Creep.prototype.Boost = function Boost(): any {
-    if (!this.memory.boostlabs?.length) return;
+Creep.prototype.Boost = function Boost():any {
 
-    const labs = this.memory.boostlabs.map((id: string) => Game.getObjectById(id)).filter(Boolean);
-    const closestLab: any = this.pos.findClosestByRange(labs);
-    if (!closestLab) return;
-
-    if (closestLab.mineralAmount < 30) {
-        if (this.ticksToLive < 1100 && this.getActiveBodyparts(CLAIM) === 0)
-            this.memory.boostlabs = this.memory.boostlabs.filter((id: string) => id !== closestLab.id);
-        this.MoveCostMatrixRoadPrio(closestLab, 3);
+    if(this.memory.boostlabs.length == 0) {
         return;
     }
+    else {
+        let labs = [];
+        for(let labID of this.memory.boostlabs) {
+            labs.push(Game.getObjectById(labID));
+        }
+        let closestLab = this.pos.findClosestByRange(labs);
+        if(closestLab.mineralAmount <  30) {
+            if(this.ticksToLive < 1100 && this.getActiveBodyparts(CLAIM)===0) {
+                let idToRemove = closestLab.id;
+                this.memory.boostlabs = this.memory.boostlabs.filter(labid => labid !== idToRemove);
+            }
+            this.MoveCostMatrixRoadPrio(closestLab, 3);
+        }
+        else {
+            if(this.pos.isNearTo(closestLab)) {
+                let result = closestLab.boostCreep(this);
+                if(result == 0) {
+                    if(this.room.memory.labs.outputLab1 && this.room.memory.labs.outputLab1 == closestLab.id && this.room.memory.labs.status.boost.lab1?.use) {
+                        this.room.memory.labs.status.boost.lab1.use -= 1;
+                    }
+                    else if(this.room.memory.labs.outputLab2 && this.room.memory.labs.outputLab2 == closestLab.id && this.room.memory.labs.status.boost.lab2?.use) {
+                        this.room.memory.labs.status.boost.lab2.use -= 1;
+                    }
+                    else if(this.room.memory.labs.outputLab3 && this.room.memory.labs.outputLab3 == closestLab.id && this.room.memory.labs.status.boost.lab3?.use) {
+                        this.room.memory.labs.status.boost.lab3.use -= 1;
+                    }
+                    else if(this.room.memory.labs.outputLab4 && this.room.memory.labs.outputLab4 == closestLab.id && this.room.memory.labs.status.boost.lab4?.use) {
+                        this.room.memory.labs.status.boost.lab4.use -= 1;
+                    }
+                    else if(this.room.memory.labs.outputLab5 && this.room.memory.labs.outputLab5 == closestLab.id && this.room.memory.labs.status.boost.lab5?.use) {
+                        this.room.memory.labs.status.boost.lab5.use -= 1;
+                    }
+                    else if(this.room.memory.labs.outputLab6 && this.room.memory.labs.outputLab6 == closestLab.id && this.room.memory.labs.status.boost.lab6?.use) {
+                        this.room.memory.labs.status.boost.lab6.use -= 1;
+                    }
+                    else if(this.room.memory.labs.outputLab7 && this.room.memory.labs.outputLab7 == closestLab.id && this.room.memory.labs.status.boost.lab7?.use) {
+                        this.room.memory.labs.status.boost.lab7.use -= 1;
+                    }
+                    else if(this.room.memory.labs.outputLab8 && this.room.memory.labs.outputLab8 == closestLab.id && this.room.memory.labs.status.boost.lab8?.use) {
+                        this.room.memory.labs.status.boost.lab8.use -= 1;
+                        if(this.room.memory.labs.status.boost.lab8.use ===0 && this.memory.role === "EnergyMiner") {
+                            this.room.memory.labs.lab8reserved = false;
+                        }
+                    }
 
-    if (!this.pos.isNearTo(closestLab)) { this.MoveCostMatrixRoadPrio(closestLab, 1); return false; }
+                    let idToRemove = closestLab.id;
+                    this.memory.boostlabs = this.memory.boostlabs.filter(labid => labid !== idToRemove);
+                    return true;
+                }
+                else {
+                    console.log(result)
+                }
+            }
 
-    const result = closestLab.boostCreep(this);
-    if (result === 0) {
-        // 减少实验室使用计数器 — 循环替换8个if/else-if块
-        const labKeys = ["outputLab1","outputLab2","outputLab3","outputLab4","outputLab5","outputLab6","outputLab7","outputLab8"];
-        for (let i = 0; i < labKeys.length; i++) {
-            const key = labKeys[i] as string;
-            const labNum = `lab${i + 1}`;
-            if (this.room.memory.labs?.[key] === closestLab.id && this.room.memory.labs?.status?.boost?.[labNum]?.use) {
-                this.room.memory.labs.status.boost[labNum].use -= 1;
-                if (i === 7 && this.room.memory.labs.status.boost[labNum].use === 0 && this.memory.role === "EnergyMiner")
-                    this.room.memory.labs.lab8reserved = false;
-                break;
+            else {
+                this.MoveCostMatrixRoadPrio(closestLab, 1);
+                return false;
             }
         }
-        this.memory.boostlabs = this.memory.boostlabs.filter((id: string) => id !== closestLab.id);
-        return true;
+
     }
-    console.log("Boost result:", result);
-};
+}
 
 /** 疏散creep以避免核弹攻击 */
-Creep.prototype.evacuate = function evacuate(): any {
-    const mem = this.room.memory;
-    if (!(mem.defence?.nuke && mem.defence?.evacuate) && !this.memory.nukeHaven) return false;
-
-    if (!this.memory.nukeTimer) {
-        const nukes = this.room.find(FIND_NUKES).filter((n: any) => n.timeToLand < 300);
-        if (nukes.length) { nukes.sort((a: any, b: any) => a.timeToLand - b.timeToLand); this.memory.nukeTimer = nukes[0].timeToLand + 1; }
-    }
-    if (!this.memory.homeRoom) this.memory.homeRoom = this.room.name;
-    if (this.memory.nukeTimer > 0) this.memory.nukeTimer--;
-
-    if (this.memory.nukeTimer > 0) {
-        if (!this.memory.nukeHaven) {
-            const adjacent = Object.values(Game.map.describeExits(this.room.name))
-                .filter((rn: any) => Game.map.getRoomStatus(rn).status === Game.map.getRoomStatus(this.room.name).status);
-            this.memory.nukeHaven = adjacent[Math.floor(Math.random() * adjacent.length)];
+Creep.prototype.evacuate = function evacuate():any {
+    if(this.room.memory.defence && this.room.memory.defence.nuke && this.room.memory.defence.evacuate || this.memory.nukeHaven) {
+        if(!this.memory.nukeTimer) {
+            let nukes = this.room.find(FIND_NUKES).filter(function(nuke) {return nuke.timeToLand < 300;});;
+            if(nukes.length > 0) {
+                nukes.sort((a,b) => a.timeToLand - b.timeToLand);
+                this.memory.nukeTimer = nukes[0].timeToLand + 1;
+            }
         }
-        if (this.memory.nukeHaven) this.moveToRoom(this.memory.nukeHaven);
-    } else {
-        if (this.room.name === this.memory.homeRoom) return false;
-        this.moveToRoom(this.memory.homeRoom); return true;
+        if(!this.memory.homeRoom) {
+            this.memory.homeRoom = this.room.name;
+        }
+        if(this.memory.nukeTimer && this.memory.nukeTimer > 0) {
+            this.memory.nukeTimer --;
+        }
+
+        if(this.memory.nukeTimer > 0) {
+
+            if(!this.memory.nukeHaven) {
+                let possibleRooms = Object.values(Game.map.describeExits(this.room.name)).filter(roomname => Game.map.getRoomStatus(roomname).status === Game.map.getRoomStatus(this.room.name).status);
+                let index = Math.floor(Math.random() * possibleRooms.length);
+                this.memory.nukeHaven = possibleRooms[index];
+            }
+            if(this.memory.nukeHaven) {
+                this.moveToRoom(this.memory.nukeHaven)
+            }
+
+        }
+        else {
+            if(this.room.name == this.memory.homeRoom) {
+                return false;
+            }
+            else {
+                this.moveToRoom(this.memory.homeRoom);
+                return true;
+            }
+        }
+
+        return true;
     }
-    return true;
-};
+    return false;
+}
 
 /** 如果在危险中则撤回家园 */
 Creep.prototype.fleeHomeIfInDanger = function (): void | string {
