@@ -93,7 +93,7 @@ function applyStationaryCreeps(costs: CostMatrix, room: Room, roleName: string |
       EnergyMiner: 21,
       builder: 26,
       buildcontainer: 60,
-      EnergyManager: 50,
+      // EnergyManager: 50,
       repair: 60,
       Convoy: 41,
       ram: 100,
@@ -122,6 +122,12 @@ function applyStationaryCreeps(costs: CostMatrix, room: Room, roleName: string |
         if (creep.name.startsWith("SquadCreep")) { costs.set(creep.pos.x, creep.pos.y, 100); return; }
         if (creep.memory.role === "CCK" && creep.room.name === creep.memory.targetRoom) { costs.set(creep.pos.x, creep.pos.y, 60); return; }
         if (creep.memory.role === "CCKparty" && creep.room.name === creep.memory.homeRoom) { costs.set(creep.pos.x, creep.pos.y, 60); return; }
+        // if (creep.memory.role === "EnergyManager" && roleName !== "EnergyManager") {
+        //     const closestLink: any = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLinkToStorage();
+        //     if (closestLink && creep.pos.isNearTo(closestLink)) {
+        //         costs.set(creep.pos.x, creep.pos.y, 255); return;
+        //     }
+        // }
         const cost = ROLE_COSTS[creep.memory.role];
         if (cost !== undefined) costs.set(creep.pos.x, creep.pos.y, cost);
     });
