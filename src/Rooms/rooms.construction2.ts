@@ -53,7 +53,7 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             }
 
 
-            let pathFromRampartToStorage = PathFinder.search(blockSpot, {pos:storage.pos, range:1}, {plainCost: 1, swampCost: 2, maxCost:50, roomCallback: (roomName: string) => false});
+            let pathFromRampartToStorage = PathFinder.search(blockSpot, {pos:storage.pos, range:1}, {plainCost: 1, swampCost: 2, maxCost:50, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
             if(pathFromRampartToStorage.incomplete) {
@@ -67,7 +67,7 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             if(exits[1] && incomplete) {
 
                 let positionInRoom = new RoomPosition(25, 25, exits[1]);
-                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: (roomName: string) => false});
+                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
                 if(!pathFromRampartToOtherRoom.incomplete) {
@@ -79,7 +79,7 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             if(exits[3] && incomplete) {
 
                 let positionInRoom = new RoomPosition(25, 25, exits[3]);
-                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: (roomName: string) => false});
+                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
                 if(!pathFromRampartToOtherRoom.incomplete) {
@@ -90,7 +90,7 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             if(exits[5] && incomplete) {
 
                 let positionInRoom = new RoomPosition(25, 25, exits[5]);
-                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: (roomName: string) => false});
+                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
                 if(!pathFromRampartToOtherRoom.incomplete) {
@@ -100,7 +100,7 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             if(exits[7] && incomplete) {
 
                 let positionInRoom = new RoomPosition(25, 25, exits[7]);
-                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: (roomName: string) => false});
+                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
                 if(!pathFromRampartToOtherRoom.incomplete) {
@@ -1822,6 +1822,67 @@ function performSafetyCheck(structure: Structure, room: Room): { safe: boolean; 
 function handleMismatchedStructures(room: Room, layout: any): void {
     console.log(`[错位处理] AGGRESSIVE模式暂未完全实现错位建筑处理`);
     // TODO: 实现错位建筑处理逻辑
+}
+
+const RampartBorderCallbackFunction = (roomName: string): boolean | CostMatrix => {
+    let currentRoom:any = Game.rooms[roomName];
+
+    let costs = new PathFinder.CostMatrix;
+
+    let storage = Game.getObjectById(currentRoom.memory.Structures.storage) || currentRoom.findStorage();
+
+
+    let rampartLocations = [];
+    for(let i = -10; i<11; i++) {
+        for(let o = -10; o <11; o++) {
+            if((i==10 || i==-10)) {
+                let combinedX = storage.pos.x + i;
+                if(combinedX >= 2 && combinedX <= 47) {
+                    rampartLocations.push([i,o]);
+                }
+                else {
+                    if(combinedX == 48) {
+                        rampartLocations.push([i-1,o]);
+                    }
+                    else if(combinedX == 49) {
+                        rampartLocations.push([i-2,o]);
+                    }
+                    else if(combinedX == 1) {
+                        rampartLocations.push([i+1,o]);
+                    }
+                    else if(combinedX == 0) {
+                        rampartLocations.push([i+2,o]);
+                    }
+                }
+            }
+            else if((o==10 || o==-10)) {
+                let combinedY = storage.pos.y + o;
+                if(combinedY >= 2 && combinedY <= 47) {
+                    rampartLocations.push([i,o]);
+                }
+                else {
+                    if(combinedY == 48) {
+                        rampartLocations.push([i,o-1]);
+                    }
+                    else if(combinedY == 49) {
+                        rampartLocations.push([i,o-2]);
+                    }
+                    else if(combinedY == 1) {
+                        rampartLocations.push([i,o+1]);
+                    }
+                    else if(combinedY == 0) {
+                        rampartLocations.push([i,o+2]);
+                    }
+                }
+            }
+        }
+    }
+    let storageRampartNeighbors = getNeighbours(storage.pos, rampartLocations);
+    for(let location of storageRampartNeighbors) {
+        costs.set(location.x, location.y, 255);
+    }
+
+    return costs;
 }
 
 // 🔥 步骤3: 清理导出 - 移除 construction 的默认导出
