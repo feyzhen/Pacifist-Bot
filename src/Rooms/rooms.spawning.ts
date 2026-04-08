@@ -1093,9 +1093,26 @@ function add_creeps_to_spawn_list(room, spawn) {
 
         case 6:
             if(EnergyManagers < spawnrules[6].energy_manager_creep.amount && storage) {
-                const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[6].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
-                console.log('Adding Energy Manager to Spawn List: ' + name);
+                // Check if there are available sourceLinks and targetLinks for EnergyManager to work with
+                const links = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_LINK});
+                const sourceLinks = links.filter(link => {
+                    // Check if link is near any energy source
+                    const sources = room.find(FIND_SOURCES);
+                    return sources.some(source => source.pos.getRangeTo(link) < 5);
+                });
+                const targetLinks = links.filter(link => {
+                    // Check if link is near storage or controller
+                    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+                    return storage && link.pos.getRangeTo(storage) < 5;
+                });
+                
+                if(sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
+                    const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.unshift(spawnrules[6].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
+                    // console.log('Adding Energy Manager to Spawn List: ' + name + ' (Links: ' + sourceLinks.length + ' source, ' + targetLinks.length + ' target)');
+                } else {
+                    // console.log('Skipping EnergyManager spawn in ' + room.name + ' - no available sourceLinks or targetLinks');
+                }
             }
 
             if((fillers < spawnrules[6].filler_creep.amount || fillers < spawnrules[6].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[6].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
@@ -1191,9 +1208,26 @@ function add_creeps_to_spawn_list(room, spawn) {
 
         case 7:
             if(EnergyManagers < spawnrules[7].energy_manager_creep.amount && storage) {
-                const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[7].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
-                console.log('Adding Energy Manager to Spawn List: ' + name);
+                // Check if there are available sourceLinks and targetLinks for EnergyManager to work with
+                const links = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_LINK});
+                const sourceLinks = links.filter(link => {
+                    // Check if link is near any energy source
+                    const sources = room.find(FIND_SOURCES);
+                    return sources.some(source => source.pos.getRangeTo(link) < 5);
+                });
+                const targetLinks = links.filter(link => {
+                    // Check if link is near storage or controller
+                    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+                    return storage && link.pos.getRangeTo(storage) < 5;
+                });
+                
+                if(sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
+                    const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.unshift(spawnrules[7].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
+                    // console.log('Adding Energy Manager to Spawn List: ' + name + ' (Links: ' + sourceLinks.length + ' source, ' + targetLinks.length + ' target)');
+                } else {
+                    // console.log('Skipping EnergyManager spawn in ' + room.name + ' - no available sourceLinks or targetLinks');
+                }
             }
             if((fillers < spawnrules[7].filler_creep.amount || fillers < spawnrules[7].filler_creep.amount + 1 && activeRemotes.length > 2 || fillers < spawnrules[7].filler_creep.amount + 2 && activeRemotes.length > 3) && storage) {
                 const name = 'Filler-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
@@ -1295,15 +1329,32 @@ function add_creeps_to_spawn_list(room, spawn) {
 
         case 8:
             if(EnergyManagers < spawnrules[8].energy_manager_creep.amount && storage) {
-                const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-                // If room is energy starved, spawn small emergency energy manager
-                if(room.energyAvailable < room.energyCapacityAvailable * 0.5 && room.energyAvailable <= 300) {
-                    room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,MOVE,MOVE], name, {memory: {role: 'EnergyManager'}});
-                    console.log('Adding Emergency Energy Manager to Spawn List: ' + name);
-                }
-                else {
-                    room.memory.spawn_list.unshift(spawnrules[8].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
-                    console.log('Adding Energy Manager to Spawn List: ' + name);
+                // Check if there are available sourceLinks and targetLinks for EnergyManager to work with
+                const links = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_LINK});
+                const sourceLinks = links.filter(link => {
+                    // Check if link is near any energy source
+                    const sources = room.find(FIND_SOURCES);
+                    return sources.some(source => source.pos.getRangeTo(link) < 5);
+                });
+                const targetLinks = links.filter(link => {
+                    // Check if link is near storage or controller
+                    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+                    return storage && link.pos.getRangeTo(storage) < 5;
+                });
+                
+                if(sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
+                    const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    // If room is energy starved, spawn small emergency energy manager
+                    if(room.energyAvailable < room.energyCapacityAvailable * 0.5 && room.energyAvailable <= 300) {
+                        room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,MOVE,MOVE], name, {memory: {role: 'EnergyManager'}});
+                        // console.log('Adding Emergency Energy Manager to Spawn List: ' + name + ' (Links: ' + sourceLinks.length + ' source, ' + targetLinks.length + ' target)');
+                    }
+                    else {
+                        room.memory.spawn_list.unshift(spawnrules[8].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
+                        // console.log('Adding Energy Manager to Spawn List: ' + name + ' (Links: ' + sourceLinks.length + ' source, ' + targetLinks.length + ' target)');
+                    }
+                } else {
+                    // console.log('Skipping EnergyManager spawn in ' + room.name + ' - no available sourceLinks or targetLinks');
                 }
             }
             if((fillers < spawnrules[8].filler_creep.amount || fillers < spawnrules[8].filler_creep.amount + 1 && repairers > 1 ||fillers < spawnrules[8].filler_creep.amount + 2 && repairers > 3 || fillers < spawnrules[8].filler_creep.amount + 1 && repairers > 2 ||  fillers < spawnrules[8].filler_creep.amount + 1 && activeRemotes.length > 2 || fillers < spawnrules[8].filler_creep.amount + 2 && activeRemotes.length > 3) && storage) {
@@ -2317,33 +2368,51 @@ function spawnFirstInLine(room, spawn) {
     if(room.controller.level >= 4 && storage && energyManagers === 0) {
         console.log(`Room ${room.name} energy: ${room.energyAvailable}/${room.energyCapacityAvailable}, checking for emergency spawn`);
 
-        // Clear the spawn queue if we're in emergency mode
-        if(room.energyAvailable < room.energyCapacityAvailable * 0.5) {
-            if(room.memory.spawn_list.length > 0) {
-                console.log(`Clearing spawn queue in ${room.name} for emergency EnergyManager`);
-                room.memory.spawn_list = [];
+        // Check if there are available sourceLinks and targetLinks for EnergyManager to work with
+        const links = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_LINK});
+        const sourceLinks = links.filter(link => {
+            // Check if link is near any energy source
+            const sources = room.find(FIND_SOURCES);
+            return sources.some(source => source.pos.getRangeTo(link) < 5);
+        });
+        const targetLinks = links.filter(link => {
+            // Check if link is near storage or controller
+            const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+            return storage && link.pos.getRangeTo(storage) < 5;
+        });
+
+        // Only spawn emergency EnergyManager if there are links or terminal to work with
+        if(sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
+            // Clear the spawn queue if we're in emergency mode
+            if(room.energyAvailable < room.energyCapacityAvailable * 0.5) {
+                if(room.memory.spawn_list.length > 0) {
+                    console.log(`Clearing spawn queue in ${room.name} for emergency EnergyManager`);
+                    room.memory.spawn_list = [];
+                }
+
+                const name = 'EmergencyEnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
+                let body;
+
+                // Ultra small body for extreme emergencies
+                if(room.energyAvailable < 200) {
+                    body = [CARRY, CARRY, MOVE]; // 150 energy
+                    console.log(`Using ultra small emergency body in ${room.name}, energy: ${room.energyAvailable}`);
+                } else {
+                    body = [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]; // 300 energy
+                }
+
+                const spawnAttempt = spawn.spawnCreep(body, name, {memory: {role: 'EnergyManager'}});
+
+                if(spawnAttempt === 0) {
+                    // console.log(`SUCCESS: Spawning emergency energy manager in ${room.name} (Links: ${sourceLinks.length} source, ${targetLinks.length} target)`);
+                    room.memory.data.c_spawned++;
+                    return "spawning";
+                } else {
+                    // console.log(`FAILED to spawn emergency energy manager in ${room.name}, error: ${spawnAttempt}`);
+                }
             }
-
-            const name = 'EmergencyEnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-            let body;
-
-            // Ultra small body for extreme emergencies
-            if(room.energyAvailable < 200) {
-                body = [CARRY, CARRY, MOVE]; // 150 energy
-                console.log(`Using ultra small emergency body in ${room.name}, energy: ${room.energyAvailable}`);
-            } else {
-                body = [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]; // 300 energy
-            }
-
-            const spawnAttempt = spawn.spawnCreep(body, name, {memory: {role: 'EnergyManager'}});
-
-            if(spawnAttempt === 0) {
-                console.log(`SUCCESS: Spawning emergency energy manager in ${room.name}`);
-                room.memory.data.c_spawned++;
-                return "spawning";
-            } else {
-                console.log(`FAILED to spawn emergency energy manager in ${room.name}, error: ${spawnAttempt}`);
-            }
+        } else {
+            // console.log(`Skipping emergency EnergyManager spawn in ${room.name} - no available sourceLinks or targetLinks`);
         }
     }
 
