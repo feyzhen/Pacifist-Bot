@@ -1,6 +1,6 @@
 function RunCreepManager(name) {
     try {
-        let creep = Game.creeps[name];
+        const creep = Game.creeps[name];
         if(!creep) {
             delete Memory.creeps[name];
             return;
@@ -17,7 +17,7 @@ function RunCreepManager(name) {
             return;
         }
         
-        let creepUsed = Game.cpu.getUsed();
+        const creepUsed = Game.cpu.getUsed();
         global.ROLES[creep.memory.role].run(creep);
         if(global.profiler) {
           console.log(creep.memory.role, "used", (Game.cpu.getUsed() - creepUsed).toFixed(2))

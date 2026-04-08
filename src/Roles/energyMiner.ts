@@ -17,17 +17,17 @@ const run = function (creep) {
 
     if(creep.memory.fleeing) {
         // find hostiles with attack or ranged attack
-        let hostiles = creep.room.find(FIND_HOSTILE_CREEPS);
-        let meleeHostiles = hostiles.filter(c => c.getActiveBodyparts(ATTACK) > 0 );
-        let rangedHostiles = hostiles.filter(c => c.getActiveBodyparts(RANGED_ATTACK) > 0 );
+        const hostiles = creep.room.find(FIND_HOSTILE_CREEPS);
+        const meleeHostiles = hostiles.filter(c => c.getActiveBodyparts(ATTACK) > 0 );
+        const rangedHostiles = hostiles.filter(c => c.getActiveBodyparts(RANGED_ATTACK) > 0 );
         if(rangedHostiles.length) {
-            let closestRangedHostile = creep.pos.findClosestByRange(rangedHostiles);
+            const closestRangedHostile = creep.pos.findClosestByRange(rangedHostiles);
             if(creep.pos.getRangeTo(closestRangedHostile) <= 5) {
                 return;
             }
         }
         else if(meleeHostiles.length) {
-            let closestMeleeHostile = creep.pos.findClosestByRange(meleeHostiles);
+            const closestMeleeHostile = creep.pos.findClosestByRange(meleeHostiles);
             if(creep.pos.getRangeTo(closestMeleeHostile) <= 3) {
                 return;
             }
@@ -58,7 +58,7 @@ const run = function (creep) {
                 global.SG(creep.memory.homeRoom, creep.memory.targetRoom)
             }
             if(!storages.length && creep.room.controller.my) {
-                let ruinsWithEnergy = creep.room.find(FIND_RUINS, {filter: r => r.store[RESOURCE_ENERGY] > 0});
+                const ruinsWithEnergy = creep.room.find(FIND_RUINS, {filter: r => r.store[RESOURCE_ENERGY] > 0});
                 if(ruinsWithEnergy.length > 0) {
                     global.SG(creep.memory.homeRoom, creep.memory.targetRoom)
                 }
@@ -69,17 +69,17 @@ const run = function (creep) {
             creep.memory.checkAmIOnRampart = true;
         }
 
-        let result = creep.harvestEnergy();
+        const result = creep.harvestEnergy();
         if(result == 0) {
             creep.memory.harvested = true;
         }
         if(creep.memory.harvested) {
-            let containerNearby = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_CONTAINER && creep.pos.getRangeTo(building) <= 2});
-            let source:any = Game.getObjectById(creep.memory.source);
+            const containerNearby = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_CONTAINER && creep.pos.getRangeTo(building) <= 2});
+            const source:any = Game.getObjectById(creep.memory.source);
             if(!creep.memory.allGood) {
-                let lookForStructures = creep.pos.lookFor(LOOK_STRUCTURES);
+                const lookForStructures = creep.pos.lookFor(LOOK_STRUCTURES);
                 if(lookForStructures.length > 0) {
-                    for(let building of lookForStructures) {
+                    for(const building of lookForStructures) {
                         if(building.structureType == STRUCTURE_CONTAINER) {
                             creep.memory.allGood = true;
                         }
@@ -95,7 +95,7 @@ const run = function (creep) {
     else {
 
         if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-            let result = creep.Boost();
+            const result = creep.Boost();
             if(!result) {
                 return;
             }
@@ -117,7 +117,7 @@ const run = function (creep) {
 
 
         if(creep.ticksToLive <= 2) {
-            let closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLink();
+            const closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLink();
             if(creep.pos.isNearTo(closestLink)) {
                 creep.transfer(closestLink, RESOURCE_ENERGY);
             }
@@ -128,13 +128,13 @@ const run = function (creep) {
 
 
         if(creep.store.getFreeCapacity() < creep.memory.potential) {
-            let source:any = Game.getObjectById(creep.memory.sourceId);
+            const source:any = Game.getObjectById(creep.memory.sourceId);
             if(creep.pos.isNearTo(source)) {
                 if(!creep.memory.NearbyExtensions) {
                     creep.memory.NearbyExtensions = [];
-                    let mystructures = creep.room.find(FIND_MY_STRUCTURES);
-                    let buildings = creep.pos.findInRange(mystructures, 1)
-                    for(let building of buildings) {
+                    const mystructures = creep.room.find(FIND_MY_STRUCTURES);
+                    const buildings = creep.pos.findInRange(mystructures, 1)
+                    for(const building of buildings) {
                         if(building.structureType == STRUCTURE_EXTENSION) {
                             creep.memory.NearbyExtensions.push(building.id);
                         }
@@ -143,8 +143,8 @@ const run = function (creep) {
             }
 
             if(creep.memory.NearbyExtensions && creep.memory.NearbyExtensions.length > 0) {
-                for(let extensionID of creep.memory.NearbyExtensions) {
-                    let extension:any = Game.getObjectById(extensionID);
+                for(const extensionID of creep.memory.NearbyExtensions) {
+                    const extension:any = Game.getObjectById(extensionID);
                     if(extension && extension.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
                         creep.transfer(extension, RESOURCE_ENERGY);
                         return;
@@ -153,29 +153,29 @@ const run = function (creep) {
             }
 
             if(creep.room.controller.level >= 7 && !creep.memory.myRampart && !creep.memory.checkedForRampartToRepair) {
-                let myRamparts = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART});
-                let rampartsInRangeOne = creep.pos.findInRange(myRamparts, 1);
+                const myRamparts = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART});
+                const rampartsInRangeOne = creep.pos.findInRange(myRamparts, 1);
 
                 if(rampartsInRangeOne.length > 0) {
                     rampartsInRangeOne.sort((a,b) => a.hits - b.hits);
                 }
 
                 let found = false;
-                for(let building of rampartsInRangeOne) {
+                for(const building of rampartsInRangeOne) {
                     if(found) {
                         break;
                     }
                     if(building.structureType == STRUCTURE_RAMPART && building.hits < 50050000) {
-                        let buildingsHereLookFor = building.pos.lookFor(LOOK_STRUCTURES);
-                        for(let buildingHere of buildingsHereLookFor) {
+                        const buildingsHereLookFor = building.pos.lookFor(LOOK_STRUCTURES);
+                        for(const buildingHere of buildingsHereLookFor) {
                             if(buildingHere.structureType == STRUCTURE_LINK) {
                                 creep.memory.myRampart = building.id;
                                 found = true;
                                 break;
                             }
                         }
-                        let creepsHere = building.pos.lookFor(LOOK_CREEPS);
-                        for(let c of creepsHere) {
+                        const creepsHere = building.pos.lookFor(LOOK_CREEPS);
+                        for(const c of creepsHere) {
                             if(c.my && c.memory.role == "EnergyMiner") {
                                 creep.memory.myRampart = building.id;
                                 found = true;
@@ -190,8 +190,8 @@ const run = function (creep) {
 
 
             if(creep.ticksToLive > 275 && creep.memory.myRampart && source && source.ticksToRegeneration * 10.5 > source.energy) {
-                let storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
-                let rampart:any = Game.getObjectById(creep.memory.myRampart);
+                const storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
+                const rampart:any = Game.getObjectById(creep.memory.myRampart);
                 if(storage && storage.store[RESOURCE_ENERGY] >= 300000) {
 
                     if(rampart && rampart.hits < 100050000) {
@@ -213,10 +213,10 @@ const run = function (creep) {
 
 
             if(!creep.memory.checkedForSites) {
-                let siteIDs = []
-                let constructionSitesNearCreep = creep.pos.findInRange(creep.room.find(FIND_MY_CONSTRUCTION_SITES), 1);
+                const siteIDs = []
+                const constructionSitesNearCreep = creep.pos.findInRange(creep.room.find(FIND_MY_CONSTRUCTION_SITES), 1);
                 if(constructionSitesNearCreep.length > 0) {
-                    for(let site of constructionSitesNearCreep) {
+                    for(const site of constructionSitesNearCreep) {
                         siteIDs.push(site.id);
                     }
                 }
@@ -226,7 +226,7 @@ const run = function (creep) {
                 creep.memory.checkedForSites = true;
             }
             if(creep.memory.constructionSites && creep.memory.constructionSites.length > 0) {
-                let site:any = Game.getObjectById(creep.memory.constructionSites[creep.memory.constructionSites.length - 1]);
+                const site:any = Game.getObjectById(creep.memory.constructionSites[creep.memory.constructionSites.length - 1]);
                 if(site) {
                     creep.build(site);
                 }
@@ -238,7 +238,7 @@ const run = function (creep) {
 
 
 
-            let closestLink = Game.getObjectById(creep.memory.sourceLink) || source.pos.findClosestByRange(creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_LINK && creep.pos.getRangeTo(s) < 5}));
+            const closestLink = Game.getObjectById(creep.memory.sourceLink) || source.pos.findClosestByRange(creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_LINK && creep.pos.getRangeTo(s) < 5}));
             if(closestLink && closestLink.store[RESOURCE_ENERGY] < 800) {
                 if(creep.pos.isNearTo(closestLink)) {
                     creep.transfer(closestLink, RESOURCE_ENERGY);
@@ -249,11 +249,11 @@ const run = function (creep) {
             }
         }
 
-        let storedSource:any = Game.getObjectById(creep.memory.sourceId)
+        const storedSource:any = Game.getObjectById(creep.memory.sourceId)
         if(!creep.memory.checkAmIOnRampart && creep.pos.isNearTo(storedSource) && creep.memory.homeRoom == creep.memory.targetRoom) {
-            let lookForRampart = creep.pos.lookFor(LOOK_STRUCTURES);
+            const lookForRampart = creep.pos.lookFor(LOOK_STRUCTURES);
             if(lookForRampart.length > 0) {
-                for(let building of lookForRampart) {
+                for(const building of lookForRampart) {
                     if(building.structureType == STRUCTURE_RAMPART) {
                         creep.memory.checkAmIOnRampart = true;
                         break;
@@ -261,12 +261,12 @@ const run = function (creep) {
                 }
             }
             if(!creep.memory.checkAmIOnRampart) {
-                let rampartsInRange3 = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.pos.getRangeTo(creep) <= 2});
+                const rampartsInRange3 = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.pos.getRangeTo(creep) <= 2});
                 if(rampartsInRange3.length == 0) {
                     creep.memory.checkAmIOnRampart = true;
                 }
                 else {
-                    let rampart = creep.pos.findClosestByRange(rampartsInRange3);
+                    const rampart = creep.pos.findClosestByRange(rampartsInRange3);
                     if(rampart) {
                         creep.memory.checkAmIOnRampart = true;
                         creep.MoveCostMatrixRoadPrio(rampart, 0);
@@ -276,36 +276,36 @@ const run = function (creep) {
         }
 
         if(creep.store.getFreeCapacity() >= creep.memory.potential) {
-            let result = creep.harvestEnergy();
+            const result = creep.harvestEnergy();
         }
 
 
 
         if(creep.store[RESOURCE_ENERGY] > 0 && creep.memory.homeRoom == creep.memory.targetRoom) {
 
-            let closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLink();
+            const closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLink();
 
             if(closestLink && closestLink.pos.isNearTo(creep) && !creep.memory.checkedForRampart) {
-                let lookForBuildingsHere = closestLink.pos.lookFor(LOOK_STRUCTURES);
+                const lookForBuildingsHere = closestLink.pos.lookFor(LOOK_STRUCTURES);
                 let found = false;
-                for(let building of lookForBuildingsHere) {
+                for(const building of lookForBuildingsHere) {
                     if(building.structureType == STRUCTURE_RAMPART) {
                         found = true;
                     }
                 }
-                let storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
+                const storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
                 if(!found && storage && closestLink.pos.getRangeTo(storage) > 7) {
                     closestLink.pos.createConstructionSite(STRUCTURE_RAMPART);
                 }
                 creep.memory.checkedForRampart = true;
             }
 
-            let targetLink:any = Game.getObjectById(creep.room.memory.Structures.StorageLink) || creep.room.findStorageLink();
-            let closestLinkToController:any = Game.getObjectById(creep.room.memory.Structures.controllerLink);
+            const targetLink:any = Game.getObjectById(creep.room.memory.Structures.StorageLink) || creep.room.findStorageLink();
+            const closestLinkToController:any = Game.getObjectById(creep.room.memory.Structures.controllerLink);
             let extraLink = null;
             if(creep.room.memory.Structures.extraLinks && creep.room.memory.Structures.extraLinks.length > 0) {
-                for(let linkID of creep.room.memory.Structures.extraLinks) {
-                    let link:any = Game.getObjectById(linkID);
+                for(const linkID of creep.room.memory.Structures.extraLinks) {
+                    const link:any = Game.getObjectById(linkID);
                     if(link && link.store[RESOURCE_ENERGY] < 200) {
                         extraLink =  link;
                         break;

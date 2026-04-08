@@ -280,7 +280,7 @@ Creep.prototype.roadCheck = function (): boolean {
 
 Creep.prototype.roadlessLocation = function (repairTarget: any): RoomPosition | null {
     const nearby = this.pos.getNearbyPositions();
-    let candidates = nearby.filter((b: RoomPosition) => {
+    const candidates = nearby.filter((b: RoomPosition) => {
         if (b.getRangeTo(repairTarget) !== 3) return false;
         return b.lookFor(LOOK_STRUCTURES).length === 0 && b.lookFor(LOOK_CREEPS).length === 0;
     });
@@ -307,19 +307,19 @@ Creep.prototype.roadlessLocation = function (repairTarget: any): RoomPosition | 
 
 Creep.prototype.findFillerTarget = function findFillerTarget():any {
 
-    let reserveFill = this.room.memory.reserveFill;
+    const reserveFill = this.room.memory.reserveFill;
 
 
     if(this.memory.role == "ControllerLinkFiller" && (!this.room.memory.Structures.controllerLink || Game.time % 10000 == 0) && this.room.controller && this.room.controller.level >= 2) {
         if(this.room.controller && this.room.controller.level < 7) {
             let containers = this.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_CONTAINER && building.id !== this.room.memory.Structures.bin && building.id !== this.room.memory.Structures.storage && building.pos.getRangeTo(this.room.controller) == 3});
             if(containers.length > 0) {
-                let controllerLink = this.room.controller.pos.findClosestByRange(containers);
+                const controllerLink = this.room.controller.pos.findClosestByRange(containers);
                 if(containers.length > 1) {
-                    let sources = this.room.find(FIND_SOURCES);
+                    const sources = this.room.find(FIND_SOURCES);
                     if(controllerLink.pos.findInRange(sources, 1).length > 0) {
                         containers = containers.filter(function(con) {return con.id !== controllerLink.id;});
-                        let newControllerLink = this.room.controller.pos.findClosestByRange(containers);
+                        const newControllerLink = this.room.controller.pos.findClosestByRange(containers);
                         this.room.memory.Structures.controllerLink = newControllerLink.id;
                     }
                 }
@@ -330,9 +330,9 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
             }
         }
         else {
-            let links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
+            const links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
             if(links.length > 0) {
-                let controllerLink = this.room.controller.pos.findClosestByRange(links);
+                const controllerLink = this.room.controller.pos.findClosestByRange(links);
                 if(controllerLink.pos.getRangeTo(this.room.controller) <= 4)  {
                     this.room.memory.Structures.controllerLink = controllerLink.id;
                 }
@@ -341,7 +341,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
 
     if(this.memory.role == "ControllerLinkFiller" && this.room.controller && this.room.memory.Structures.controllerLink) {
-        let controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
+        const controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
         if(controllerLink) {
             if(controllerLink.structureType == STRUCTURE_CONTAINER && controllerLink.store.getFreeCapacity() >= 200) {
                 if(this.room.controller.level >= 7) {
@@ -371,7 +371,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
         let outputLab7;
         let outputLab8;
 
-        let Labs = [];
+        const Labs = [];
 
         if(this.room.memory.labs.outputLab1) {
             outputLab1 = Game.getObjectById(this.room.memory.labs.outputLab1)
@@ -406,7 +406,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
             Labs.push(outputLab8)
         }
 
-        for(let lab of Labs) {
+        for(const lab of Labs) {
             if(lab && (lab.store[RESOURCE_ENERGY] <= 2000 - this.memory.MaxStorage*2 || lab.store[RESOURCE_ENERGY] < 1200) && !reserveFill.includes(lab.id)) {
                 if(!this.room.memory.reserveFill.includes(lab.id)) {
                     this.room.memory.reserveFill.push(lab.id);
@@ -418,9 +418,9 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
     if(this.room.energyAvailable < this.room.energyCapacityAvailable) {
 
-        let spawnAndExtensions = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_SPAWN || building.structureType == STRUCTURE_EXTENSION) && building.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && !reserveFill.includes(building.id)});
+        const spawnAndExtensions = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_SPAWN || building.structureType == STRUCTURE_EXTENSION) && building.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && !reserveFill.includes(building.id)});
         if(spawnAndExtensions.length > 0) {
-            let t = this.pos.findClosestByRange(spawnAndExtensions);
+            const t = this.pos.findClosestByRange(spawnAndExtensions);
             if(!this.room.memory.reserveFill.includes(t.id)) {
                 this.room.memory.reserveFill.push(t.id);
             }
@@ -431,18 +431,18 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
 
 
-    let towers2 = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store.getFreeCapacity(RESOURCE_ENERGY) >= 100 && !reserveFill.includes(building.id))});
+    const towers2 = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store.getFreeCapacity(RESOURCE_ENERGY) >= 100 && !reserveFill.includes(building.id))});
     if(towers2.length > 0) {
-        let t = this.pos.findClosestByRange(towers2);
+        const t = this.pos.findClosestByRange(towers2);
         if(!this.room.memory.reserveFill.includes(t.id)) {
             this.room.memory.reserveFill.push(t.id);
         }        this.memory.t = t.id;
         return t;
     }
 
-    let storage = Game.getObjectById(this.memory.storage) || this.findStorage() || this.room.storage;
+    const storage = Game.getObjectById(this.memory.storage) || this.findStorage() || this.room.storage;
     if(this.room.memory.Structures.factory) {
-        let factory:any = Game.getObjectById(this.room.memory.Structures.factory);
+        const factory:any = Game.getObjectById(this.room.memory.Structures.factory);
         if(factory && factory.store[RESOURCE_ENERGY] < 20000 && storage && storage.store[RESOURCE_ENERGY] > 450000 && storage.store[RESOURCE_BATTERY] < 200 && !reserveFill.includes(factory.id)) {
             if(!this.room.memory.reserveFill.includes(factory.id)) {
                 this.room.memory.reserveFill.push(factory.id);
@@ -452,8 +452,8 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
 
     if(this.room.memory.Structures.extraLinks) {
-        for(let linkID of this.room.memory.Structures.extraLinks) {
-            let extraLink:any = Game.getObjectById(linkID);
+        for(const linkID of this.room.memory.Structures.extraLinks) {
+            const extraLink:any = Game.getObjectById(linkID);
             if(extraLink && extraLink.store[RESOURCE_ENERGY] < 800 && storage && storage.store[RESOURCE_ENERGY] > 100000 && !reserveFill.includes(extraLink.id)) {
                 if(!this.room.memory.reserveFill.includes(extraLink.id)) {
                     this.room.memory.reserveFill.push(extraLink.id);
@@ -466,7 +466,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
 
 
     if(this.room.memory.Structures.powerSpawn) {
-        let powerSpawn:any = Game.getObjectById(this.room.memory.Structures.powerSpawn);
+        const powerSpawn:any = Game.getObjectById(this.room.memory.Structures.powerSpawn);
         if(powerSpawn && powerSpawn.store[RESOURCE_ENERGY] < 2500 && storage && storage.store[RESOURCE_ENERGY] > 280000 && !reserveFill.includes(powerSpawn.id)) {
             if(!this.room.memory.reserveFill.includes(powerSpawn.id)) {
                 this.room.memory.reserveFill.push(powerSpawn.id);
@@ -483,12 +483,12 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
         if(this.room.controller.level < 7) {
             let containers = this.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_CONTAINER && building.id !== this.room.memory.Structures.bin && building.id !== this.room.memory.Structures.storage && building.pos.getRangeTo(this.room.controller) == 3});
             if(containers.length > 0) {
-                let controllerLink = this.room.controller.pos.findClosestByRange(containers);
+                const controllerLink = this.room.controller.pos.findClosestByRange(containers);
                 if(containers.length > 1) {
-                    let sources = this.room.find(FIND_SOURCES);
+                    const sources = this.room.find(FIND_SOURCES);
                     if(controllerLink.pos.findInRange(sources, 1).length > 0) {
                         containers = containers.filter(function(con) {return con.id !== controllerLink.id;});
-                        let newControllerLink = this.room.controller.pos.findClosestByRange(containers);
+                        const newControllerLink = this.room.controller.pos.findClosestByRange(containers);
                         this.room.memory.Structures.controllerLink = newControllerLink.id;
                     }
                 }
@@ -499,9 +499,9 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
             }
         }
         else {
-            let links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
+            const links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
             if(links.length > 0) {
-                let controllerLink = this.room.controller.pos.findClosestByRange(links);
+                const controllerLink = this.room.controller.pos.findClosestByRange(links);
                 if(controllerLink.pos.getRangeTo(this.room.controller) <= 4)  {
                     this.room.memory.Structures.controllerLink = controllerLink.id;
                 }
@@ -510,7 +510,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
 
     if(this.memory.role == "filler" && this.room.energyAvailable == this.room.energyCapacityAvailable && this.room.controller && this.room.memory.Structures.controllerLink) {
-        let controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
+        const controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
         if(controllerLink) {
             if(controllerLink.structureType == STRUCTURE_CONTAINER && controllerLink.store.getFreeCapacity() > 1800) {
                 if(this.room.controller.level >= 7) {

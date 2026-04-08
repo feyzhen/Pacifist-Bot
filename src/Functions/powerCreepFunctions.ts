@@ -45,7 +45,7 @@ PowerCreep.prototype.moveToRoom = function moveToRoom(roomName, travelTarget_x =
 PowerCreep.prototype.evacuate = function evacuate():any {
     if(this.room.memory.defence && this.room.memory.defence.nuke && this.room.memory.defence.evacuate || this.memory.nukeHaven) {
         if(!this.memory.nukeTimer) {
-            let nukes = this.room.find(FIND_NUKES).filter(function(nuke) {return nuke.timeToLand < 300;});;
+            const nukes = this.room.find(FIND_NUKES).filter(function(nuke) {return nuke.timeToLand < 300;});
             if(nukes.length > 0) {
                 nukes.sort((a,b) => a.timeToLand - b.timeToLand);
                 this.memory.nukeTimer = nukes[0].timeToLand + 1;
@@ -61,8 +61,8 @@ PowerCreep.prototype.evacuate = function evacuate():any {
         if(this.memory.nukeTimer > 0) {
 
             if(!this.memory.nukeHaven) {
-                let possibleRooms = Object.values(Game.map.describeExits(this.room.name)).filter(roomname => Game.map.getRoomStatus(roomname).status === Game.map.getRoomStatus(this.room.name).status);
-                let index = Math.floor(Math.random() * possibleRooms.length);
+                const possibleRooms = Object.values(Game.map.describeExits(this.room.name)).filter(roomname => Game.map.getRoomStatus(roomname).status === Game.map.getRoomStatus(this.room.name).status);
+                const index = Math.floor(Math.random() * possibleRooms.length);
                 this.memory.nukeHaven = possibleRooms[index];
             }
             if(this.memory.nukeHaven) {
@@ -88,10 +88,10 @@ PowerCreep.prototype.evacuate = function evacuate():any {
 PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction) {
     if(direction == 1) {
         if(this.pos.y != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y - 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y - 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -111,10 +111,10 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
     }
     else if(direction == 2) {
         if(this.pos.x != 49 && this.pos.y != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y - 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y - 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -134,10 +134,10 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
     }
     else if(direction == 3) {
         if(this.pos.x != 49) {
-            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -158,10 +158,10 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
     }
     else if(direction == 4) {
         if(this.pos.x != 49 && this.pos.y != 49) {
-            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y + 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y + 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -182,10 +182,10 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
     }
     else if(direction == 5) {
         if(this.pos.y != 49) {
-            let targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y + 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y + 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -205,10 +205,10 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
     }
     else if(direction == 6) {
         if(this.pos.y != 49 && this.pos.x != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y + 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y + 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -228,10 +228,10 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
     }
     else if(direction == 7) {
         if(this.pos.x != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -252,10 +252,10 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
     }
     else if(direction == 8) {
         if(this.pos.x != 0 && this.pos.y != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y - 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y - 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -285,9 +285,9 @@ PowerCreep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(ta
         }
 
         if(!this.memory.path || this.memory.path.length == 0 || !this.memory.MoveTargetId || this.memory.MoveTargetId != target.id) {
-            let costMatrix = roomCallbackRoadPrioPower;
+            const costMatrix = roomCallbackRoadPrioPower;
 
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 this.pos, {pos:target.pos, range:range},
                 {
                     maxOps: 1000,
@@ -296,8 +296,8 @@ PowerCreep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(ta
                 }
                 );
 
-            let pos = path.path[0];
-            let direction = this.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = this.pos.getDirectionTo(pos);
 
             this.SwapPositionWithCreep(direction);
             this.memory.path = path.path;
@@ -306,8 +306,8 @@ PowerCreep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(ta
 
 
 
-        let pos = this.memory.path[0];
-        let direction = this.pos.getDirectionTo(pos);
+        const pos = this.memory.path[0];
+        const direction = this.pos.getDirectionTo(pos);
 
         this.move(direction);
         this.memory.moving = true;
@@ -318,12 +318,12 @@ PowerCreep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(ta
 }
 
 const roomCallbackRoadPrioPower = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -372,19 +372,19 @@ const roomCallbackRoadPrioPower = (roomName: string): boolean | CostMatrix => {
         }
     });
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 6);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 11);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 3);
             }

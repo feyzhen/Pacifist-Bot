@@ -11,8 +11,8 @@ function mosquito_attack() {
   if(!Memory.e) {
     Memory.e = {mosquito: []};
   }
-  for (let attack of Memory.e.mosquito) {
-    let room = Game.rooms[attack.n];
+  for (const attack of Memory.e.mosquito) {
+    const room = Game.rooms[attack.n];
 
     if (!room) continue;
 
@@ -27,29 +27,29 @@ function mosquito_attack() {
 
 
 
-    let creeps = room.find(FIND_CREEPS);
-    let myCreeps = creeps.filter(c => c.my);
-    let enemyCreeps = creeps.filter(c => !c.my);
+    const creeps = room.find(FIND_CREEPS);
+    const myCreeps = creeps.filter(c => c.my);
+    const enemyCreeps = creeps.filter(c => !c.my);
 
-    let mosquitos = myCreeps.filter(c => c.memory.role === "mosquito");
-    let myOtherCreeps = myCreeps.filter(c => c.memory.role !== "mosquito");
+    const mosquitos = myCreeps.filter(c => c.memory.role === "mosquito");
+    const myOtherCreeps = myCreeps.filter(c => c.memory.role !== "mosquito");
 
-    let structures = room.find(FIND_STRUCTURES);
-    let neutralStructures = structures.filter(
+    const structures = room.find(FIND_STRUCTURES);
+    const neutralStructures = structures.filter(
       s => !(s instanceof OwnedStructure) && s.structureType !== STRUCTURE_CONTAINER
     );
-    let enemyStructures = structures.filter(
+    const enemyStructures = structures.filter(
       s =>
         s instanceof OwnedStructure &&
         s.owner &&
         s.owner.username !== "PacifistBot" &&
         s.structureType !== STRUCTURE_CONTROLLER
     );
-    let combinedStructures = neutralStructures.concat(enemyStructures);
-    let towers = <Array<StructureTower>>enemyStructures.filter(s => s.structureType === STRUCTURE_TOWER);
-    let spawns = enemyStructures.filter(s => s.structureType === STRUCTURE_SPAWN);
+    const combinedStructures = neutralStructures.concat(enemyStructures);
+    const towers = <Array<StructureTower>>enemyStructures.filter(s => s.structureType === STRUCTURE_TOWER);
+    const spawns = enemyStructures.filter(s => s.structureType === STRUCTURE_SPAWN);
 
-    let controller = room.controller;
+    const controller = room.controller;
     let safeMode = false;
     if (controller && controller.safeMode && controller.safeMode > 0) {
       attack.ts = 0;
@@ -60,14 +60,14 @@ function mosquito_attack() {
 
     if (!attack.cp || Game.time % 500 === 0) {
       // Create an object to store the scores for each position
-      let positionScores = {};
+      const positionScores = {};
 
       // Calculate the score for each position based on the number of hostile structures around it
-      for (let structure of enemyStructures) {
+      for (const structure of enemyStructures) {
         for (let x = structure.pos.x - 4; x <= structure.pos.x + 4; x++) {
           for (let y = structure.pos.y - 4; y <= structure.pos.y + 4; y++) {
             if (x < 0 || x > 49 || y < 0 || y > 49) continue;
-            let positionKey = x + "-" + y;
+            const positionKey = x + "-" + y;
             if (!positionScores[positionKey]) positionScores[positionKey] = 0;
             positionScores[positionKey]++;
           }
@@ -76,11 +76,11 @@ function mosquito_attack() {
 
       // Find the position with the highest score (highest concentration of hostile structures)
       let maxScore = 0;
-      for (let key in positionScores) {
-        let score = positionScores[key];
+      for (const key in positionScores) {
+        const score = positionScores[key];
         if (score > maxScore) {
           maxScore = score;
-          let [x, y] = key.split("-").map(Number);
+          const [x, y] = key.split("-").map(Number);
           centermostPosition = new RoomPosition(x, y, room.name);
         }
       }
@@ -93,26 +93,26 @@ function mosquito_attack() {
 
     console.log(centermostPosition?.x, centermostPosition?.y, "is the centre position");
 
-    for (let mosquito of mosquitos) {
+    for (const mosquito of mosquitos) {
       if (mosquito.ticksToLive === 200 && !safeMode && spawns.length) {
         attack.ts++;
       }
 
-      let mosquitosNearby = mosquitos.filter(c => c.pos.getRangeTo(mosquito.pos) <= 2 && c.id !== mosquito.id).length;
+      const mosquitosNearby = mosquitos.filter(c => c.pos.getRangeTo(mosquito.pos) <= 2 && c.id !== mosquito.id).length;
 
 
-      let myHealPotential = mosquito.getActiveBodyparts(HEAL) * 48;
-      let myActiveToughParts = mosquito.getActiveBodyparts(TOUGH);
+      const myHealPotential = mosquito.getActiveBodyparts(HEAL) * 48;
+      const myActiveToughParts = mosquito.getActiveBodyparts(TOUGH);
 
-      let enemyCreepsInRange5 = mosquito.pos.findInRange(enemyCreeps, 5);
-      let enemyCreepsInRange3 = mosquito.pos.findInRange(enemyCreepsInRange5, 3);
+      const enemyCreepsInRange5 = mosquito.pos.findInRange(enemyCreeps, 5);
+      const enemyCreepsInRange3 = mosquito.pos.findInRange(enemyCreepsInRange5, 3);
 
-      let enemyCreepsInRange3WithArms = enemyCreepsInRange3.filter(
+      const enemyCreepsInRange3WithArms = enemyCreepsInRange3.filter(
         c => c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0
       );
 
-      let enemyStructuresInRange3 = mosquito.pos.findInRange(enemyStructures, 3);
-      let neutralStructuresInRange3 = mosquito.pos.findInRange(neutralStructures, 3);
+      const enemyStructuresInRange3 = mosquito.pos.findInRange(enemyStructures, 3);
+      const neutralStructuresInRange3 = mosquito.pos.findInRange(neutralStructures, 3);
 
       const result = calc_incoming_damage_potential_next_tick(
         mosquito.pos,
@@ -124,9 +124,9 @@ function mosquito_attack() {
       const hostileDamagePotentialNextTick = result.totalDamage;
       const advance = result.advance;
 
-      let hostileDamagePotentialThisTick = calc_incoming_damage(mosquito.pos, towers, enemyCreepsInRange3);
+      const hostileDamagePotentialThisTick = calc_incoming_damage(mosquito.pos, towers, enemyCreepsInRange3);
 
-      let myDamageWithstandPotential = myHealPotential + myActiveToughParts * 233.33333;
+      const myDamageWithstandPotential = myHealPotential + myActiveToughParts * 233.33333;
 
       console.log(
         mosquito.name,
@@ -142,16 +142,16 @@ function mosquito_attack() {
       if (mosquito.hits === mosquito.hitsMax) {
         let mosquitosInRange3 = mosquito.pos.findInRange(mosquitos, 3);
         mosquitosInRange3 = mosquitosInRange3.filter(u => u.id !== mosquito.id && u.hits < u.hitsMax);
-        let nonMosquitosInRange3 = mosquito.pos.findInRange(myOtherCreeps, 3);
-        let nonMosquitosInRange1 = mosquito.pos.findInRange(nonMosquitosInRange3, 1);
-        let nonMosquitosInRange1WithHits = nonMosquitosInRange1.filter(u => u.hits < u.hitsMax);
-        let nonMosquitosInRange3WithHits = nonMosquitosInRange3.filter(u => u.hits < u.hitsMax);
+        const nonMosquitosInRange3 = mosquito.pos.findInRange(myOtherCreeps, 3);
+        const nonMosquitosInRange1 = mosquito.pos.findInRange(nonMosquitosInRange3, 1);
+        const nonMosquitosInRange1WithHits = nonMosquitosInRange1.filter(u => u.hits < u.hitsMax);
+        const nonMosquitosInRange3WithHits = nonMosquitosInRange3.filter(u => u.hits < u.hitsMax);
 
 
         if (mosquitosInRange3.length > 0) {
-          let lowestHitsmosquito = mosquitosInRange3.reduce((p, c) => (p.hits < c.hits ? p : c));
+          const lowestHitsmosquito = mosquitosInRange3.reduce((p, c) => (p.hits < c.hits ? p : c));
           if (lowestHitsmosquito) {
-            let range = mosquito.pos.getRangeTo(lowestHitsmosquito);
+            const range = mosquito.pos.getRangeTo(lowestHitsmosquito);
             if (range > 1) {
               mosquito.rangedHeal(lowestHitsmosquito);
             } else {
@@ -160,13 +160,13 @@ function mosquito_attack() {
           }
         }
         else if(nonMosquitosInRange1WithHits.length > 0) {
-          let lowestHitsNonMosquito = nonMosquitosInRange1WithHits.reduce((p, c) => (p.hits < c.hits ? p : c));
+          const lowestHitsNonMosquito = nonMosquitosInRange1WithHits.reduce((p, c) => (p.hits < c.hits ? p : c));
           if (lowestHitsNonMosquito) {
             mosquito.heal(lowestHitsNonMosquito);
           }
         }
         else if(nonMosquitosInRange3WithHits.length > 0) {
-          let lowestHitsNonMosquito = nonMosquitosInRange3WithHits.reduce((p, c) => (p.hits < c.hits ? p : c));
+          const lowestHitsNonMosquito = nonMosquitosInRange3WithHits.reduce((p, c) => (p.hits < c.hits ? p : c));
           if (lowestHitsNonMosquito) {
             mosquito.rangedHeal(lowestHitsNonMosquito);
           }
@@ -185,7 +185,7 @@ function mosquito_attack() {
 
           const exits = mosquito.room.find(FIND_EXIT)
                     // random number between 0 - exits length - 1
-          let closestexit = mosquito.pos.findClosestByRange(exits);
+          const closestexit = mosquito.pos.findClosestByRange(exits);
 
                   if (closestexit) {
                     if(nukes[0].timeToLand === 2) {
@@ -214,20 +214,20 @@ function mosquito_attack() {
         }
         let targetPos = centermostPosition;
         if (!targetPos) {
-          let closestSpawn = mosquito.pos.findClosestByRange(spawns);
+          const closestSpawn = mosquito.pos.findClosestByRange(spawns);
           if (closestSpawn) {
             targetPos = closestSpawn.pos;
           }
         }
         if (targetPos) {
           // add custom cost matrix to pathfinder.search method
-          let closestHostileCreep = mosquito.pos.findClosestByRange(enemyCreepsInRange3WithArms);
+          const closestHostileCreep = mosquito.pos.findClosestByRange(enemyCreepsInRange3WithArms);
           if (closestHostileCreep) {
             targetPos = closestHostileCreep.pos;
             range = 6;
           }
           let path: Array<RoomPosition> | null = null;
-          let targetMemory = mosquito.memory.target;
+          const targetMemory = mosquito.memory.target;
           let targetMemoryPosition: RoomPosition | null = null;
           if (targetMemory && typeof targetMemory.x === 'number' && typeof targetMemory.y === 'number' && typeof targetMemory.roomName === 'string' && targetMemory.x >= 0 && targetMemory.x <= 49 && targetMemory.y >= 0 && targetMemory.y <= 49)
             targetMemoryPosition = new RoomPosition(targetMemory.x, targetMemory.y, targetMemory.roomName);
@@ -264,9 +264,9 @@ function mosquito_attack() {
           } else if (mosquito.memory.path?.length) {
             path = [];
             for (let i = 0; i < mosquito.memory.path.length; i++) {
-              let posMemory = mosquito.memory.path[i];
+              const posMemory = mosquito.memory.path[i];
               if (posMemory && typeof posMemory.x === 'number' && typeof posMemory.y === 'number' && typeof posMemory.roomName === 'string' && posMemory.x >= 0 && posMemory.x <= 49 && posMemory.y >= 0 && posMemory.y <= 49) {
-                let pos = new RoomPosition(posMemory.x, posMemory.y, posMemory.roomName);
+                const pos = new RoomPosition(posMemory.x, posMemory.y, posMemory.roomName);
                 path.push(pos);
               }
             }
@@ -274,8 +274,8 @@ function mosquito_attack() {
 
           if (path && path.length > 0) {
             if (!flee) {
-              let nextPos = path[0];
-              let potentialDamageAtNextPos = calc_incoming_damage_potential_next_tick_next_pos(
+              const nextPos = path[0];
+              const potentialDamageAtNextPos = calc_incoming_damage_potential_next_tick_next_pos(
                 nextPos,
                 towers,
                 enemyCreepsInRange5
@@ -300,9 +300,9 @@ function mosquito_attack() {
       }
 
       // attack part
-      let exposedCreeps = find_exposed_creeps(mosquito.pos, enemyCreepsInRange3);
+      const exposedCreeps = find_exposed_creeps(mosquito.pos, enemyCreepsInRange3);
       if (exposedCreeps.length) {
-        let closestExposedCreep = mosquito.pos.findClosestByRange(exposedCreeps);
+        const closestExposedCreep = mosquito.pos.findClosestByRange(exposedCreeps);
         if (closestExposedCreep && mosquito.pos.isNearTo(closestExposedCreep)) {
           mosquito.rangedMassAttack();
         } else {
@@ -320,31 +320,31 @@ function mosquito_attack() {
         continue;
       }
 
-      let exposedNeutralStructs = find_exposed_structs(mosquito.pos, neutralStructuresInRange3);
+      const exposedNeutralStructs = find_exposed_structs(mosquito.pos, neutralStructuresInRange3);
       // filter out walls
-      let exposedNeutralStructsNoWalls = exposedNeutralStructs.filter(s => s.structureType !== STRUCTURE_WALL);
+      const exposedNeutralStructsNoWalls = exposedNeutralStructs.filter(s => s.structureType !== STRUCTURE_WALL);
       if (exposedNeutralStructsNoWalls.length) {
         exposedNeutralStructsNoWalls.sort((a, b) => b.pos.getRangeTo(mosquito) - a.pos.getRangeTo(mosquito));
         mosquito.rangedAttack(exposedNeutralStructsNoWalls[0]);
         continue;
       }
 
-      let exposedEnemyStructs = find_exposed_structs(mosquito.pos, enemyStructuresInRange3);
+      const exposedEnemyStructs = find_exposed_structs(mosquito.pos, enemyStructuresInRange3);
       if (exposedEnemyStructs.length) {
-        let rangeOne = exposedEnemyStructs.filter(s => s.pos.getRangeTo(mosquito) === 1);
+        const rangeOne = exposedEnemyStructs.filter(s => s.pos.getRangeTo(mosquito) === 1);
         if (rangeOne.length) {
           mosquito.rangedMassAttack();
           continue;
         }
 
-        let rangeTwo = exposedEnemyStructs.filter(s => s.pos.getRangeTo(mosquito) === 2);
-        let rangeThree = exposedEnemyStructs.filter(s => s.pos.getRangeTo(mosquito) === 3);
+        const rangeTwo = exposedEnemyStructs.filter(s => s.pos.getRangeTo(mosquito) === 2);
+        const rangeThree = exposedEnemyStructs.filter(s => s.pos.getRangeTo(mosquito) === 3);
 
         let damageScore = 0;
-        for (let s of rangeThree) {
+        for (const s of rangeThree) {
           damageScore++;
         }
-        for (let s of rangeTwo) {
+        for (const s of rangeTwo) {
           damageScore += 4;
         }
 
@@ -352,7 +352,7 @@ function mosquito_attack() {
           mosquito.rangedMassAttack();
         } else {
           // Prioritize attacking non-STRUCTURE_WALL targets
-          let nonWallStructures = exposedEnemyStructs.filter(s => s.structureType !== STRUCTURE_WALL);
+          const nonWallStructures = exposedEnemyStructs.filter(s => s.structureType !== STRUCTURE_WALL);
           if (nonWallStructures.length > 0) {
             nonWallStructures.sort((a, b) => a.hits - b.hits);
             mosquito.rangedAttack(nonWallStructures[0]);
@@ -367,20 +367,20 @@ function mosquito_attack() {
       }
 
       if (enemyStructuresInRange3.length) {
-        let rangeOne = enemyStructuresInRange3.filter(s => s.pos.getRangeTo(mosquito) === 1);
+        const rangeOne = enemyStructuresInRange3.filter(s => s.pos.getRangeTo(mosquito) === 1);
         if (rangeOne.length) {
           mosquito.rangedMassAttack();
           continue;
         }
 
-        let rangeTwo = enemyStructuresInRange3.filter(s => s.pos.getRangeTo(mosquito) === 2);
-        let rangeThree = enemyStructuresInRange3.filter(s => s.pos.getRangeTo(mosquito) === 3);
+        const rangeTwo = enemyStructuresInRange3.filter(s => s.pos.getRangeTo(mosquito) === 2);
+        const rangeThree = enemyStructuresInRange3.filter(s => s.pos.getRangeTo(mosquito) === 3);
 
         let damageScore = 0;
-        for (let s of rangeThree) {
+        for (const s of rangeThree) {
           damageScore++;
         }
-        for (let s of rangeTwo) {
+        for (const s of rangeTwo) {
           damageScore += 4;
         }
 
@@ -388,7 +388,7 @@ function mosquito_attack() {
           mosquito.rangedMassAttack();
         } else {
           // Prioritize attacking non-STRUCTURE_WALL targets
-          let nonWallStructures = enemyStructuresInRange3.filter(s => s.structureType !== STRUCTURE_WALL);
+          const nonWallStructures = enemyStructuresInRange3.filter(s => s.structureType !== STRUCTURE_WALL);
           if (nonWallStructures.length > 0) {
             nonWallStructures.sort((a, b) => a.hits - b.hits);
             mosquito.rangedAttack(nonWallStructures[0]);
@@ -405,10 +405,10 @@ function mosquito_attack() {
   }
 
   if (Game.time % 1000 === 0) {
-    let occupiedRooms: Array<string> = [];
+    const occupiedRooms: Array<string> = [];
 
-    for (let creepName in Game.creeps) {
-      let creep = Game.creeps[creepName];
+    for (const creepName in Game.creeps) {
+      const creep = Game.creeps[creepName];
       if (creep.memory.role === "mosquito") {
         if (creep.memory.targetRoom) {
           occupiedRooms.push(creep.memory.targetRoom);
@@ -416,9 +416,9 @@ function mosquito_attack() {
       }
     }
 
-    let occupiedRoomsSet = new Set(occupiedRooms);
+    const occupiedRoomsSet = new Set(occupiedRooms);
 
-    let mosquitoRooms = Memory.e.mosquito;
+    const mosquitoRooms = Memory.e.mosquito;
     for (let i = 0; i < mosquitoRooms.length; i++) {
       if (mosquitoRooms[i].ts > 0) continue;
       if (!occupiedRoomsSet.has(mosquitoRooms[i].n)) {
@@ -452,12 +452,12 @@ const GoToTheClosestSpawn = (
   flee: boolean,
   terrain: RoomTerrain
 ): boolean | CostMatrix => {
-  let room = Game.rooms[roomName];
+  const room = Game.rooms[roomName];
   if (!room || room == undefined || room === undefined || room == null || room === null) {
     return false;
   }
 
-  let costs = new PathFinder.CostMatrix();
+  const costs = new PathFinder.CostMatrix();
 
   for (let y = 0; y <= 49; y++) {
     for (let x = 0; x <= 49; x++) {
@@ -474,7 +474,7 @@ const GoToTheClosestSpawn = (
     }
   }
 
-  for (let myCreep of myCreeps) {
+  for (const myCreep of myCreeps) {
     if (myCreep && myCreep.memory && myCreep.memory.role === "mosquito") {
       costs.set(myCreep.pos.x, myCreep.pos.y, 160);
     }
@@ -483,9 +483,9 @@ const GoToTheClosestSpawn = (
     }
   }
 
-  for (let eCreep of hostileCreeps) {
-    let hasDamageBodyParts = eCreep.getActiveBodyparts(ATTACK) > 5 || eCreep.getActiveBodyparts(RANGED_ATTACK) > 5;
-    let range = creep.pos.getRangeTo(eCreep);
+  for (const eCreep of hostileCreeps) {
+    const hasDamageBodyParts = eCreep.getActiveBodyparts(ATTACK) > 5 || eCreep.getActiveBodyparts(RANGED_ATTACK) > 5;
+    const range = creep.pos.getRangeTo(eCreep);
     if (hasDamageBodyParts && flee && range <= 4) {
       let radius = 2;
       if (eCreep.getActiveBodyparts(RANGED_ATTACK) > 5) {
@@ -494,7 +494,7 @@ const GoToTheClosestSpawn = (
       for (let x = eCreep.pos.x - radius; x <= eCreep.pos.x + radius; x++) {
         for (let y = eCreep.pos.y - radius; y <= eCreep.pos.y + radius; y++) {
           if (x < 0 || x > 49 || y < 0 || y > 49) continue;
-          let distance = Math.abs(eCreep.pos.x - x) + Math.abs(eCreep.pos.y - y);
+          const distance = Math.abs(eCreep.pos.x - x) + Math.abs(eCreep.pos.y - y);
           let weight = 254 - distance * 40; // You can adjust the multiplier (20) to control the weight gradient.
           weight = Math.max(weight, 1); // Ensure the weight is at least 1 to avoid blocking the path completely.
           if (costs.get(x, y) < weight) {
@@ -510,7 +510,7 @@ const GoToTheClosestSpawn = (
       for (let x = eCreep.pos.x - radius; x <= eCreep.pos.x + radius; x++) {
         for (let y = eCreep.pos.y - radius; y <= eCreep.pos.y + radius; y++) {
           if (x < 0 || x > 49 || y < 0 || y > 49) continue;
-          let distance = Math.abs(eCreep.pos.x - x) + Math.abs(eCreep.pos.y - y);
+          const distance = Math.abs(eCreep.pos.x - x) + Math.abs(eCreep.pos.y - y);
           let weight = 254 - distance * 40; // You can adjust the multiplier (20) to control the weight gradient.
           weight = Math.max(weight, 1); // Ensure the weight is at least 1 to avoid blocking the path completely.
           if (costs.get(x, y) < weight) {

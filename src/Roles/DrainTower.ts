@@ -4,7 +4,7 @@
  **/
 
  const run = function (creep) {
-    ;
+    
 
     if(creep.hits == creep.hitsMax) {
         creep.memory.draining = true;

@@ -18,16 +18,16 @@ interface Room {
 
 Room.prototype.roomTowersHealMe = function(creep): object | void {
     if(creep) {
-        let towerIDs = this.memory.Structures.towers;
-        let towerObjs = [];
-        for(let towerID of towerIDs) {
-            let towerObj = Game.getObjectById(towerID);
+        const towerIDs = this.memory.Structures.towers;
+        const towerObjs = [];
+        for(const towerID of towerIDs) {
+            const towerObj = Game.getObjectById(towerID);
             if(towerObj) {
                 towerObjs.push(towerObj);
             }
         }
         if(towerObjs.length > 0) {
-            for(let tower of towerObjs) {
+            for(const tower of towerObjs) {
                 tower.heal(creep);
             }
         }
@@ -36,10 +36,10 @@ Room.prototype.roomTowersHealMe = function(creep): object | void {
 
 Room.prototype.roomTowersAttackEnemy = function(enemyCreep) {
     if (enemyCreep) {
-        let towerIDs = this.memory.Structures.towers || [];
-        let towerObjs = [];
-        for (let towerID of towerIDs) {
-            let towerObj = Game.getObjectById(towerID);
+        const towerIDs = this.memory.Structures.towers || [];
+        const towerObjs = [];
+        for (const towerID of towerIDs) {
+            const towerObj = Game.getObjectById(towerID);
             if (towerObj) {
                 towerObjs.push(towerObj);
             }
@@ -47,15 +47,15 @@ Room.prototype.roomTowersAttackEnemy = function(enemyCreep) {
         if (towerObjs.length === 0) return; // No towers, exit the function
 
         if (enemyCreep.hits < enemyCreep.hitsMax / 1.5) {
-            for (let tower of towerObjs) {
+            for (const tower of towerObjs) {
                 tower.attack(enemyCreep);
             }
         }
-        for (let tower of towerObjs) {
+        for (const tower of towerObjs) {
             if (tower.store[RESOURCE_ENERGY] < 100) return;
         }
         if (towerObjs.length > 0) {
-            for (let tower of towerObjs) {
+            for (const tower of towerObjs) {
                 tower.attack(enemyCreep);
             }
         }
@@ -65,16 +65,16 @@ Room.prototype.roomTowersAttackEnemy = function(enemyCreep) {
 
 Room.prototype.roomTowersRepairTarget = function(target): object | void {
     if(target) {
-        let towerIDs = this.memory.Structures.towers;
-        let towerObjs = [];
-        for(let towerID of towerIDs) {
-            let towerObj = Game.getObjectById(towerID);
+        const towerIDs = this.memory.Structures.towers;
+        const towerObjs = [];
+        for(const towerID of towerIDs) {
+            const towerObj = Game.getObjectById(towerID);
             if(towerObj) {
                 towerObjs.push(towerObj);
             }
         }
         if(towerObjs.length > 0) {
-            for(let tower of towerObjs) {
+            for(const tower of towerObjs) {
                 tower.repair(target);
             }
         }
@@ -82,7 +82,7 @@ Room.prototype.roomTowersRepairTarget = function(target): object | void {
 }
 
 Room.prototype.findNuker = function(): object | void {
-    let nukers = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_NUKER);}});
+    const nukers = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_NUKER);}});
     if(nukers.length > 0) {
         if(this.memory.Structures) {
             this.memory.Structures.nuker = nukers[0].id;
@@ -95,7 +95,7 @@ Room.prototype.findNuker = function(): object | void {
 }
 
 Room.prototype.findObserver = function(): object | void {
-    let observers = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_OBSERVER);}});
+    const observers = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_OBSERVER);}});
     if(observers.length > 0) {
         if(this.memory.Structures) {
             this.memory.Structures.observer = observers[0].id;
@@ -109,16 +109,16 @@ Room.prototype.findObserver = function(): object | void {
 
 
 Room.prototype.findStorageLink = function(): object | void {
-    let links = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_LINK);}});
+    const links = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_LINK);}});
     if(links.length > 0) {
-        let storage = Game.getObjectById(this.memory.Structures.storage) || this.findStorage();
+        const storage = Game.getObjectById(this.memory.Structures.storage) || this.findStorage();
         if(!storage) return;
         
         // Find links within 2 range of storage
-        let nearbyLinks = storage.pos.findInRange(links, 2);
+        const nearbyLinks = storage.pos.findInRange(links, 2);
         if(nearbyLinks.length > 0) {
             // Find the closest link to storage
-            let closestLink = storage.pos.findClosestByRange(nearbyLinks);
+            const closestLink = storage.pos.findClosestByRange(nearbyLinks);
             this.memory.Structures.StorageLink = closestLink.id;
             return closestLink;
         }
@@ -129,7 +129,7 @@ Room.prototype.findStorageLink = function(): object | void {
 }
 
 Room.prototype.findStorage = function() {
-    let storage = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_STORAGE);}});
+    const storage = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_STORAGE);}});
     if(storage.length) {
         this.memory.Structures.storage = storage[0].id;
         return storage[0];
@@ -140,7 +140,7 @@ Room.prototype.findStorage = function() {
 }
 
 Room.prototype.findExtractor = function() {
-    let extractor = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_EXTRACTOR);}});
+    const extractor = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_EXTRACTOR);}});
     if(extractor.length) {
         this.memory.Structures.extractor = extractor[0].id;
         return extractor[0];
@@ -149,7 +149,7 @@ Room.prototype.findExtractor = function() {
 }
 
 Room.prototype.findSpawn = function() {
-    let spawns = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_SPAWN && !structure.spawning);}});
+    const spawns = this.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_SPAWN && !structure.spawning);}});
     if(spawns.length) {
         this.memory.Structures.spawn = spawns[0].id;
         return spawns[0]
@@ -158,12 +158,12 @@ Room.prototype.findSpawn = function() {
 
 
 Room.prototype.findStorageContainer = function(): object | void {
-    let spawn:any = Game.getObjectById(this.memory.Structures.spawn);
+    const spawn:any = Game.getObjectById(this.memory.Structures.spawn);
     if(spawn && spawn.pos.y >= 2) {
-        let storagePosition = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, this.name);
-        let storagePositionStructures = storagePosition.lookFor(LOOK_STRUCTURES);
+        const storagePosition = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, this.name);
+        const storagePositionStructures = storagePosition.lookFor(LOOK_STRUCTURES);
         if(storagePositionStructures.length > 0) {
-            for(let building of storagePositionStructures) {
+            for(const building of storagePositionStructures) {
                 if(building.structureType == STRUCTURE_CONTAINER) {
                     this.memory.Structures.storage = building.id;
                     return building;
@@ -187,7 +187,7 @@ Room.prototype.findContainers = function(capacity) {
         containers = this.find(FIND_STRUCTURES, {filter: (i) => i.structureType == STRUCTURE_CONTAINER && i.store[RESOURCE_ENERGY] > capacity});
     }
     if(containers.length > 0) {
-        let CurrentContainer:any = Game.getObjectById(this.memory.Structures.container);
+        const CurrentContainer:any = Game.getObjectById(this.memory.Structures.container);
         if(CurrentContainer && CurrentContainer.store[RESOURCE_ENERGY] >= capacity) {
             this.memory.Structures.container = CurrentContainer.id;
             return CurrentContainer;
@@ -201,7 +201,7 @@ Room.prototype.findContainers = function(capacity) {
 }
 
 Room.prototype.findMineral = function() {
-    let mineral = this.find(FIND_MINERALS);
+    const mineral = this.find(FIND_MINERALS);
     if(mineral.length) {
         this.memory.mineral = mineral[0].id;
         return mineral[0];
@@ -210,10 +210,10 @@ Room.prototype.findMineral = function() {
 
 Room.prototype.findBin = function(storage): object | void {
     if(storage && storage.pos.y < 49) {
-        let binPosition = new RoomPosition(storage.pos.x, storage.pos.y + 1, this.name);
-        let binPositionStructures = binPosition.lookFor(LOOK_STRUCTURES);
+        const binPosition = new RoomPosition(storage.pos.x, storage.pos.y + 1, this.name);
+        const binPositionStructures = binPosition.lookFor(LOOK_STRUCTURES);
         if(binPositionStructures.length > 0) {
-            for(let building of binPositionStructures) {
+            for(const building of binPositionStructures) {
                 if(building.structureType == STRUCTURE_CONTAINER) {
                     this.memory.Structures.bin = building.id;
                     return building;

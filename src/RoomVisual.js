@@ -297,20 +297,20 @@ RoomVisual.prototype.structure = function(x,y,type,opts={}){
                 stroke: false,
                 opacity: opts.opacity
             });
-        {
-            let box = [
-                [-0.45,0.3],
-                [-0.45,0.55],
-                [0.45,0.55],
-                [0.45,0.3],
-            ];
-            box = relPoly(x,y,box);
-            this.poly(box,{
-                stroke: colors.outline,
-                strokeWidth: 0.05,
-                opacity: opts.opacity
-            })
-        }
+            {
+                let box = [
+                    [-0.45,0.3],
+                    [-0.45,0.55],
+                    [0.45,0.55],
+                    [0.45,0.3],
+                ];
+                box = relPoly(x,y,box);
+                this.poly(box,{
+                    stroke: colors.outline,
+                    strokeWidth: 0.05,
+                    opacity: opts.opacity
+                })
+            }
             break;
         case STRUCTURE_TOWER:
             this.circle(x,y,{
@@ -487,14 +487,14 @@ RoomVisual.prototype.connectRoads = function(opts={}){
 
 
 RoomVisual.prototype.speech = function(text, x, y, opts={}) {
-    var background = !!opts.background ? opts.background : colors.speechBackground;
-    var textcolor = !!opts.textcolor ? opts.textcolor : colors.speechText;
-    var textstyle = !!opts.textstyle ? opts.textstyle : false;
-    var textsize = !!opts.textsize ? opts.textsize : speechSize;
-    var textfont = !!opts.textfont ? opts.textfont : speechFont;
-    var opacity = !!opts.opacity ? opts.opacity : 1;
+    const background = !!opts.background ? opts.background : colors.speechBackground;
+    const textcolor = !!opts.textcolor ? opts.textcolor : colors.speechText;
+    const textstyle = !!opts.textstyle ? opts.textstyle : false;
+    const textsize = !!opts.textsize ? opts.textsize : speechSize;
+    const textfont = !!opts.textfont ? opts.textfont : speechFont;
+    const opacity = !!opts.opacity ? opts.opacity : 1;
 
-    var fontstring = '';
+    let fontstring = '';
     if(textstyle) {
         fontstring = textstyle + ' '
     }

@@ -19,7 +19,7 @@ function rooms() {
 
   // });
 
-  let myRooms = [];
+  const myRooms = [];
 
   let roomsIController = 0;
   _.forEach(Game.rooms, function (room: any) {
@@ -32,7 +32,7 @@ function rooms() {
 
     if (room && room.controller && room.controller.my) {
       if (Game.time % 100 == 0) {
-        let spawnAmount = room.find(FIND_MY_SPAWNS).length;
+        const spawnAmount = room.find(FIND_MY_SPAWNS).length;
         if (room.controller.level >= 6 && spawnAmount == 0) {
           if (!Memory.keepAfloat.includes(room.name)) {
             Memory.keepAfloat.push(room.name);
@@ -45,7 +45,7 @@ function rooms() {
       }
 
       if (room.controller.safeMode && room.controller.safeMode > 100 && Game.time % 100 === 0) {
-        let hostileCreeps = room.find(FIND_HOSTILE_CREEPS);
+        const hostileCreeps = room.find(FIND_HOSTILE_CREEPS);
         if (!hostileCreeps.length) {
           room.memory.danger = false;
           room.memory.danger_timer = 0;
@@ -105,7 +105,7 @@ function rooms() {
         Memory.targetRampRoom.room = room.name;
       }
       if (room.memory.Structures) {
-        let storage: any = Game.getObjectById(room.memory.Structures.storage);
+        const storage: any = Game.getObjectById(room.memory.Structures.storage);
         if (room.controller && room.controller.level >= 6 && room.terminal && storage && storage.store[RESOURCE_ENERGY] < 75000) {
           Memory.targetRampRoom.room = room.name;
         }
@@ -134,7 +134,7 @@ function rooms() {
             return remoteRoom !== room.name;
           });
           if (remoteRooms.length > 1) {
-            for (let remoteRoom of remoteRooms) {
+            for (const remoteRoom of remoteRooms) {
               room.memory.resources[remoteRoom].active = false;
             }
           }
@@ -164,12 +164,12 @@ function rooms() {
       }
 
       if (room.controller.level == 1 && Game.time % 25000 == 0 && !room.controller.safeMode) {
-        let walls = room.find(FIND_STRUCTURES, {
+        const walls = room.find(FIND_STRUCTURES, {
           filter: building =>
             building.structureType == STRUCTURE_WALL ||
             (!building.my && building.structureType != STRUCTURE_ROAD && building.structureType != STRUCTURE_CONTAINER)
         });
-        for (let wall of walls) {
+        for (const wall of walls) {
           wall.destroy();
         }
       }
@@ -178,7 +178,7 @@ function rooms() {
         if (room.memory.danger_timer > 350) {
           Memory.CPU.reduce = true;
         }
-        let storage: any = Game.getObjectById(room.memory.Structures.storage);
+        const storage: any = Game.getObjectById(room.memory.Structures.storage);
         if (storage && storage.store[RESOURCE_ENERGY] < 175000) {
           Memory.targetRampRoom.room = room.name;
           if (storage.store[RESOURCE_ENERGY] < 80000) {
@@ -263,7 +263,7 @@ function rooms() {
           }
         });
       }
-      let bucket = Game.cpu.bucket;
+      const bucket = Game.cpu.bucket;
       if (
         (Game.time % 1000 == 0 && bucket > 3500) ||
         room.memory.data.DOB == 2 ||
@@ -338,13 +338,13 @@ function rooms() {
 
   if (Game.time % 500 == 1) {
     if (Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit - 10 && Game.cpu.bucket > 9000) {
-      let room = Game.rooms[myRooms[Math.floor(Math.random() * myRooms.length)]];
+      const room = Game.rooms[myRooms[Math.floor(Math.random() * myRooms.length)]];
 
       if (room.controller.level >= 2) {
-        for (let remoteRoom of Object.keys(room.memory.resources)) {
+        for (const remoteRoom of Object.keys(room.memory.resources)) {
           if (remoteRoom !== room.name) {
             if (Object.keys(room.memory.resources[remoteRoom]).length == 0) {
-              let newName = "Scout-" + "-" + room.name;
+              const newName = "Scout-" + "-" + room.name;
               room.memory.spawn_list.push([MOVE], newName, {
                 memory: { role: "scout", homeRoom: room.name, targetRoom: remoteRoom }
               });
@@ -358,8 +358,8 @@ function rooms() {
         }
       }
     } else if (Memory.CPU.fiveHundredTickAvg.avg > Game.cpu.limit - 3) {
-      for (let roomName of myRooms) {
-        let room = Game.rooms[roomName];
+      for (const roomName of myRooms) {
+        const room = Game.rooms[roomName];
         let remoteRooms = Object.keys(room.memory.resources);
         if (remoteRooms.length > 1) {
           remoteRooms = remoteRooms.filter(function (remoteRoom) {
@@ -367,7 +367,7 @@ function rooms() {
           });
           if (remoteRooms.length > 1) {
             let found = false;
-            for (let remoteRoom of remoteRooms) {
+            for (const remoteRoom of remoteRooms) {
               room.memory.resources[remoteRoom].active = false;
               if (room.memory.resources[remoteRoom].active) {
                 found = true;
@@ -406,14 +406,14 @@ function establishMemory(room) {
 
     // console.log(JSON.stringify(Memory.tasks))
 
-    let HostileStructures = room.find(FIND_HOSTILE_STRUCTURES);
-    let HostileCreeps: Array<Creep> = room.find(FIND_HOSTILE_CREEPS);
+    const HostileStructures = room.find(FIND_HOSTILE_STRUCTURES);
+    const HostileCreeps: Array<Creep> = room.find(FIND_HOSTILE_CREEPS);
     let isArmed = false;
 
     // check if has attacking parts.
     if (HostileCreeps.length > 0) {
       HostileCreeps.forEach(Hostile => {
-        for (let part of Hostile.body)
+        for (const part of Hostile.body)
           if (part.type == ATTACK || part.type == RANGED_ATTACK) {
             isArmed = true;
             break;
@@ -448,7 +448,7 @@ function establishMemory(room) {
         let healParts = 0;
 
         HostileCreeps.forEach(Hostile => {
-          for (let part of Hostile.body) {
+          for (const part of Hostile.body) {
             let boostMultiplier = 1;
             let toughMultiplier = 0;
 
@@ -501,7 +501,7 @@ function establishMemory(room) {
         };
 
         room.memory.roomData.has_only_invader = true;
-        for (let Hostile of HostileCreeps) {
+        for (const Hostile of HostileCreeps) {
           if (Hostile.getActiveBodyparts(ATTACK) > 0 || Hostile.getActiveBodyparts(RANGED_ATTACK) > 0) {
             room.memory.roomData.has_only_invader = false;
           }
@@ -552,10 +552,10 @@ function identifySources(room) {
   }
 
   if (!room.memory.resources[room.name]) {
-    let sources = room.find(FIND_SOURCES);
+    const sources = room.find(FIND_SOURCES);
 
     _.forEach(sources, function (source) {
-      let data = _.get(room.memory, ["resources", room.name, "energy", source.id]);
+      const data = _.get(room.memory, ["resources", room.name, "energy", source.id]);
       if (data === undefined) {
         _.set(room.memory, ["resources", room.name, "energy", source.id], {});
       }

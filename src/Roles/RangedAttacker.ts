@@ -7,16 +7,16 @@
 // }
 
 const run = function (creep) {
-    ;
+    
 
     creep.memory.moving = false;
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         if(!result) {
             return;
         }
     }
-    let enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+    const enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
     let Structures;
 
     if(creep.hits != creep.hitsMax || (enemyCreeps.length > 0 && creep.pos.getRangeTo(creep.pos.findClosestByRange(enemyCreeps)) <= 4)) {
@@ -30,10 +30,10 @@ const run = function (creep) {
     if(creep.memory.targetRoom && creep.memory.targetRoom !== creep.room.name) {
         if(!creep.memory.ignore) {
             if(enemyCreeps.length > 0) {
-                let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+                const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
 
                 let isMelee = false;
-                for(let part of closestEnemyCreep.body) {
+                for(const part of closestEnemyCreep.body) {
                     if(part.type == ATTACK) {
                         isMelee = true;
                     }
@@ -65,10 +65,10 @@ const run = function (creep) {
 
 
         if(enemyCreeps.length > 0) {
-            let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+            const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
 
             let isMelee = false;
-            for(let part of closestEnemyCreep.body) {
+            for(const part of closestEnemyCreep.body) {
                 if(part.type == ATTACK) {
                     isMelee = true;
                 }
@@ -119,7 +119,7 @@ const run = function (creep) {
 
 
         if(Structures.length > 0) {
-            let closestStructure = creep.pos.findClosestByRange(Structures);
+            const closestStructure = creep.pos.findClosestByRange(Structures);
             if(creep.pos.isNearTo(closestStructure)) {
                 creep.rangedAttack(closestStructure);
 
@@ -130,7 +130,7 @@ const run = function (creep) {
             return;
         }
 
-        let myConstructionSites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
+        const myConstructionSites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
         if(myConstructionSites.length > 0) {
             if(myConstructionSites[0].structureType == STRUCTURE_CONTAINER || myConstructionSites[0].structureType == STRUCTURE_ROAD) {
                 creep.MoveCostMatrixRoadPrio(myConstructionSites[0], 2);

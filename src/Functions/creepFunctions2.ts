@@ -840,7 +840,7 @@ Creep.prototype.roadCheck = function (): boolean {
 
 Creep.prototype.roadlessLocation = function (repairTarget: any): RoomPosition | null {
     const nearby = this.pos.getNearbyPositions();
-    let candidates = nearby.filter((b: RoomPosition) => {
+    const candidates = nearby.filter((b: RoomPosition) => {
         if (b.getRangeTo(repairTarget) !== 3) return false;
         return b.lookFor(LOOK_STRUCTURES).length === 0 && b.lookFor(LOOK_CREEPS).length === 0;
     });

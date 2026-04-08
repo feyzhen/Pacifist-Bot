@@ -8,7 +8,7 @@ import { getBody } from "Rooms/rooms.spawning";
  const run = function (creep) {
     creep.memory.moving = false;
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         if(!result) {
             return;
         }
@@ -23,12 +23,12 @@ import { getBody } from "Rooms/rooms.spawning";
     }
 
     if(creep.ticksToLive == 1 && creep.room.name == creep.memory.targetRoom && !creep.room.controller.upgradeBlocked && !creep.room.controller.reservation) {
-        let newName = 'DismantleControllerWalls-' + creep.memory.homeRoom + "-" + creep.memory.targetRoom;
+        const newName = 'DismantleControllerWalls-' + creep.memory.homeRoom + "-" + creep.memory.targetRoom;
         Game.rooms[creep.memory.homeRoom].memory.spawn_list.push(getBody([MOVE,WORK], Game.rooms[creep.memory.homeRoom], 50), newName, {memory: {role: 'DismantleControllerWalls', homeRoom: creep.memory.homeRoom, targetRoom:creep.memory.targetRoom}});
         console.log('Adding DismantleControllerWalls to Spawn List: ' + newName);
     }
 
-    let controller = creep.room.controller;
+    const controller = creep.room.controller;
 
     if(controller && controller.level == 0 && !controller.reservation) {
 
@@ -44,7 +44,7 @@ import { getBody } from "Rooms/rooms.spawning";
 
     else if(controller && !controller.my && controller.level > 0 && !controller.reservation) {
         if(creep.pos.isNearTo(controller)) {
-            let result = creep.attackController(controller);
+            const result = creep.attackController(controller);
             if(result == 0) {
                 creep.suicide();
             }

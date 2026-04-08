@@ -3,7 +3,7 @@ const run = function (creep:any) {
     creep.memory.moving = false;
 
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0 && creep.room.memory.danger) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         if(!result) {
             return;
         }
@@ -39,19 +39,19 @@ const run = function (creep:any) {
         // filter enemy creeps by creeps with ranged attack, work, or attack parts
         enemyCreeps = _.filter(enemyCreeps, (c) => c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0 || c.getActiveBodyparts(WORK) > 0);
         if(enemyCreeps.length > 0) {
-            let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+            const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
 
 
 
             if(!creep.memory.myRampartToMan || (creep.ticksToLive % 3 == 0 && enemyCreeps.length == 1 || creep.ticksToLive % 20 == 0 && enemyCreeps.length > 1)) {
 
-                let roomRampartTarget:any = Game.getObjectById(creep.room.memory.rampartToMan);
+                const roomRampartTarget:any = Game.getObjectById(creep.room.memory.rampartToMan);
 
                 let rangeFromCreepToCreep;
                 let rangeFromRampartToCreep;
-                let storage = creep.room.storage;
+                const storage = creep.room.storage;
                 if(roomRampartTarget) {
-                    let closestEnemyCreepToRoomRampart = roomRampartTarget.pos.findClosestByRange(enemyCreeps);
+                    const closestEnemyCreepToRoomRampart = roomRampartTarget.pos.findClosestByRange(enemyCreeps);
                     if(closestEnemyCreepToRoomRampart) {
                         rangeFromRampartToCreep = roomRampartTarget.pos.getRangeTo(closestEnemyCreepToRoomRampart);
                         rangeFromCreepToCreep = creep.pos.getRangeTo(closestEnemyCreep);
@@ -73,12 +73,12 @@ const run = function (creep:any) {
 
             if(creep.pos.isNearTo(closestEnemyCreep)) {
 
-                let LookStructures = creep.pos.lookFor(LOOK_STRUCTURES);
+                const LookStructures = creep.pos.lookFor(LOOK_STRUCTURES);
                 if(LookStructures.length > 0) {
-                    for(let building of LookStructures) {
+                    for(const building of LookStructures) {
                         if(building.structureType == STRUCTURE_RAMPART) {
 
-                            let attackResult = creep.attack(closestEnemyCreep);
+                            const attackResult = creep.attack(closestEnemyCreep);
                             if(attackResult == 0) {
                                 creep.room.roomTowersAttackEnemy(closestEnemyCreep);
                             }
@@ -107,7 +107,7 @@ const run = function (creep:any) {
                 }
             }
 
-            let rampart:any = Game.getObjectById(creep.memory.myRampartToMan);
+            const rampart:any = Game.getObjectById(creep.memory.myRampartToMan);
 
             if(rampart) {
 

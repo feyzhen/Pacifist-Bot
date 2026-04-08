@@ -11,7 +11,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
     creep.memory.moving = false;
 
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         if(!result) {
             return;
         }
@@ -26,7 +26,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
      return Object.keys(hashmap).reduce((a, b) => hashmap[a] > hashmap[b] ? a : b)
      }
 
-    let creepBodyType = getMostFrequent(creepBody);
+    const creepBodyType = getMostFrequent(creepBody);
      creep.memory.bodyType = creepBodyType;
 
 
@@ -138,9 +138,9 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
             else if(creep.pos.x > 1 && creep.pos.x < 47 && creep.pos.y > 1 && creep.pos.y < 47) {
 
-                let nearExit = creep.memory.route[0].room;
+                const nearExit = creep.memory.route[0].room;
 
-                let path = PathFinder.search(
+                const path = PathFinder.search(
                     creep.pos, {pos:new RoomPosition(25,25,nearExit), range:23},
                     {
                         plainCost: 1,
@@ -150,8 +150,8 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                         roomCallback: (roomName) => roomCallbackSquadGetReady(roomName)
                     }
                     );
-                    let pos = path.path[0];
-                    let direction = creep.pos.getDirectionTo(pos);
+                    const pos = path.path[0];
+                    const direction = creep.pos.getDirectionTo(pos);
 
                     creep.move(direction);
             }
@@ -163,13 +163,13 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
     }
 
 
-    let structures = creep.room.find(FIND_STRUCTURES, {filter: building => !building.my && building.structureType !== STRUCTURE_CONTAINER && building.structureType !== STRUCTURE_ROAD && building.structureType !== STRUCTURE_CONTROLLER && building.structureType !== STRUCTURE_KEEPER_LAIR && building.structureType !== STRUCTURE_EXTRACTOR&& building.structureType !== STRUCTURE_TERMINAL});
-    let enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
-    let enemyCreepInRangeThree = creep.pos.findInRange(enemyCreeps, 3);
+    const structures = creep.room.find(FIND_STRUCTURES, {filter: building => !building.my && building.structureType !== STRUCTURE_CONTAINER && building.structureType !== STRUCTURE_ROAD && building.structureType !== STRUCTURE_CONTROLLER && building.structureType !== STRUCTURE_KEEPER_LAIR && building.structureType !== STRUCTURE_EXTRACTOR&& building.structureType !== STRUCTURE_TERMINAL});
+    const enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+    const enemyCreepInRangeThree = creep.pos.findInRange(enemyCreeps, 3);
     let targetCreep;
     if(enemyCreepInRangeThree.length > 0) {
         let attack_able = false;
-        for(let e_creep of enemyCreepInRangeThree) {
+        for(const e_creep of enemyCreepInRangeThree) {
 
 
             if (getMostFrequent(e_creep.body) !== "heal" || creepBodyType !== "ranged_attack") {
@@ -179,7 +179,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                 }
                 else {
 
-                    let lookStructuresOnEnemyCreep = e_creep.pos.lookFor(LOOK_STRUCTURES);
+                    const lookStructuresOnEnemyCreep = e_creep.pos.lookFor(LOOK_STRUCTURES);
                     if (lookStructuresOnEnemyCreep.length > 0) {
                         if (lookStructuresOnEnemyCreep.length == 1 && lookStructuresOnEnemyCreep[0].structureType == STRUCTURE_ROAD ||
                             lookStructuresOnEnemyCreep.length == 1 && lookStructuresOnEnemyCreep[0].structureType == STRUCTURE_CONTAINER ||
@@ -188,7 +188,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                             attack_able = true;
                             targetCreep = e_creep;
                         }
-                        for (let structure of lookStructuresOnEnemyCreep) {
+                        for (const structure of lookStructuresOnEnemyCreep) {
                             if (structure.structureType == STRUCTURE_RAMPART) {
                                 attack_able = false;
                             }
@@ -221,7 +221,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
     }
     if(structures.length > 0) {
-        let closestStructure = creep.pos.findClosestByRange(structures);
+        const closestStructure = creep.pos.findClosestByRange(structures);
         if(creep.pos.getRangeTo(closestStructure) <= 3) {
             if(creepBodyType == "ranged_attack" && !targetCreep) {
                 creep.rangedAttack(closestStructure);
@@ -258,30 +258,30 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
     if(!creep.memory.squad) {
         creep.memory.squad = {};
     }
-    let squad = [];
+    const squad = [];
     if(!creep.memory.squad.a) {
-        let squadcreepa = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepA");}});
+        const squadcreepa = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepA");}});
         if(squadcreepa.length > 0) {
             squadcreepa.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.squad.a = squadcreepa[0].id;
         }
     }
     if(!creep.memory.squad.b) {
-        let squadcreepb = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepB");}});
+        const squadcreepb = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepB");}});
         if(squadcreepb.length > 0) {
             squadcreepb.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.squad.b = squadcreepb[0].id;
         }
     }
     if(!creep.memory.squad.y) {
-        let squadcreepy = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepY");}});
+        const squadcreepy = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepY");}});
         if(squadcreepy.length > 0) {
             squadcreepy.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.squad.y = squadcreepy[0].id;
         }
     }
     if(!creep.memory.squad.z) {
-        let squadcreepz = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepZ");}});
+        const squadcreepz = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepZ");}});
         if(squadcreepz.length > 0) {
             squadcreepz.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.squad.z = squadcreepz[0].id;
@@ -330,7 +330,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
         z = squad[3];
 
 
-        let aliveCreeps = [];
+        const aliveCreeps = [];
 
         if(a) {
             aliveCreeps.push(a);
@@ -351,7 +351,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
             let healPartsTotal = 0;
             let target;
             let lowest = creep.hitsMax;
-            for(let squadmember of aliveCreeps) {
+            for(const squadmember of aliveCreeps) {
                 healPartsTotal += squadmember.getActiveBodyparts(HEAL);
                 if(squadmember.hits < lowest) {
                     lowest = squadmember.hits;
@@ -368,7 +368,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                 creep.heal(creep);
             }
             else {
-                let lastHealCreep = Game.getObjectById(a.memory.lastHeal)
+                const lastHealCreep = Game.getObjectById(a.memory.lastHeal)
                 if(lastHealCreep && creep.pos.isNearTo(lastHealCreep)) {
                     creep.heal(lastHealCreep)
                 }
@@ -379,19 +379,19 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
             if(creep.room.name == creep.memory.targetPosition.roomName) {
                 if(structures.length > 0) {
 
-                    let nowall = structures.filter(function(building) {return building.structureType!=STRUCTURE_WALL && building.structureType!=STRUCTURE_CONTAINER && building.structureType!=STRUCTURE_ROAD && building.structureType!=STRUCTURE_RAMPART;});
+                    const nowall = structures.filter(function(building) {return building.structureType!=STRUCTURE_WALL && building.structureType!=STRUCTURE_CONTAINER && building.structureType!=STRUCTURE_ROAD && building.structureType!=STRUCTURE_RAMPART;});
                     if(nowall.length > 0) {
-                        let closestBuilding = creep.pos.findClosestByRange(nowall);
+                        const closestBuilding = creep.pos.findClosestByRange(nowall);
                         creep.memory.targetPosition = closestBuilding.pos;
                         move_location = creep.memory.targetPosition
                     }
 
-                    let towers = structures.filter(function(building) {return building.structureType == STRUCTURE_TOWER && building.store[RESOURCE_ENERGY] > 9;});
+                    const towers = structures.filter(function(building) {return building.structureType == STRUCTURE_TOWER && building.store[RESOURCE_ENERGY] > 9;});
                     if(towers.length > 0) {
 
-                        let closestTower = creep.pos.findClosestByRange(towers);
+                        const closestTower = creep.pos.findClosestByRange(towers);
 
-                        let totalTowerDamage = TowerDamageCalculator(creep.pos, closestTower.pos) * towers.length;
+                        const totalTowerDamage = TowerDamageCalculator(creep.pos, closestTower.pos) * towers.length;
 
                         let HealPower = healPartsTotal * 12;
                         if(creep.body[creep.body.length - 1].boost) {
@@ -402,9 +402,9 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                         if(totalTowerDamage > HealPower && lowest < creep.hitsMax && target && target.hits < target.hitsMax || target && target.hits <= target.hitsMax/2.1 || enemyCreepInRangeThree.length && enemyCreepInRangeThree.filter(ecreep => ecreep.getActiveBodyparts(ATTACK) > 24 && ecreep.pos.findPathTo(creep, { ignoreCreeps: false, ignoreRoads: true, swampCost: 1 }).length < 3).length) {
 
-                            let distance = creep.pos.getRangeTo(closestTower);
+                            const distance = creep.pos.getRangeTo(closestTower);
 
-                            let fleeTowerPath = PathFinder.search(
+                            const fleeTowerPath = PathFinder.search(
                                 creep.pos, {pos:closestTower.pos, range:distance + 4},
                                 {
                                 plainCost: 1,
@@ -415,15 +415,15 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                             move_location = fleeTowerPath.path[fleeTowerPath.path.length - 1];
                         }
                         else if(enemyCreepInRangeThree.length && enemyCreepInRangeThree.filter(ecreep => ecreep.getActiveBodyparts(ATTACK) > 24 && ecreep.pos.findPathTo(creep, { ignoreCreeps: false, ignoreRoads: true, swampCost: 1 }).length === 3).length) {
-                            let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreepInRangeThree);
-                            let directionToEnemyCreep = creep.pos.getDirectionTo(closestEnemyCreep);
+                            const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreepInRangeThree);
+                            const directionToEnemyCreep = creep.pos.getDirectionTo(closestEnemyCreep);
 
                                                         if(aliveCreeps.length == 4) {
 
-                                let leaderMemory = a.memory;
-                                let nonLeaderMemoryB = b.memory;
-                                let nonLeaderMemoryY = y.memory;
-                                let nonLeaderMemoryZ = z.memory;
+                                const leaderMemory = a.memory;
+                                const nonLeaderMemoryB = b.memory;
+                                const nonLeaderMemoryY = y.memory;
+                                const nonLeaderMemoryZ = z.memory;
 
                                 if((directionToEnemyCreep == 1 || directionToEnemyCreep == 2 || directionToEnemyCreep == 8) && creepBodyType == "heal" && b.memory.bodyType == "heal") {
                                     leaderMemory.squad.a = y.id;
@@ -741,9 +741,9 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
             else if(z && z.room.name == creep.memory.targetPosition.roomName) {
                 if(structures.length > 0) {
 
-                    let nowall = structures.filter(function(building) {return building.structureType!=STRUCTURE_WALL && building.structureType!=STRUCTURE_ROAD && building.structureType!=STRUCTURE_CONTAINER && building.structureType!=STRUCTURE_CONTAINER;});
+                    const nowall = structures.filter(function(building) {return building.structureType!=STRUCTURE_WALL && building.structureType!=STRUCTURE_ROAD && building.structureType!=STRUCTURE_CONTAINER && building.structureType!=STRUCTURE_CONTAINER;});
                     if(nowall.length > 0) {
-                        let closestBuilding = z.pos.findClosestByRange(nowall);
+                        const closestBuilding = z.pos.findClosestByRange(nowall);
                         if(closestBuilding) {
                             creep.memory.targetPosition = closestBuilding.pos;
                             move_location = creep.memory.targetPosition
@@ -826,8 +826,8 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                 new RoomVisual(spot.roomName).circle(spot.x, spot.y, {fill: 'transparent', radius: .25, stroke: '#ffffff'});
             });
             console.log(path.incomplete)
-            let pos = path.path[0];
-            let direction = creep.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = creep.pos.getDirectionTo(pos);
             // && a.room.name == y.room.name && a.room.name == z.room.name) || (a.room.name == b.room.name && a.pos.isNearTo(b) && !a.pos.isNearTo(y)) || (a.room.name == y.room.name && a.pos.isNearTo(b) && !a.pos.isNearTo(b))
             if(
                 pos &&
@@ -1399,11 +1399,11 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                         if(!allow && creep.pos.x <= 46 && creep.pos.x >= 2 && creep.pos.y <= 46 && creep.pos.y >= 2) {
                             if(direction == 1) {
 
-                                let Position = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1416,14 +1416,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 2) {
 
-                                let Position = new RoomPosition(creep.pos.x + 2, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 2, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1439,11 +1439,11 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 3) {
 
-                                let Position = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1456,14 +1456,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 4) {
 
-                                let Position = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1479,11 +1479,11 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 5) {
 
-                                let Position = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1496,14 +1496,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 6) {
 
-                                let Position = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1519,11 +1519,11 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 7) {
 
-                                let Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x- 1, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x- 1, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1536,14 +1536,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 8) {
 
-                                let Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1560,14 +1560,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                         }
                         else if(!allow && (creep.pos.x == 48 || creep.pos.x == 47) && creep.pos.y >= 2 && creep.pos.y <= 46) {
                             if(direction == 6) {
-                                let Position = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1581,11 +1581,11 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                             }
                             else if(direction == 7) {
 
-                                let Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x- 1, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x- 1, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1595,14 +1595,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                                 }
                             }
                             else if(direction == 8) {
-                                let Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1618,14 +1618,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                         else if(!allow && (creep.pos.x == 0 || creep.pos.x == 1) && creep.pos.y >= 2 && creep.pos.y <= 46) {
                             if(direction == 2) {
 
-                                let Position = new RoomPosition(creep.pos.x + 2, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 2, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1641,11 +1641,11 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 3) {
 
-                                let Position = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1658,14 +1658,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 4) {
 
-                                let Position = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1682,14 +1682,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                         else if(!allow && (creep.pos.y == 47 || creep.pos.y == 48) && creep.pos.x >= 2 && creep.pos.x <= 46) {
                             if(direction == 8) {
 
-                                let Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x - 1, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1704,11 +1704,11 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                             }
                             else if(direction == 1) {
 
-                                let Position = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1721,14 +1721,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 2) {
 
-                                let Position = new RoomPosition(creep.pos.x + 2, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 2, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 1, creep.pos.y - 1, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x + 2, creep.pos.y, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1745,14 +1745,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                         else if(!allow && (creep.pos.y == 0 || creep.pos.y == 1) && creep.pos.x >= 2 && creep.pos.x <= 46) {
                             if(direction == 4) {
 
-                                let Position = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 2, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x + 2, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1768,11 +1768,11 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 5) {
 
-                                let Position = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x + 1, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1785,14 +1785,14 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             else if(direction == 6) {
 
-                                let Position = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
+                                const Position = new RoomPosition(creep.pos.x, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere = Position.lookFor(LOOK_STRUCTURES);
 
-                                let Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 2, creep.room.name);
-                                let lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
+                                const Position2 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 2, creep.room.name);
+                                const lookForStructuresHere2 = Position2.lookFor(LOOK_STRUCTURES);
 
-                                let Position3 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 1, creep.room.name);
-                                let lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
+                                const Position3 = new RoomPosition(creep.pos.x - 1, creep.pos.y + 1, creep.room.name);
+                                const lookForStructuresHere3 = Position3.lookFor(LOOK_STRUCTURES);
 
                                 if(lookForStructuresHere.length > 0 && lookForStructuresHere[0].structureType !== STRUCTURE_CONTAINER && lookForStructuresHere[0].structureType !== STRUCTURE_ROAD) {
                                     creep.memory.target = lookForStructuresHere[0].id;
@@ -1811,7 +1811,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
                         }
 
                         if(creep.memory.target) {
-                            let targetStructure:any = Game.getObjectById(creep.memory.target);
+                            const targetStructure:any = Game.getObjectById(creep.memory.target);
                             if(targetStructure && (targetStructure.structureType == STRUCTURE_WALL || targetStructure.structureType == STRUCTURE_CONTAINER ||
                                 targetStructure.structureType == STRUCTURE_ROAD || creep.pos.getRangeTo(targetStructure) > 1)) {
                                 if(creepBodyType == "ranged_attack" && !targetCreep) {
@@ -1849,10 +1849,10 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
                             if(aliveCreeps.length == 4) {
 
-                                let leaderMemory = a.memory;
-                                let nonLeaderMemoryB = b.memory;
-                                let nonLeaderMemoryY = y.memory;
-                                let nonLeaderMemoryZ = z.memory;
+                                const leaderMemory = a.memory;
+                                const nonLeaderMemoryB = b.memory;
+                                const nonLeaderMemoryY = y.memory;
+                                const nonLeaderMemoryZ = z.memory;
 
                                 if((direction == 1 || direction == 2 || direction == 8) && creepBodyType == "heal" && b.memory.bodyType == "heal") {
                                     leaderMemory.squad.a = y.id;
@@ -2203,7 +2203,7 @@ import {roomCallbackSquadA, roomCallbackSquadASwampCostSame, roomCallbackSquadGe
 
 
 function TowerDamageCalculator(creepPosition, closestTowerPosition) {
-    let distance = creepPosition.getRangeTo(closestTowerPosition) - 1;
+    const distance = creepPosition.getRangeTo(closestTowerPosition) - 1;
     if(distance >= 20) {
         return 150;
     }

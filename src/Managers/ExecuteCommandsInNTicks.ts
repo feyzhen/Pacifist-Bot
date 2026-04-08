@@ -5,10 +5,10 @@ function ExecuteCommandsInNTicks() {
     }
 
     // Memory.commandsToExecute.push({delay:40, bucketNeeded:9500, formation:"Duo", homeRoom:"E33N59", Boosted:true, targetRoom:"E29N55"})
-    let commands = Memory.commandsToExecute;
+    const commands = Memory.commandsToExecute;
 
     let index = 0;
-    for(let command of commands) {
+    for(const command of commands) {
         if(command.delay > 0) {
             command.delay --;
             console.log(JSON.stringify(command))

@@ -3,7 +3,7 @@ const run = function (creep:Creep) {
     creep.memory.moving = false;
 
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         console.log(result)
         if(!result) {
             return;
@@ -17,19 +17,19 @@ const run = function (creep:Creep) {
 
     if(creep.room.memory.danger) {
 
-        let enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+        const enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
 
         if(enemyCreeps.length > 0) {
-            let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+            const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
 
             if(!creep.memory.myRampartToMan || creep.ticksToLive % 5 == 0) {
-                let roomRampartTarget:any = Game.getObjectById(creep.room.memory.rampartToMan);
+                const roomRampartTarget:any = Game.getObjectById(creep.room.memory.rampartToMan);
 
                 let rangeFromCreepToCreep;
                 let rangeFromRampartToCreep;
-                let storage = creep.room.storage;
+                const storage = creep.room.storage;
                 if(roomRampartTarget) {
-                    let closestEnemyCreepToRoomRampart = roomRampartTarget.pos.findClosestByRange(enemyCreeps);
+                    const closestEnemyCreepToRoomRampart = roomRampartTarget.pos.findClosestByRange(enemyCreeps);
                     if(closestEnemyCreepToRoomRampart) {
                         rangeFromRampartToCreep = roomRampartTarget.pos.getRangeTo(closestEnemyCreepToRoomRampart);
                         rangeFromCreepToCreep = creep.pos.getRangeTo(closestEnemyCreep);
@@ -69,7 +69,7 @@ const run = function (creep:Creep) {
             }
 
             else if(creep.pos.getRangeTo(closestEnemyCreep) <= 3) {
-                let enemyCreepsInRange = enemyCreeps.filter(function(eC) {return creep.pos.getRangeTo(eC) <= 3;});
+                const enemyCreepsInRange = enemyCreeps.filter(function(eC) {return creep.pos.getRangeTo(eC) <= 3;});
 
                 if(enemyCreepsInRange.length > 1) {
                     enemyCreepsInRange.sort((a,b) => a.hits - b.hits);
@@ -80,7 +80,7 @@ const run = function (creep:Creep) {
                     else {
                         // could add more random targetting and random hitting from towers to get some creeps low hits to blast them down but this will do for now.
                         // add more complexity as needed.
-                        let randomTarget = enemyCreepsInRange[Math.floor(Math.random() * enemyCreepsInRange.length)];
+                        const randomTarget = enemyCreepsInRange[Math.floor(Math.random() * enemyCreepsInRange.length)];
                         creep.rangedAttack(randomTarget);
                         creep.room.roomTowersAttackEnemy(randomTarget);
                     }
@@ -90,7 +90,7 @@ const run = function (creep:Creep) {
                 }
             }
 
-            let rampart:any = Game.getObjectById(creep.memory.myRampartToMan);
+            const rampart:any = Game.getObjectById(creep.memory.myRampartToMan);
 
             if(rampart) {
                 if(!creep.pos.isEqualTo(rampart)) {

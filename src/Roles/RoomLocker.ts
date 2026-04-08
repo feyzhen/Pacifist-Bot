@@ -10,9 +10,9 @@ const run = function (creep):CreepMoveReturnCode | -2 | -5 | -7 | void {
   }
 
   if(!creep.memory.full && creep.room.name === creep.memory.homeRoom) {
-    let storage = creep.room.storage;
+    const storage = creep.room.storage;
     if(storage) {
-      let result = creep.withdraw(storage, RESOURCE_ENERGY);
+      const result = creep.withdraw(storage, RESOURCE_ENERGY);
       if(result === ERR_NOT_IN_RANGE) {
         creep.MoveCostMatrixIgnoreRoads(storage, 1);
       }
@@ -34,7 +34,7 @@ const run = function (creep):CreepMoveReturnCode | -2 | -5 | -7 | void {
   }
 
   if(creep.room.name === creep.memory.targetRoom && creep.memory.full) {
-    let controller = creep.room.controller;
+    const controller = creep.room.controller;
     if(controller && controller.level === 0) {
       creep.MoveCostMatrixRoadPrio(controller, 1);
     }
@@ -53,7 +53,7 @@ const run = function (creep):CreepMoveReturnCode | -2 | -5 | -7 | void {
       // filter by structureWall
       constructionSites = constructionSites.filter((site) => site.structureType === STRUCTURE_WALL);
       if(constructionSites.length > 0) {
-        let closestConstructionSite = creep.pos.findClosestByRange(constructionSites);
+        const closestConstructionSite = creep.pos.findClosestByRange(constructionSites);
         if(creep.pos.getRangeTo(closestConstructionSite) <= 3) {
           creep.build(closestConstructionSite);
         }

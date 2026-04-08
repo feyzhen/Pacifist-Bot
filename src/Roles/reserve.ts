@@ -26,7 +26,7 @@
     if(creep.room.controller) {
         if(creep.memory.claim) {
             if(creep.room.controller.level == 0) {
-                let claimOutcome = creep.claimController(creep.room.controller);
+                const claimOutcome = creep.claimController(creep.room.controller);
                 if(claimOutcome === 0) {
                     // creep.signController(creep.room.controller, "we come in peace")
                     creep.suicide();

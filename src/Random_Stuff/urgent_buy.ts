@@ -1,14 +1,14 @@
 function urgent_buy(terminal: StructureTerminal, resource: ResourceConstant, amount: number) {
   if (!terminal.cooldown) {
-    let orderPrice = 2000;
+    const orderPrice = 2000;
     let orders = Game.market.getAllOrders({ type: ORDER_SELL, resourceType: resource });
     orders = _.filter(orders, order => order.price <= orderPrice);
     console.log(orders);
     if (orders.length > 0) {
       orders.sort((a, b) => a.price - b.price);
       amount = Math.min(orders[0].amount, amount);
-      let orderID = orders[0].id;
-      let result = Game.market.deal(orderID, amount, terminal.room.name);
+      const orderID = orders[0].id;
+      const result = Game.market.deal(orderID, amount, terminal.room.name);
       if (result === 0) {
         console.log(
           orders[0].amount,

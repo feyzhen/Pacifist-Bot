@@ -8,7 +8,7 @@
         return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
     }
 
-    let controller = creep.room.controller
+    const controller = creep.room.controller
     if(!controller) {
         creep.memory.suicide = true;
     }
@@ -20,8 +20,8 @@
         creep.suicide();
     }
 
-    let buildings = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType !== STRUCTURE_CONTAINER && s.structureType !== STRUCTURE_ROAD && s.structureType !== STRUCTURE_CONTROLLER});
-    let buildingsInRange = creep.pos.findInRange(buildings, 1);
+    const buildings = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType !== STRUCTURE_CONTAINER && s.structureType !== STRUCTURE_ROAD && s.structureType !== STRUCTURE_CONTROLLER});
+    const buildingsInRange = creep.pos.findInRange(buildings, 1);
     if(buildingsInRange.length > 0) {
         buildingsInRange.sort(function (a, b):any {
 
@@ -46,9 +46,9 @@ function GoToController(creep, target, range) {
             creep.memory.path = false;
         }
         if(!creep.memory.path || creep.memory.path.length == 0 || !creep.memory.MoveTargetId || creep.memory.MoveTargetId != target.id || target.roomName !== creep.room.name) {
-            let costMatrix = GoToTheController;
+            const costMatrix = GoToTheController;
 
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 creep.pos, {pos:target, range:range},
                 {
                     maxOps: 1000,
@@ -61,8 +61,8 @@ function GoToController(creep, target, range) {
         }
 
 
-        let pos = creep.memory.path[0];
-        let direction = creep.pos.getDirectionTo(pos);
+        const pos = creep.memory.path[0];
+        const direction = creep.pos.getDirectionTo(pos);
         creep.move(direction);
         creep.memory.moving = true;
         creep.memory.path.shift();
@@ -72,12 +72,12 @@ function GoToController(creep, target, range) {
 
 
 const GoToTheController = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -98,8 +98,8 @@ const GoToTheController = (roomName: string): boolean | CostMatrix => {
         }
     }
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         costs.set(eCreep.pos.x, eCreep.pos.y, 255);
     }
 
@@ -109,8 +109,8 @@ const GoToTheController = (roomName: string): boolean | CostMatrix => {
         }
     });
 
-    let myCreeps = room.find(FIND_MY_CREEPS);
-    for(let myCreep of myCreeps) {
+    const myCreeps = room.find(FIND_MY_CREEPS);
+    for(const myCreep of myCreeps) {
         if(myCreep.memory.role == "DismantleControllerWalls") {
             costs.set(myCreep.pos.x, myCreep.pos.y, 140);
         }

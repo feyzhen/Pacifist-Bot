@@ -6,7 +6,7 @@ const run = function (creep) {
     creep.memory.moving = false;
 
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         if(!result) {
             return;
         }
@@ -17,7 +17,7 @@ const run = function (creep) {
     // if(!enemyCreeps || enemyCreeps.length == 0) {
         enemySpotted = false;
     // }
-    let friendlyChatter = false
+    const friendlyChatter = false
     GuardSay(creep, enemySpotted, friendlyChatter);
 
     let enemyCreeps;
@@ -56,16 +56,16 @@ const run = function (creep) {
     if(enemyCreeps.length > 0) {
         killCreepsInroom(creep, enemyCreeps);
         // structs filter away controller
-        let structs = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType !== STRUCTURE_CONTROLLER});
-        let closestStruct = creep.pos.findClosestByRange(structs);
+        const structs = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType !== STRUCTURE_CONTROLLER});
+        const closestStruct = creep.pos.findClosestByRange(structs);
         if(creep.pos.isNearTo(closestStruct)) {
             creep.attack(closestStruct);
         }
     }
     else {
-        let HostileStructures = creep.room.find(FIND_HOSTILE_STRUCTURES, {filter: s => s.structureType !== STRUCTURE_CONTROLLER});
+        const HostileStructures = creep.room.find(FIND_HOSTILE_STRUCTURES, {filter: s => s.structureType !== STRUCTURE_CONTROLLER});
         if(HostileStructures.length > 0) {
-            let closestHostileStructure = creep.pos.findClosestByRange(HostileStructures);
+            const closestHostileStructure = creep.pos.findClosestByRange(HostileStructures);
             if(creep.pos.isNearTo(closestHostileStructure)) {
                 creep.attack(closestHostileStructure);
             }
@@ -74,9 +74,9 @@ const run = function (creep) {
             }
         }
         else if(creep.room.controller && !creep.room.controller.my) {
-            let Structures = creep.room.find(FIND_STRUCTURES);
+            const Structures = creep.room.find(FIND_STRUCTURES);
             if(Structures.length > 0) {
-                let closestStructure = creep.pos.findClosestByRange(Structures);
+                const closestStructure = creep.pos.findClosestByRange(Structures);
                 if(creep.pos.isNearTo(closestStructure)) {
                     creep.attack(closestStructure);
                 }
@@ -96,7 +96,7 @@ const run = function (creep) {
 
 
 function killCreepsInroom(creep, enemyCreeps) {
-    let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+    const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
     GoToController(creep, closestEnemyCreep.pos, 1)
     creep.attack(closestEnemyCreep)
 }
@@ -148,9 +148,9 @@ function GoToController(creep, target, range) {
             creep.memory.path = false;
         }
         if(!creep.memory.path || creep.memory.path.length == 0 || !creep.memory.MoveTargetId || creep.memory.MoveTargetId != target.id || target.roomName !== creep.room.name) {
-            let costMatrix = GoToTheController;
+            const costMatrix = GoToTheController;
 
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 creep.pos, {pos:target, range:range},
                 {
                     maxOps: 1000,
@@ -163,8 +163,8 @@ function GoToController(creep, target, range) {
         }
 
 
-        let pos = creep.memory.path[0];
-        let direction = creep.pos.getDirectionTo(pos);
+        const pos = creep.memory.path[0];
+        const direction = creep.pos.getDirectionTo(pos);
         creep.move(direction);
         creep.memory.moving = true;
         creep.memory.path.shift();
@@ -172,12 +172,12 @@ function GoToController(creep, target, range) {
 }
 
 const GoToTheController = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -198,8 +198,8 @@ const GoToTheController = (roomName: string): boolean | CostMatrix => {
         }
     }
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         costs.set(eCreep.pos.x, eCreep.pos.y, 255);
     }
 
@@ -209,8 +209,8 @@ const GoToTheController = (roomName: string): boolean | CostMatrix => {
         }
     });
 
-    let myCreeps = room.find(FIND_MY_CREEPS);
-    for(let myCreep of myCreeps) {
+    const myCreeps = room.find(FIND_MY_CREEPS);
+    for(const myCreep of myCreeps) {
         costs.set(myCreep.pos.x, myCreep.pos.y, 140);
     }
 

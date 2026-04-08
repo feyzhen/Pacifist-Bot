@@ -3,7 +3,7 @@
  * @param {Creep} creep
  **/
 const run = function (creep) {
-    ;
+    
     creep.memory.moving = false;
 
     if(creep.memory.suicide) {
@@ -24,13 +24,13 @@ const run = function (creep) {
         creep.memory.repairing = true;
     }
 
-    let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+    const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
 
 
     if(creep.memory.repairing) {
         let buildingsToRepair = [];
         creep.room.memory.keepTheseRoads.forEach(function(roadID) {
-            let road:any = Game.getObjectById(roadID);
+            const road:any = Game.getObjectById(roadID);
             if(road && road.hits <= road.hitsMax - 500) {
                 buildingsToRepair.push(road);
             }
@@ -44,7 +44,7 @@ const run = function (creep) {
         }
 
         if(containers.length > 0) {
-            for(let container of containers) {
+            for(const container of containers) {
                 if(container.hits <= container.hitsMax - 500) {
                     buildingsToRepair.push(container);
                 }
@@ -52,18 +52,18 @@ const run = function (creep) {
         }
 
         if(!creep.memory.rampartsToRepair) {
-            let rampartsInRoom = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.hits < 500000 && (!creep.room.storage || creep.room.storage.pos.getRangeTo(s) >= 9)});
-            let idsOfRamparts = [];
-            for(let rampart of rampartsInRoom) {
+            const rampartsInRoom = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.hits < 500000 && (!creep.room.storage || creep.room.storage.pos.getRangeTo(s) >= 9)});
+            const idsOfRamparts = [];
+            for(const rampart of rampartsInRoom) {
                 idsOfRamparts.push(rampart.id);
             }
             creep.memory.rampartsToRepair = idsOfRamparts;
         }
 
-        let rampartsIDS = creep.memory.rampartsToRepair;
+        const rampartsIDS = creep.memory.rampartsToRepair;
         if(rampartsIDS.length > 0) {
-            for(let rampart of rampartsIDS) {
-                let rampObj:any = Game.getObjectById(rampart);
+            for(const rampart of rampartsIDS) {
+                const rampObj:any = Game.getObjectById(rampart);
                 if(rampObj && rampObj.hits <= 50000) {
                     buildingsToRepair.push(rampObj);
                 }
@@ -75,7 +75,7 @@ const run = function (creep) {
         }
 
         if(buildingsToRepair.length > 0) {
-            let closeByBuildings = creep.pos.findInRange(buildingsToRepair, 3);
+            const closeByBuildings = creep.pos.findInRange(buildingsToRepair, 3);
             if(closeByBuildings.length > 0) {
                 creep.repair(closeByBuildings[closeByBuildings.length - 1])
                 if(closeByBuildings[closeByBuildings.length - 1].hits !== closeByBuildings[closeByBuildings.length - 1].hitsMax) {
@@ -101,7 +101,7 @@ const run = function (creep) {
       // 如果没有 Storage，尝试其他能量源
       if(!energySource) {
           // 尝试从容器获取能量
-          let containers = creep.room.find(FIND_STRUCTURES, {
+          const containers = creep.room.find(FIND_STRUCTURES, {
               filter: s => s.structureType === STRUCTURE_CONTAINER &&
                          s.store[RESOURCE_ENERGY] > creep.store.getFreeCapacity()
           });

@@ -337,14 +337,16 @@ class RoomMigrationAnalyzer {
      */
     private static isInefficientStructure(structure: Structure): boolean {
         switch (structure.structureType) {
-            case STRUCTURE_EXTENSION:
+            case STRUCTURE_EXTENSION: {
                 const room = structure.room;
                 return room.controller.level >= 8 &&
                        room.find(FIND_MY_STRUCTURES, { filter: s => s.structureType === STRUCTURE_EXTENSION }).length > 60;
+            }
 
-            case STRUCTURE_TOWER:
+            case STRUCTURE_TOWER: {
                 const tower = structure as StructureTower;
                 return tower.store[RESOURCE_ENERGY] < tower.store.getCapacity(RESOURCE_ENERGY) * 0.3;
+            }
 
             case STRUCTURE_CONTAINER:
                 return this.isEmptyForLongTime(structure as StructureContainer, 5000);

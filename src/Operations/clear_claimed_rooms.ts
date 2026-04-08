@@ -3,8 +3,8 @@ function clear_claimed_rooms() {
     Memory.Operations = {clear_claimed_rooms:{}};
   }
 
-  for(let roomName in Memory.Operations.clear_claimed_rooms) {
-
+  for(const roomName in Memory.Operations.clear_claimed_rooms) {
+    // TODO: Implement logic for each claimed room
   }
 
 }

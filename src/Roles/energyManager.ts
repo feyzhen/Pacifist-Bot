@@ -8,7 +8,7 @@
 		return;
 	}
     if(creep.ticksToLive == creep.body.length  * 3 && creep.room.find(FIND_MY_CREEPS, {filter: (c) => {return (c.memory.role == "EnergyManager")}}).length == 1) {
-        let newName = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + creep.room.name;
+        const newName = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + creep.room.name;
         if(creep.room.memory.danger && creep.room.memory.danger_timer > 100) {
             creep.room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE], newName, {memory: {role: 'EnergyManager'}});
         }
@@ -34,14 +34,14 @@
 
     if(!creep.memory.MaxStorage) {
         let carryPartsAmount = 0
-        for(let part of creep.body) {
+        for(const part of creep.body) {
             if(part.type == CARRY) {
                 carryPartsAmount += 1;
             }
         }
         creep.memory.MaxStorage = carryPartsAmount * 50;
     }
-    let MaxStorage = creep.memory.MaxStorage;
+    const MaxStorage = creep.memory.MaxStorage;
 
 	if(creep.ticksToLive <= 10 && _.keys(creep.store).length == 0) {
 		creep.memory.suicide = true;
@@ -58,9 +58,9 @@
     }
 
     if(creep.memory.target) {
-        let target = Game.getObjectById(creep.memory.target);
+        const target = Game.getObjectById(creep.memory.target);
         if(creep.pos.isNearTo(target)) {
-            for(let resource in creep.store) {
+            for(const resource in creep.store) {
                 if(creep.transfer(target, resource) !== 0) {
                     creep.memory.target = false;
                 }
@@ -71,11 +71,11 @@
         }
     }
     if(!creep.memory.target) {
-        let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
-        let terminal = creep.room.terminal;
+        const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+        const terminal = creep.room.terminal;
         let factory; if(creep.room.controller.level >= 7 && creep.room.memory.Structures.factory) {factory = Game.getObjectById(creep.room.memory.Structures.factory);}
-        let closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLinkToStorage();
-        let bin = Game.getObjectById(creep.room.memory.Structures.bin) || creep.room.findBin(storage);
+        const closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLinkToStorage();
+        const bin = Game.getObjectById(creep.room.memory.Structures.bin) || creep.room.findBin(storage);
 
         if(creep.store.getFreeCapacity() == 0) {
             creep.memory.target = storage.id;
@@ -89,7 +89,7 @@
             let outputLab1; let outputLab2; let outputLab3; let outputLab4;
             let outputLab5; let outputLab6; let outputLab7; let outputLab8;
 
-            let outputLabs = [];
+            const outputLabs = [];
 
             if(creep.room.memory.labs.inputLab1) {inputLab1 = Game.getObjectById(creep.room.memory.labs.inputLab1)}
             if(creep.room.memory.labs.inputLab2) {inputLab2 = Game.getObjectById(creep.room.memory.labs.inputLab2)}
@@ -126,9 +126,9 @@
                 outputLabs.push(outputLab8)
             }
 
-            let currentOutput = creep.room.memory.labs.status.currentOutput;
-            let lab1Input = creep.room.memory.labs.status.lab1Input;
-            let lab2Input = creep.room.memory.labs.status.lab2Input;
+            const currentOutput = creep.room.memory.labs.status.currentOutput;
+            const lab1Input = creep.room.memory.labs.status.lab1Input;
+            const lab2Input = creep.room.memory.labs.status.lab2Input;
 
             if(inputLab1 && inputLab1.mineralType != undefined && inputLab1.mineralType != lab1Input) {
                 if(creep.pos.isNearTo(inputLab1)) {
@@ -152,7 +152,7 @@
                 return;
             }
             let number = 0;
-            for(let outputLab of outputLabs) {
+            for(const outputLab of outputLabs) {
                 number += 1;
 
                 if(number == 1 && creep.room.memory.labs.outputLab1 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab1 && creep.room.memory.labs.status.boost.lab1.use > 0) {
@@ -533,7 +533,7 @@
 
         if(bin && bin.store.getFreeCapacity() < 2000 && creep.store.getFreeCapacity() == MaxStorage) {
             if(creep.pos.isNearTo(bin)) {
-                for(let resourceType in bin.store) {
+                for(const resourceType in bin.store) {
                     creep.withdraw(bin, resourceType);
                 }
                 creep.memory.target = storage.id;
@@ -589,8 +589,8 @@
         }
 
 
-        let Mineral:any = Game.getObjectById(creep.room.memory.mineral) || creep.room.findMineral();
-        let MineralType = Mineral.mineralType;
+        const Mineral:any = Game.getObjectById(creep.room.memory.mineral) || creep.room.findMineral();
+        const MineralType = Mineral.mineralType;
         if(storage && storage.store[MineralType] > 20000 && terminal && terminal.store.getFreeCapacity() > 10000) {
             if(creep.pos.isNearTo(storage)) {
                 creep.withdraw(storage, MineralType);
@@ -606,7 +606,7 @@
         if(Game.time % 50 <= 50) {
 
 
-        let listOfResourcesToTerminal1:any = [
+        const listOfResourcesToTerminal1:any = [
             RESOURCE_ALLOY, RESOURCE_TUBE, RESOURCE_FIXTURES, RESOURCE_FRAME, RESOURCE_HYDRAULICS, RESOURCE_MACHINE,
             RESOURCE_CELL, RESOURCE_PHLEGM, RESOURCE_TISSUE, RESOURCE_MUSCLE, RESOURCE_ORGANOID, RESOURCE_ORGANISM,
             RESOURCE_WIRE, RESOURCE_SWITCH, RESOURCE_TRANSISTOR, RESOURCE_MICROCHIP, RESOURCE_CIRCUIT, RESOURCE_DEVICE,
@@ -616,7 +616,7 @@
             RESOURCE_METAL, RESOURCE_BIOMASS, RESOURCE_SILICON, RESOURCE_MIST,
             RESOURCE_GHODIUM_HYDRIDE, RESOURCE_GHODIUM_ACID, RESOURCE_CATALYZED_GHODIUM_ACID, RESOURCE_KEANIUM_ACID];
             if(storage && terminal && terminal.store.getFreeCapacity() > MaxStorage * 5) {
-                for(let resource in storage.store) {
+                for(const resource in storage.store) {
                     if(listOfResourcesToTerminal1.includes(resource)) {
                         if(creep.pos.isNearTo(storage)) {
                             creep.withdraw(storage, resource);
@@ -631,7 +631,7 @@
             }
 
 
-            let listOfResourcesToTerminal2:any = [
+            const listOfResourcesToTerminal2:any = [
                 RESOURCE_CATALYZED_LEMERGIUM_ACID,
                 RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE,
                 RESOURCE_CATALYZED_GHODIUM_ALKALIDE,
@@ -643,7 +643,7 @@
             ];
 
             if(storage && terminal && terminal.store.getFreeCapacity() > MaxStorage * 5) {
-                for(let resource in storage.store) {
+                for(const resource in storage.store) {
                     if(listOfResourcesToTerminal2.includes(resource) && storage.store[resource] > 20000 && terminal.store[resource] < 3000) {
                         if(creep.pos.isNearTo(storage)) {
 
@@ -660,7 +660,7 @@
             }
 
 
-            let listOfResourcesToStorage2:any = [
+            const listOfResourcesToStorage2:any = [
                 RESOURCE_CATALYZED_LEMERGIUM_ACID,
                 RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE,
                 RESOURCE_CATALYZED_GHODIUM_ALKALIDE,
@@ -672,7 +672,7 @@
             ];
 
             if(storage && terminal && storage.store.getFreeCapacity() > MaxStorage * 5) {
-                for(let resource in terminal.store) {
+                for(const resource in terminal.store) {
                     if(listOfResourcesToStorage2.includes(resource) && (storage.store[resource] < 18000 && terminal.store[resource] > 0 || terminal.store[resource] > 4000)) {
                         if(creep.pos.isNearTo(terminal)) {
                             if(storage.store[resource] > 25000 && terminal.store[resource] > 3000) {
@@ -746,9 +746,9 @@
 
 
 
-            let listOfResourcesToStorage1:any = [RESOURCE_KEANIUM_OXIDE,RESOURCE_ZYNTHIUM_ALKALIDE,RESOURCE_ZYNTHIUM_HYDRIDE,RESOURCE_POWER,RESOURCE_BATTERY];
+            const listOfResourcesToStorage1:any = [RESOURCE_KEANIUM_OXIDE,RESOURCE_ZYNTHIUM_ALKALIDE,RESOURCE_ZYNTHIUM_HYDRIDE,RESOURCE_POWER,RESOURCE_BATTERY];
             if(storage && terminal && storage.store.getFreeCapacity() > MaxStorage * 5) {
-                for(let resource in terminal.store) {
+                for(const resource in terminal.store) {
                     if(listOfResourcesToStorage1.includes(resource) && (storage.store.getFreeCapacity() <= 100000 && storage.store[resource] <= 15000 || storage.store.getFreeCapacity() > 175000 && storage.store[resource] <= 50000)) {
                         if(creep.pos.isNearTo(terminal)) {
                             creep.withdraw(terminal, resource);
@@ -782,7 +782,7 @@
             // }
 
 
-        let nuker = Game.getObjectById(creep.room.memory.Structures.nuker) || creep.room.findNuker();
+        const nuker = Game.getObjectById(creep.room.memory.Structures.nuker) || creep.room.findNuker();
         if(storage && nuker) {
             if(storage.store[RESOURCE_GHODIUM] >= 3000 && nuker.store[RESOURCE_GHODIUM] < 5000) {
                 if(creep.pos.isNearTo(storage)) {
@@ -811,7 +811,7 @@
         }
 
 
-        let powerSpawn:any = Game.getObjectById(creep.room.memory.Structures.powerSpawn);
+        const powerSpawn:any = Game.getObjectById(creep.room.memory.Structures.powerSpawn);
         if(storage && powerSpawn && storage.store[RESOURCE_POWER] >= 1 && powerSpawn.store[RESOURCE_POWER] == 0) {
             if(creep.pos.isNearTo(storage)) {
                 if(storage.store[RESOURCE_POWER] >= 100) {

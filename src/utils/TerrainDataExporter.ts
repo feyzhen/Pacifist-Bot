@@ -26,8 +26,8 @@ const TerrainDataExporter = () => {
           const x = Memory.lastProcessedCoord.x;
           const y = Memory.lastProcessedCoord.y;
 
-          for (let horizontalDirection of ['E', 'W']) {
-              for (let verticalDirection of ['N', 'S']) {
+          for (const horizontalDirection of ['E', 'W']) {
+              for (const verticalDirection of ['N', 'S']) {
                   const roomName = `${horizontalDirection}${x}${verticalDirection}${y}`;
 
                   const roomStatus = Game.map.getRoomStatus(roomName);

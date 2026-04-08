@@ -1,22 +1,22 @@
 function observe(room) {
-    let interval = 64;
-    let twoTimesInterval = interval*2
-    let observer:any = Game.getObjectById(room.memory.Structures.observer) || room.findObserver();
+    const interval = 64;
+    const twoTimesInterval = interval*2
+    const observer:any = Game.getObjectById(room.memory.Structures.observer) || room.findObserver();
     if(observer && (Game.time % interval == 0 || Game.time % interval == 1) && Game.cpu.bucket > 8000) {
         if(!room.memory.observe) {
             room.memory.observe = {};
         }
 
         if(!room.memory.observe.RoomsToSee) {
-            let RoomsToSee = [];
+            const RoomsToSee = [];
 
 
             if(room.name.length == 6) {
-                let EastOrWest = room.name[0];
-                let NorthOrSouth = room.name[3];
+                const EastOrWest = room.name[0];
+                const NorthOrSouth = room.name[3];
 
-                let homeRoomNameX = parseInt(room.name[1] + room.name[2]);
-                let homeRoomNameY = parseInt(room.name[4] + room.name[5]);
+                const homeRoomNameX = parseInt(room.name[1] + room.name[2]);
+                const homeRoomNameY = parseInt(room.name[4] + room.name[5]);
                 for(let i = homeRoomNameX-5; i<=homeRoomNameX+5; i++) {
                     for(let o = homeRoomNameY-5; o<=homeRoomNameY+5; o++) {
                         if(i % 10 !== 0 && o % 10 !== 0) {
@@ -24,9 +24,9 @@ function observe(room) {
                                 // do nothing
                             }
                             else {
-                                let firstString = i.toString();
-                                let secondString = o.toString();
-                                let roomName = EastOrWest + firstString + NorthOrSouth + secondString;
+                                const firstString = i.toString();
+                                const secondString = o.toString();
+                                const roomName = EastOrWest + firstString + NorthOrSouth + secondString;
                                 if(room.name !== roomName) {
                                     RoomsToSee.push(roomName);
                                 }
@@ -36,7 +36,7 @@ function observe(room) {
                 }
             }
             else if(room.name.length !== 6) {
-                let EastOrWest = room.name[0];
+                const EastOrWest = room.name[0];
                 let NorthOrSouth;
                 let homeRoomNameX;
                 let homeRoomNameY;
@@ -105,9 +105,9 @@ function observe(room) {
                             }
                             else {
 
-                                let firstString = x.toString();
-                                let secondString = y.toString();
-                                let roomName = EorW + firstString + NorS + secondString;
+                                const firstString = x.toString();
+                                const secondString = y.toString();
+                                const roomName = EorW + firstString + NorS + secondString;
                                 if(room.name !== roomName) {
                                     RoomsToSee.push(roomName);
                                 }
@@ -120,7 +120,7 @@ function observe(room) {
             room.memory.observe.RoomsToSee = RoomsToSee;
         }
 
-        let RoomsToSee = room.memory.observe.RoomsToSee
+        const RoomsToSee = room.memory.observe.RoomsToSee
 
         if(RoomsToSee.length > 0 && Game.time % interval == 0) {
             if(!room.memory.observe.lastObserved || room.memory.observe.lastObserved >= RoomsToSee.length) {
@@ -128,7 +128,7 @@ function observe(room) {
             }
 
 
-            let chosenRoom = RoomsToSee[room.memory.observe.lastObserved]
+            const chosenRoom = RoomsToSee[room.memory.observe.lastObserved]
             observer.observeRoom(chosenRoom);
 
 
@@ -141,7 +141,7 @@ function observe(room) {
         }
 
         if(Game.time % interval == 1) {
-            let adj = room.memory.observe.lastRoomObserved;
+            const adj = room.memory.observe.lastRoomObserved;
             if(areRoomsNormalToThisRoom(room.name, adj)) {
                 if (
                   Game.rooms[adj] &&
@@ -154,7 +154,7 @@ function observe(room) {
                   Game.rooms[adj].controller.owner?.username !== "nekey975" &&
                   Game.map.getRoomStatus(adj).status == "normal"
                 ) {
-                  let buildings = Game.rooms[adj].find(FIND_STRUCTURES, {
+                  const buildings = Game.rooms[adj].find(FIND_STRUCTURES, {
                     filter: s =>
                       s.structureType !== STRUCTURE_ROAD &&
                       s.structureType !== STRUCTURE_CONTAINER &&
@@ -186,8 +186,8 @@ function observe(room) {
                       if (Memory.CanClaimRemote >= 1) {
                         let canReachController = true;
 
-                        let nameOfRoomsWithExits = Object.values(Game.map.describeExits(adj));
-                        for (let roomName of nameOfRoomsWithExits) {
+                        const nameOfRoomsWithExits = Object.values(Game.map.describeExits(adj));
+                        for (const roomName of nameOfRoomsWithExits) {
                           const exitDirection: any = Game.map.findExit(room.name, roomName);
                           const exit: any = Game.rooms[adj].controller.pos.findClosestByRange(exitDirection);
                           if (exit) {
@@ -200,9 +200,9 @@ function observe(room) {
                                   maxCost: 600,
                                   swampCost: 1,
                                   roomCallback: function (roomName): any {
-                                    let thisRoom = Game.rooms[roomName];
+                                    const thisRoom = Game.rooms[roomName];
                                     if (!room) return;
-                                    let costs = new PathFinder.CostMatrix();
+                                    const costs = new PathFinder.CostMatrix();
 
                                     thisRoom.find(FIND_STRUCTURES).forEach(function (struct) {
                                       if (struct.structureType === STRUCTURE_ROAD) {
@@ -233,7 +233,7 @@ function observe(room) {
                         if (canReachController) {
                           let found = false;
 
-                          for (let creepName in Game.creeps) {
+                          for (const creepName in Game.creeps) {
                             if (creepName.startsWith("WallClearer")) {
                               if (
                                 Game.creeps[creepName].memory.role == "WallClearer" &&
@@ -246,7 +246,7 @@ function observe(room) {
                           }
 
                           if (!found) {
-                            let newName = "WallClearer-" + room.name + "-" + adj;
+                            const newName = "WallClearer-" + room.name + "-" + adj;
                             room.memory.spawn_list.push([CLAIM, MOVE], newName, {
                               memory: { role: "WallClearer", homeRoom: room.name, targetRoom: adj }
                             });
@@ -256,7 +256,7 @@ function observe(room) {
                         if (!canReachController) {
                           let found = false;
 
-                          for (let creepName in Game.creeps) {
+                          for (const creepName in Game.creeps) {
                             if (creepName.startsWith("DismantleControllerWalls")) {
                               if (
                                 Game.creeps[creepName].memory.role == "DismantleControllerWalls" &&
@@ -269,7 +269,7 @@ function observe(room) {
                           }
 
                           if (!found) {
-                            let newName = "DismantleControllerWalls-" + room.name + "-" + adj;
+                            const newName = "DismantleControllerWalls-" + room.name + "-" + adj;
                             room.memory.spawn_list.push(
                               [
                                 MOVE,
@@ -333,7 +333,7 @@ function observe(room) {
                     } else if (openControllerPositions && openControllerPositions.length == 0) {
                       let found = false;
 
-                      for (let creepName in Game.creeps) {
+                      for (const creepName in Game.creeps) {
                         if (creepName.startsWith("DismantleControllerWalls")) {
                           if (
                             Game.creeps[creepName].memory.role == "DismantleControllerWalls" &&
@@ -346,7 +346,7 @@ function observe(room) {
                       }
 
                       if (!found) {
-                        let newName = "DismantleControllerWalls-" + room.name + "-" + adj;
+                        const newName = "DismantleControllerWalls-" + room.name + "-" + adj;
                         room.memory.spawn_list.push(
                           [
                             MOVE,
@@ -407,8 +407,8 @@ function observe(room) {
                       }
                     }
                   } else if (Game.rooms[adj].controller.level == 2 && !Game.rooms[adj].controller.safeMode) {
-                    let hostileSpawns = Game.rooms[adj].find(FIND_HOSTILE_SPAWNS);
-                    let hostileCreeps = Game.rooms[adj].find(FIND_HOSTILE_CREEPS);
+                    const hostileSpawns = Game.rooms[adj].find(FIND_HOSTILE_SPAWNS);
+                    const hostileCreeps = Game.rooms[adj].find(FIND_HOSTILE_CREEPS);
                     if (hostileSpawns.length > 0 && hostileCreeps.length > 0) {
                       global.SGD(room.name, adj, [
                         MOVE,
@@ -521,10 +521,10 @@ function observe(room) {
                     (Game.rooms[adj].controller.level == 3 || Game.rooms[adj].controller.level == 4) &&
                     !Game.rooms[adj].controller.safeMode
                   ) {
-                    let controllerFreePositions = Game.rooms[adj].controller.pos.getOpenPositionsIgnoreCreeps().length;
-                    let hostileSpawns = Game.rooms[adj].find(FIND_HOSTILE_SPAWNS);
-                    let hostileCreeps = Game.rooms[adj].find(FIND_HOSTILE_CREEPS);
-                    let hostileTowers = Game.rooms[adj].find(FIND_HOSTILE_STRUCTURES, {
+                    const controllerFreePositions = Game.rooms[adj].controller.pos.getOpenPositionsIgnoreCreeps().length;
+                    const hostileSpawns = Game.rooms[adj].find(FIND_HOSTILE_SPAWNS);
+                    const hostileCreeps = Game.rooms[adj].find(FIND_HOSTILE_CREEPS);
+                    const hostileTowers = Game.rooms[adj].find(FIND_HOSTILE_STRUCTURES, {
                       filter: s => s.structureType == STRUCTURE_TOWER && s.store[RESOURCE_ENERGY] > 9
                     });
                     if (hostileSpawns.length > 0 && hostileTowers.length > 0) {
@@ -629,7 +629,7 @@ function observe(room) {
                         targetRoom: adj
                       });
                     } else if (hostileCreeps.length && !hostileSpawns.length && !hostileTowers.length) {
-                      let armedHostileCreeps = hostileCreeps.filter(
+                      const armedHostileCreeps = hostileCreeps.filter(
                         c => c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0
                       );
                       if (!armedHostileCreeps) {
@@ -658,9 +658,9 @@ function observe(room) {
                       });
                     }
                   } else if (Game.rooms[adj].controller.level == 5 && !Game.rooms[adj].controller.safeMode) {
-                    let hostileSpawns = Game.rooms[adj].find(FIND_HOSTILE_SPAWNS);
-                    let hostileCreeps = Game.rooms[adj].find(FIND_HOSTILE_CREEPS);
-                    let hostileTowers = Game.rooms[adj].find(FIND_HOSTILE_STRUCTURES, {
+                    const hostileSpawns = Game.rooms[adj].find(FIND_HOSTILE_SPAWNS);
+                    const hostileCreeps = Game.rooms[adj].find(FIND_HOSTILE_CREEPS);
+                    const hostileTowers = Game.rooms[adj].find(FIND_HOSTILE_STRUCTURES, {
                       filter: s => s.structureType == STRUCTURE_TOWER && s.store[RESOURCE_ENERGY] > 9
                     });
                     if (hostileSpawns.length > 0 && hostileTowers.length > 0) {
@@ -758,7 +758,7 @@ function observe(room) {
                       !hostileSpawns.length &&
                       !hostileTowers.length
                     ) {
-                      let armedHostileCreeps = hostileCreeps.filter(
+                      const armedHostileCreeps = hostileCreeps.filter(
                         c => c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0
                       );
                       if (!armedHostileCreeps) {
@@ -792,15 +792,15 @@ function observe(room) {
                     (Game.rooms[adj].controller.level == 6 || Game.rooms[adj].controller.level == 7 || Game.rooms[adj].controller.level == 8) &&
                     !Game.rooms[adj].controller.safeMode
                   ) {
-                    let hostileSpawns = Game.rooms[adj].find(FIND_HOSTILE_SPAWNS);
-                    let hostileCreeps = Game.rooms[adj].find(FIND_HOSTILE_CREEPS);
-                    let hostileTowers = Game.rooms[adj].find(FIND_HOSTILE_STRUCTURES, {
+                    const hostileSpawns = Game.rooms[adj].find(FIND_HOSTILE_SPAWNS);
+                    const hostileCreeps = Game.rooms[adj].find(FIND_HOSTILE_CREEPS);
+                    const hostileTowers = Game.rooms[adj].find(FIND_HOSTILE_STRUCTURES, {
                       filter: s => s.structureType == STRUCTURE_TOWER && s.store[RESOURCE_ENERGY] > 9
                     });
                     if (hostileSpawns.length > 0 && hostileTowers.length > 0) {
                       if (Game.cpu.bucket >= 8000) {
                         // At high CPU, randomly choose between all formations
-                        let rand = Math.random();
+                        const rand = Math.random();
                         if (rand < 0.25) {
                             global.SDB(room.name, adj, true);
                         } else if (rand < 0.5) {
@@ -931,18 +931,18 @@ function observe(room) {
                 room.memory.observe.lastRoomObservedForPowerIndex = 0;
             }
 
-            let highWayRoomsToObserve = [];
+            const highWayRoomsToObserve = [];
 
             if(room.name.length == 6) {
-                let EastOrWest = room.name[0];
-                let NorthOrSouth = room.name[3];
-                let homeRoomNameX = parseInt(room.name[1] + room.name[2]);
-                let homeRoomNameY = parseInt(room.name[4] + room.name[5]);
+                const EastOrWest = room.name[0];
+                const NorthOrSouth = room.name[3];
+                const homeRoomNameX = parseInt(room.name[1] + room.name[2]);
+                const homeRoomNameY = parseInt(room.name[4] + room.name[5]);
                 for(let i = homeRoomNameX-4; i<=homeRoomNameX+4; i++) {
                     for(let o = homeRoomNameY-4; o<=homeRoomNameY+4; o++) {
                         if(i % 10 == 0 || o % 10 == 0) {
-                            let firstString = i.toString();
-                            let secondString = o.toString();
+                            const firstString = i.toString();
+                            const secondString = o.toString();
                             highWayRoomsToObserve.push(EastOrWest + firstString + NorthOrSouth + secondString);
                         }
                     }
@@ -950,7 +950,7 @@ function observe(room) {
                 room.memory.observe.listOfRoomsForPower = highWayRoomsToObserve;
             }
             else if(room.name.length !== 6) {
-                let EastOrWest = room.name[0];
+                const EastOrWest = room.name[0];
                 let NorthOrSouth;
                 let homeRoomNameX;
                 let homeRoomNameY;
@@ -1014,9 +1014,9 @@ function observe(room) {
                         }
                         if(x % 10 == 0 || y % 10 == 0) {
 
-                            let firstString = x.toString();
-                            let secondString = y.toString();
-                            let roomName = EorW + firstString + NorS + secondString;
+                            const firstString = x.toString();
+                            const secondString = y.toString();
+                            const roomName = EorW + firstString + NorS + secondString;
                             if(Game.map.getRoomStatus(roomName).status == "normal" && room.name !== roomName) {
                                 highWayRoomsToObserve.push(roomName);
                             }
@@ -1029,7 +1029,7 @@ function observe(room) {
 
         if(room.memory.observe.listOfRoomsForPower) {
 
-            let RoomsToSee = room.memory.observe.listOfRoomsForPower
+            const RoomsToSee = room.memory.observe.listOfRoomsForPower
 
             if(RoomsToSee.length > 0 && Game.time % twoTimesInterval == 2) {
                 if(!room.memory.observe.lastRoomObservedForPowerIndex || room.memory.observe.lastRoomObservedForPowerIndex >= RoomsToSee.length) {
@@ -1037,7 +1037,7 @@ function observe(room) {
                 }
 
 
-                let chosenRoom = RoomsToSee[room.memory.observe.lastRoomObservedForPowerIndex]
+                const chosenRoom = RoomsToSee[room.memory.observe.lastRoomObservedForPowerIndex]
                 observer.observeRoom(chosenRoom);
 
 
@@ -1050,21 +1050,21 @@ function observe(room) {
             }
 
             if(Game.time % twoTimesInterval == 3) {
-                let adj = room.memory.observe.lastRoomObservedForPower;
+                const adj = room.memory.observe.lastRoomObservedForPower;
 
                 if(areRoomsNormalToThisRoom(room.name, adj)) {
-                    let seenRoom = Game.rooms[adj];
+                    const seenRoom = Game.rooms[adj];
 
-                    let storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+                    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
 
                     if(seenRoom && storage && storage.store[RESOURCE_ENERGY] > 225000) {
 
-                        let walls = seenRoom.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_WALL});
+                        const walls = seenRoom.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_WALL});
                         if(walls.length == 0) {
 
                             // let powerBanks = seenRoom.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_POWER_BANK && (s.ticksToDecay > 1700 || s.ticksToDecay > 1000 && s.hits < 700000)});
 
-                            let deposits = seenRoom.find(FIND_DEPOSITS);
+                            const deposits = seenRoom.find(FIND_DEPOSITS);
 
                             // if(powerBanks.length > 0 && storage.store[RESOURCE_ENERGY] > 330000 && (powerBanks[0].hits < 2000000 && Game.cpu.bucket > 7000 || Game.cpu.bucket > 9000) &&
                             //  powerBanks[0].pos.getOpenPositionsIgnoreCreeps().length > 1 &&
@@ -1128,9 +1128,9 @@ function observe(room) {
 
 
 function areRoomsNormalToThisRoom(homeRoom, targetRoom) {
-    let route = Game.map.findRoute(homeRoom, targetRoom)
+    const route = Game.map.findRoute(homeRoom, targetRoom)
     if(route && route !== -2 && route.length > 0) {
-        for(let partOfRoute of route) {
+        for(const partOfRoute of route) {
             if(Game.map.getRoomStatus(partOfRoute.room).status !== "normal") {
                 return false;
             }

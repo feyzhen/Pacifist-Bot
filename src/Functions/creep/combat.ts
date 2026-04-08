@@ -19,21 +19,21 @@ Creep.prototype.Boost = function Boost():any {
         return;
     }
     else {
-        let labs = [];
-        for(let labID of this.memory.boostlabs) {
+        const labs = [];
+        for(const labID of this.memory.boostlabs) {
             labs.push(Game.getObjectById(labID));
         }
-        let closestLab = this.pos.findClosestByRange(labs);
+        const closestLab = this.pos.findClosestByRange(labs);
         if(closestLab.mineralAmount <  30) {
             if(this.ticksToLive < 1100 && this.getActiveBodyparts(CLAIM)===0) {
-                let idToRemove = closestLab.id;
+                const idToRemove = closestLab.id;
                 this.memory.boostlabs = this.memory.boostlabs.filter(labid => labid !== idToRemove);
             }
             this.MoveCostMatrixRoadPrio(closestLab, 3);
         }
         else {
             if(this.pos.isNearTo(closestLab)) {
-                let result = closestLab.boostCreep(this);
+                const result = closestLab.boostCreep(this);
                 if(result == 0) {
                     if(this.room.memory.labs.outputLab1 && this.room.memory.labs.outputLab1 == closestLab.id && this.room.memory.labs.status.boost.lab1?.use) {
                         this.room.memory.labs.status.boost.lab1.use -= 1;
@@ -63,7 +63,7 @@ Creep.prototype.Boost = function Boost():any {
                         }
                     }
 
-                    let idToRemove = closestLab.id;
+                    const idToRemove = closestLab.id;
                     this.memory.boostlabs = this.memory.boostlabs.filter(labid => labid !== idToRemove);
                     return true;
                 }
@@ -85,7 +85,7 @@ Creep.prototype.Boost = function Boost():any {
 Creep.prototype.evacuate = function evacuate():any {
     if(this.room.memory.defence && this.room.memory.defence.nuke && this.room.memory.defence.evacuate || this.memory.nukeHaven) {
         if(!this.memory.nukeTimer) {
-            let nukes = this.room.find(FIND_NUKES).filter(function(nuke) {return nuke.timeToLand < 300;});;
+            const nukes = this.room.find(FIND_NUKES).filter(function(nuke) {return nuke.timeToLand < 300;});
             if(nukes.length > 0) {
                 nukes.sort((a,b) => a.timeToLand - b.timeToLand);
                 this.memory.nukeTimer = nukes[0].timeToLand + 1;
@@ -101,8 +101,8 @@ Creep.prototype.evacuate = function evacuate():any {
         if(this.memory.nukeTimer > 0) {
 
             if(!this.memory.nukeHaven) {
-                let possibleRooms = Object.values(Game.map.describeExits(this.room.name)).filter(roomname => Game.map.getRoomStatus(roomname).status === Game.map.getRoomStatus(this.room.name).status);
-                let index = Math.floor(Math.random() * possibleRooms.length);
+                const possibleRooms = Object.values(Game.map.describeExits(this.room.name)).filter(roomname => Game.map.getRoomStatus(roomname).status === Game.map.getRoomStatus(this.room.name).status);
+                const index = Math.floor(Math.random() * possibleRooms.length);
                 this.memory.nukeHaven = possibleRooms[index];
             }
             if(this.memory.nukeHaven) {
@@ -192,7 +192,7 @@ Creep.prototype.roadCheck = function (): boolean {
 /** 找到无道路位置 */
 Creep.prototype.roadlessLocation = function (repairTarget: any): RoomPosition | null {
     const nearby = this.pos.getNearbyPositions();
-    let candidates = nearby.filter((b: RoomPosition) => {
+    const candidates = nearby.filter((b: RoomPosition) => {
         if (b.getRangeTo(repairTarget) !== 3) return false;
         return b.lookFor(LOOK_STRUCTURES).length === 0 && b.lookFor(LOOK_CREEPS).length === 0;
     });

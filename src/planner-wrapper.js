@@ -2110,7 +2110,7 @@ function placeRoadsAndLinkAndRampartAndTower(room, start, layout, layoutCost, ex
     // 首先考虑所有 ext 圈，必须都能进入
     let goals = entryRoots.map(root => ({ pos: { x: root.x, y: root.y, roomName: room.name }, range: 0 }));
     //console.log('start:', JSON.stringify(start));
-    var { removedPosList } = findAllGoals(start, goals, pfCostMat, roads, extensionPos, rv);
+    const { removedPosList } = findAllGoals(start, goals, pfCostMat, roads, extensionPos, rv);
     removedNum += removedPosList.length;
     for (let pos of removedPosList) {
         removedExt[pos.x][pos.y] = 1;
@@ -2124,9 +2124,9 @@ function placeRoadsAndLinkAndRampartAndTower(room, start, layout, layoutCost, ex
     }
     goals = goalObjects.map(o => ({ pos: o.pos, range: 1 }));
     // console.log('find road to 资源点');
-    var { removedPosList, goalNearestPos } = findAllGoals(start, goals, pfCostMat, roads, extensionPos, rv);
-    removedNum += removedPosList.length;
-    for (let pos of removedPosList) {
+    const { removedPosList: removedPosList2, goalNearestPos } = findAllGoals(start, goals, pfCostMat, roads, extensionPos, rv);
+    removedNum += removedPosList2.length;
+    for (let pos of removedPosList2) {
         removedExt[pos.x][pos.y] = 1;
     }
 
@@ -2161,7 +2161,7 @@ function placeRoadsAndLinkAndRampartAndTower(room, start, layout, layoutCost, ex
     // 确保 ram 可达，移除 ext 并铺路
     for (let group of rampartGroups) {
         goals = group.map(pos => ({ pos: { x: pos.x, y: pos.y, roomName: room.name }, range: 1 }));
-        var { removedPosList, canReach, fakeRoads } = findRoadToRamp(start, goals, pfCostMat, roads, extensionPos, rv);
+        const { removedPosList, canReach, fakeRoads } = findRoadToRamp(start, goals, pfCostMat, roads, extensionPos, rv);
         removedNum += removedPosList.length;
         for (let pos of removedPosList) {
             removedExt[pos.x][pos.y] = 1;
@@ -2174,9 +2174,9 @@ function placeRoadsAndLinkAndRampartAndTower(room, start, layout, layoutCost, ex
     }
 
     // 在 ram 的路也确定后，铺 link 或 container
-    var { removedPosList, sourceWorkPosList, controllerWorkPos, mineralWorkPos } = placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roads, fakeRoads, extensionPos, exitMaps, layout, layoutCost, vertexVisited, vertexDist, shareControllerLink, rv);
-    removedNum += removedPosList.length;
-    for (let pos of removedPosList) {
+    const { removedPosList: removedPosList3, sourceWorkPosList, controllerWorkPos, mineralWorkPos } = placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roads, fakeRoads, extensionPos, exitMaps, layout, layoutCost, vertexVisited, vertexDist, shareControllerLink, rv);
+    removedNum += removedPosList3.length;
+    for (let pos of removedPosList3) {
         px = pos.x;
         py = pos.y;
         removedExt[px][py] = 1;
@@ -2205,7 +2205,7 @@ function placeRoadsAndLinkAndRampartAndTower(room, start, layout, layoutCost, ex
         validTowerPoses[px][py] = false;
     }
     while (true) {
-        var { removedPosList, removedTowers } = findAllGoals(start, goals, pfCostMat, roads, extensionPos, rv, towerPos);
+        const { removedPosList, removedTowers } = findAllGoals(start, goals, pfCostMat, roads, extensionPos, rv, towerPos);
         removedNum += removedPosList.length;
         for (let pos of removedPosList) {
             removedExt[pos.x][pos.y] = 1;

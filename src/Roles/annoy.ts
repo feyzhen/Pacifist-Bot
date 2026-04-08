@@ -3,18 +3,18 @@
  * @param {Creep} creep
  **/
  const run = function (creep:Creep) {
-    ;
+    
 
     if(creep.room.controller && !creep.room.controller.my && creep.room.controller.safeMode > 0) {
         return creep.moveToRoom(creep.memory.targetRoom);
     }
 
-    let enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
-    let Structures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
+    const enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+    const Structures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
         filter: object => object.structureType != STRUCTURE_CONTROLLER && object.structureType != STRUCTURE_KEEPER_LAIR && object.structureType != STRUCTURE_STORAGE && object.structureType != STRUCTURE_TERMINAL});
-    let ConstructionSites = creep.room.find(FIND_HOSTILE_CONSTRUCTION_SITES, {filter: site => site.structureType != STRUCTURE_ROAD && site.progress != 0});
+    const ConstructionSites = creep.room.find(FIND_HOSTILE_CONSTRUCTION_SITES, {filter: site => site.structureType != STRUCTURE_ROAD && site.progress != 0});
     if(enemyCreeps.length > 0) {
-        let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+        const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
             if(creep.pos.isNearTo(closestEnemyCreep)) {
                 creep.attack(closestEnemyCreep);
             }
@@ -34,7 +34,7 @@
         }
 
     else if(Structures.length > 0) {
-        let closestStructure = creep.pos.findClosestByRange(Structures)
+        const closestStructure = creep.pos.findClosestByRange(Structures)
         if(creep.pos.isNearTo(closestStructure)) {
             creep.attack(closestStructure)
         }
@@ -54,7 +54,7 @@
 
 
     else {
-        let buildings = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_WALL});
+        const buildings = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_WALL});
         if(buildings.length > 0) {
             buildings.sort((a,b) => a.pos.getRangeTo(creep.room.controller) - b.pos.getRangeTo(creep.room.controller));
             // let closestWall = creep.pos.findClosestByRange(buildings);

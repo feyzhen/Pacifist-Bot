@@ -1,29 +1,29 @@
 function findLocked(creep) {
-    let terminal = creep.room.terminal;
+    const terminal = creep.room.terminal;
     if (terminal && terminal.store[RESOURCE_ENERGY] < 10000) {
         creep.memory.locked = terminal.id;
         return terminal;
     }
 
     if(creep.room.energyCapacityAvailable /1.5 < creep.room.energyAvailable) {
-        let towers = creep.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store[RESOURCE_ENERGY] < 200)});
+        const towers = creep.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store[RESOURCE_ENERGY] < 200)});
         if(towers.length > 0) {
-            let closestTower = creep.pos.findClosestByRange(towers);
+            const closestTower = creep.pos.findClosestByRange(towers);
             creep.memory.locked = closestTower.id;
             return closestTower;
         }
     }
 
-    let spawnAndExtensions = creep.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_SPAWN || building.structureType == STRUCTURE_EXTENSION || building.structureType == STRUCTURE_TOWER) && building.store.getFreeCapacity(RESOURCE_ENERGY) > 0});
+    const spawnAndExtensions = creep.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_SPAWN || building.structureType == STRUCTURE_EXTENSION || building.structureType == STRUCTURE_TOWER) && building.store.getFreeCapacity(RESOURCE_ENERGY) > 0});
     if(spawnAndExtensions.length > 0) {
-        let closestDropOffLocation = creep.pos.findClosestByRange(spawnAndExtensions);
+        const closestDropOffLocation = creep.pos.findClosestByRange(spawnAndExtensions);
         creep.memory.locked = closestDropOffLocation.id;
         return closestDropOffLocation;
     }
 
-    let towers2 = creep.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store[RESOURCE_ENERGY] >= 0 && building.store.getFreeCapacity() > 0)});
+    const towers2 = creep.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store[RESOURCE_ENERGY] >= 0 && building.store.getFreeCapacity() > 0)});
     if(towers2.length > 0) {
-        let closestTower = creep.pos.findClosestByRange(towers2);
+        const closestTower = creep.pos.findClosestByRange(towers2);
         creep.memory.locked = closestTower.id;
         return closestTower;
     }
@@ -52,17 +52,17 @@ function findLocked(creep) {
 
     if(creep.memory.fleeing) {
         // find hostiles with attack or ranged attack
-        let hostiles = creep.room.find(FIND_HOSTILE_CREEPS);
-        let meleeHostiles = hostiles.filter(c => c.getActiveBodyparts(ATTACK) > 0 );
-        let rangedHostiles = hostiles.filter(c => c.getActiveBodyparts(RANGED_ATTACK) > 0 );
+        const hostiles = creep.room.find(FIND_HOSTILE_CREEPS);
+        const meleeHostiles = hostiles.filter(c => c.getActiveBodyparts(ATTACK) > 0 );
+        const rangedHostiles = hostiles.filter(c => c.getActiveBodyparts(RANGED_ATTACK) > 0 );
         if(rangedHostiles.length) {
-            let closestRangedHostile = creep.pos.findClosestByRange(rangedHostiles);
+            const closestRangedHostile = creep.pos.findClosestByRange(rangedHostiles);
             if(creep.pos.getRangeTo(closestRangedHostile) <= 5) {
                 return;
             }
         }
         else if(meleeHostiles.length) {
-            let closestMeleeHostile = creep.pos.findClosestByRange(meleeHostiles);
+            const closestMeleeHostile = creep.pos.findClosestByRange(meleeHostiles);
             if(creep.pos.getRangeTo(closestMeleeHostile) <= 3) {
                 return;
             }
@@ -99,15 +99,15 @@ function findLocked(creep) {
             return creep.moveToRoomAvoidEnemyRooms(creep.memory.homeRoom);
         }
 
-        let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+        const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
         if(storage) {
             creep.MoveCostMatrixRoadPrio(storage, 1);
             creep.memory.role = "FakeFiller";
             return;
         }
         else {
-            let spawn:any = Game.getObjectById(creep.memory.spawn) || creep.findSpawn();
-            let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+            const spawn:any = Game.getObjectById(creep.memory.spawn) || creep.findSpawn();
+            const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
             let bin;
             if(storage && creep.room.memory.Structures) {
                 bin = Game.getObjectById(creep.room.memory.Structures.bin) || creep.room.findBin(storage);
@@ -145,7 +145,7 @@ function findLocked(creep) {
             }
             else {
                 if(!creep.memory.locked) {
-                    let target = findLocked(creep);
+                    const target = findLocked(creep);
 
                     if(!target) {
                         if(spawn) {
@@ -161,7 +161,7 @@ function findLocked(creep) {
                 }
 
                 if(creep.memory.locked) {
-                    let target = Game.getObjectById(creep.memory.locked);
+                    const target = Game.getObjectById(creep.memory.locked);
 
                     if(!target) {
                         if(spawn) {
@@ -182,7 +182,7 @@ function findLocked(creep) {
                         }
                         else {
                             findLocked(creep);
-                            let target = Game.getObjectById(creep.memory.locked);
+                            const target = Game.getObjectById(creep.memory.locked);
                             if(!creep.pos.isNearTo(target)) {
                                 creep.MoveCostMatrixRoadPrio(target, 1)
                             }
@@ -202,10 +202,10 @@ function findLocked(creep) {
         if(creep.memory.targetRoom && creep.memory.targetRoom !== creep.room.name) {
             return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
         }
-        let result = creep.acquireEnergyWithContainersAndOrDroppedEnergy();
+        const result = creep.acquireEnergyWithContainersAndOrDroppedEnergy();
         if(result == 0 && creep.store.getFreeCapacity() == 0) {
-            let spawn:any = Game.getObjectById(creep.memory.spawn) || creep.findSpawn();
-            let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+            const spawn:any = Game.getObjectById(creep.memory.spawn) || creep.findSpawn();
+            const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
             if(creep.memory.homeRoom && creep.memory.homeRoom !== creep.room.name) {
                 if(creep.memory.storage) {
                     return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
@@ -228,7 +228,7 @@ function findLocked(creep) {
             }
             else {
                 if(!creep.memory.locked) {
-                    let target = findLocked(creep);
+                    const target = findLocked(creep);
 
                     if(!target) {
                         if(spawn) {
@@ -244,7 +244,7 @@ function findLocked(creep) {
                 }
 
                 if(creep.memory.locked) {
-                    let target = Game.getObjectById(creep.memory.locked);
+                    const target = Game.getObjectById(creep.memory.locked);
 
                     if(!target) {
                         if(spawn) {
@@ -265,7 +265,7 @@ function findLocked(creep) {
                         }
                         else {
                             findLocked(creep);
-                            let target = Game.getObjectById(creep.memory.locked);
+                            const target = Game.getObjectById(creep.memory.locked);
                             if(!creep.pos.isNearTo(target)) {
                                 creep.MoveCostMatrixRoadPrio(target, 1)
                             }

@@ -5,7 +5,7 @@
  const run = function (creep:any) {
     creep.memory.moving = false;
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         if(!result) {
             return;
         }
@@ -21,7 +21,7 @@
 
 
     if(!creep.memory.healtarget) {
-        let creepsInRoom = creep.room.find(FIND_MY_CREEPS, {filter: (c) => {return (c.memory.role == "ram");}});
+        const creepsInRoom = creep.room.find(FIND_MY_CREEPS, {filter: (c) => {return (c.memory.role == "ram");}});
         if(creepsInRoom.length > 0) {
             creepsInRoom.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.healtarget = creepsInRoom[0].id;
@@ -29,20 +29,20 @@
         }
     }
 
-    let hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+    const hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
 
     // Assuming "creep" is your reference point
-    let hostilesInRangeFour = hostileCreeps.filter(hostileCreep => {
+    const hostilesInRangeFour = hostileCreeps.filter(hostileCreep => {
       // Calculate the distance between the hostileCreep and your "creep"
-      let distance = creep.pos.getRangeTo(hostileCreep);
+      const distance = creep.pos.getRangeTo(hostileCreep);
 
       // Keep the hostileCreep in the resulting array if it is within range 4
       return distance <= 4;
     });
 
-    let hostilesInRangeThree = hostilesInRangeFour.filter(hostileCreep => {
+    const hostilesInRangeThree = hostilesInRangeFour.filter(hostileCreep => {
         // Calculate the distance between the hostileCreep and your "creep"
-        let distance = creep.pos.getRangeTo(hostileCreep);
+        const distance = creep.pos.getRangeTo(hostileCreep);
 
         // Keep the hostileCreep in the resulting array if it is within range 4
         return distance <= 3;
@@ -51,7 +51,7 @@
     if(creep.memory.healtarget) {
 
 
-        let target:any = Game.getObjectById(creep.memory.healtarget);
+        const target:any = Game.getObjectById(creep.memory.healtarget);
         if(target) {
             creep.moveTo(target.pos);
             if(creep.pos.isNearTo(target) && creep.room.name == creep.memory.targetRoom) {

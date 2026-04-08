@@ -17,9 +17,9 @@ const run = function (creep) {
 
     if(!creep.memory.targets || Game.time % 30 == 0) {
         creep.memory.targets = [];
-        let powerMelees = creep.room.find(FIND_MY_CREEPS, {filter: c => c.memory.role == "PowerMelee"});
+        const powerMelees = creep.room.find(FIND_MY_CREEPS, {filter: c => c.memory.role == "PowerMelee"});
         if(powerMelees.length > 0) {
-            for(let pm of powerMelees) {
+            for(const pm of powerMelees) {
                 creep.memory.targets.push(pm.id);
             }
         }
@@ -30,15 +30,15 @@ const run = function (creep) {
     }
 
     if(creep.memory.targets && creep.memory.targets.length > 0) {
-        let targets = [];
-        for(let target of creep.memory.targets) {
-            let targetObj = Game.getObjectById(target)
+        const targets = [];
+        for(const target of creep.memory.targets) {
+            const targetObj = Game.getObjectById(target)
             if(targetObj) {
                 targets.push(targetObj);
             }
         }
         if(targets.length > 0) {
-            let range1Targets = creep.pos.findInRange(targets, 1);
+            const range1Targets = creep.pos.findInRange(targets, 1);
             if(range1Targets.length > 0) {
                 range1Targets.sort((a,b) => a.hits - b.hits);
                 if(range1Targets[0].hits < range1Targets[0].hitsMax) {

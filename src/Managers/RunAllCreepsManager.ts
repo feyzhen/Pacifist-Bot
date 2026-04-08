@@ -10,9 +10,9 @@ function RunAllCreepsManager() {
     RunPowerCreepManager();
 
 
-    let executeCreepScriptsLaterList = [];
+    const executeCreepScriptsLaterList = [];
     const creepNames = Object.keys(Memory.creeps);
-    for(let name of creepNames) {
+    for(const name of creepNames) {
       if(!Game.creeps[name]) {
         delete Memory.creeps[name];
         continue;

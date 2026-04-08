@@ -16,7 +16,7 @@ function data(room) {
     }
 
 
-    let data = room.memory.data;
+    const data = room.memory.data;
     data.DOB += 1;
     data.DOBug += 1;
     room.memory.data = data;

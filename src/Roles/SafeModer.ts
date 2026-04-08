@@ -2,9 +2,9 @@ const run = function (creep) {
   creep.memory.moving = false;
 
   if(!creep.memory.targetRoom) {
-    let controller = creep.room.controller;
+    const controller = creep.room.controller;
     if(controller && controller.safeModeAvailable <= 1) {
-      let storage = creep.room.storage;
+      const storage = creep.room.storage;
       if(storage) {
         if(creep.store.getUsedCapacity(RESOURCE_GHODIUM) < 1000 ) {
           if(storage.store[RESOURCE_GHODIUM] < 1000) {
@@ -36,7 +36,7 @@ const run = function (creep) {
   else {
 
     if(creep.store.getUsedCapacity(RESOURCE_GHODIUM) < 1000 && creep.room.name !== creep.memory.targetRoom) {
-      let storage = creep.room.storage;
+      const storage = creep.room.storage;
       if(storage && storage.store[RESOURCE_GHODIUM] >= 1000) {
         if(creep.pos.isNearTo(storage)) {
           creep.withdraw(storage, RESOURCE_GHODIUM);
@@ -58,7 +58,7 @@ const run = function (creep) {
         return;
       }
 
-      let controller = creep.room.controller;
+      const controller = creep.room.controller;
       if(controller) {
         if(creep.pos.isNearTo(controller)) {
           creep.generateSafeMode(controller);

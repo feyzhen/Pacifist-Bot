@@ -9,8 +9,8 @@ const run = function (creep) {
     }
   }
   if (creep.ticksToLive === 1499) {
-    let room = creep.room;
-    let newName = "Claimer-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
+    const room = creep.room;
+    const newName = "Claimer-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
     room.memory.spawn_list.push([TOUGH, MOVE, MOVE, MOVE, MOVE, CLAIM, HEAL, HEAL], newName, {
       memory: {
         role: "claimer",
@@ -48,7 +48,7 @@ const run = function (creep) {
 
   }
   if (creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-    let result = creep.Boost();
+    const result = creep.Boost();
     if (!result) {
       return;
     }
@@ -56,26 +56,26 @@ const run = function (creep) {
 
   if (!creep.memory.party) {
     // filter by creeps with the memory.line property and with role claimer or role RoomLocker
-    let party = creep.room.find(FIND_MY_CREEPS, {filter: c => (c.memory.role === "RoomLocker" || c.memory.role === "claimer" || c.memory.role === "Escort") && c.memory.line && (!c.memory.boostlabs || c.memory.boostlabs && !c.memory.boostlabs.length)});
+    const party = creep.room.find(FIND_MY_CREEPS, {filter: c => (c.memory.role === "RoomLocker" || c.memory.role === "claimer" || c.memory.role === "Escort") && c.memory.line && (!c.memory.boostlabs || c.memory.boostlabs && !c.memory.boostlabs.length)});
 
     if (party.length === 3) {
       party.sort((a, b) => a.memory.line - b.memory.line);
-      let partyIDs = party.map(c => c.id);
+      const partyIDs = party.map(c => c.id);
       creep.memory.party = partyIDs;
     }
   }
 
   if (creep.memory.party) {
-    let party = [];
-    for (let id of creep.memory.party) {
-      let partyMember = Game.getObjectById(id);
+    const party = [];
+    for (const id of creep.memory.party) {
+      const partyMember = Game.getObjectById(id);
       if (partyMember) {
         party.push(partyMember);
       }
     }
     party.reverse();
     let allGood = true;
-    for (let partyMember of party) {
+    for (const partyMember of party) {
       if (partyMember.memory.line === 3 && partyMember.memory.full) {
         if (partyMember.room.name === party[1].room.name && !partyMember.pos.isNearTo(party[1])) {
           allGood = false;
@@ -94,11 +94,11 @@ const run = function (creep) {
         if (allGood) {
           partyMember.moveToRoomAvoidEnemyRooms(partyMember.memory.targetRoom);
         }
-        let lowestHealthInParty = party.reduce((lowest, creep) => creep.hits < lowest.hits && creep.hits !== creep.hitsMax ? creep : lowest, party[party.length-1]);
+        const lowestHealthInParty = party.reduce((lowest, creep) => creep.hits < lowest.hits && creep.hits !== creep.hitsMax ? creep : lowest, party[party.length-1]);
 
-        let hostileCreepsInRange3 = partyMember.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
+        const hostileCreepsInRange3 = partyMember.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
         if(hostileCreepsInRange3.length > 0) {
-          let closestHostile = partyMember.pos.findClosestByRange(hostileCreepsInRange3);
+          const closestHostile = partyMember.pos.findClosestByRange(hostileCreepsInRange3);
           if(partyMember.pos.isNearTo(closestHostile)) {
             partyMember.rangedMassAttack();
           }
@@ -111,7 +111,7 @@ const run = function (creep) {
 
           let structures = creep.room.find(FIND_STRUCTURES);
           structures = structures.filter(s => !s.my && s.structureType !== STRUCTURE_CONTAINER && s.structureType !== STRUCTURE_ROAD && s.structureType !== STRUCTURE_CONTROLLER && s.structureType !== STRUCTURE_POWER_BANK && s.structureType !== STRUCTURE_INVADER_CORE && s.structureType !== STRUCTURE_KEEPER_LAIR && s.structureType !== STRUCTURE_PORTAL && s.structureType !== STRUCTURE_CONTAINER);
-          let closestStructure = partyMember.pos.findClosestByRange(structures);
+          const closestStructure = partyMember.pos.findClosestByRange(structures);
           partyMember.rangedAttack(closestStructure);
         }
 

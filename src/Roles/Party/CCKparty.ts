@@ -6,7 +6,7 @@ const run = function (creep) {
   creep.memory.moving = false;
 
   if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-      let result = creep.Boost();
+      const result = creep.Boost();
       if(!result) {
           return;
       }

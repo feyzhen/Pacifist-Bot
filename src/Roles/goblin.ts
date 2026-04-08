@@ -21,7 +21,7 @@ const run = function (creep) {
 
     if(!creep.memory.MaxStorage) {
         let carryPartsAmount = 0;
-        for(let part of creep.body) {
+        for(const part of creep.body) {
             if(part.type == CARRY) {
                 carryPartsAmount += 1;
             }
@@ -29,7 +29,7 @@ const run = function (creep) {
         creep.memory.MaxStorage = carryPartsAmount * 50;
     }
 
-    let MaxStorage = creep.memory.MaxStorage;
+    const MaxStorage = creep.memory.MaxStorage;
 
     if(!creep.memory.full && creep.store.getFreeCapacity() == 0) {
         creep.memory.full = true;
@@ -40,7 +40,7 @@ const run = function (creep) {
 
             _.forEach(Game.rooms, function(AllRooms) {
                 if (AllRooms && AllRooms.controller && AllRooms.controller.my && AllRooms.controller.level >= 4) {
-                    let distance = Game.map.getRoomLinearDistance(creep.room.name, AllRooms.name);
+                    const distance = Game.map.getRoomLinearDistance(creep.room.name, AllRooms.name);
                     if(distance < closestRoom[1]) {
                         creep.memory.dropRoom = AllRooms.name;
                         closestRoom = [creep.memory.dropRoom, distance];
@@ -59,10 +59,10 @@ const run = function (creep) {
             return creep.moveToRoomAvoidEnemyRooms(creep.memory.dropRoom);
         }
 
-        let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+        const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
         if(storage && creep.store.getFreeCapacity() < MaxStorage) {
             if(creep.pos.isNearTo(storage)) {
-                for(let resourceType in creep.store) {
+                for(const resourceType in creep.store) {
                     creep.transfer(storage, resourceType);
                 }
             }
@@ -77,12 +77,12 @@ const run = function (creep) {
             return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
         }
 
-        let ruins = creep.room.find(FIND_RUINS);
+        const ruins = creep.room.find(FIND_RUINS);
         if(ruins.length > 0) {
-            let refinedRuins = ruins.filter(ruin => _.keys(ruin.store).length > 0);
-            let refinedRuinsList = [];
+            const refinedRuins = ruins.filter(ruin => _.keys(ruin.store).length > 0);
+            const refinedRuinsList = [];
 
-            for(let ruin of refinedRuins) {
+            for(const ruin of refinedRuins) {
                 if(_.keys(ruin.store).length == 1 && _.keys(ruin.store)[0] == RESOURCE_ENERGY)  {
                     refinedRuinsList.push(ruin);
                     // Log if needed
@@ -92,8 +92,8 @@ const run = function (creep) {
                 }
             }
 
-            for(let ruin of refinedRuinsList) {
-                for(let resource in ruin.store) {
+            for(const ruin of refinedRuinsList) {
+                for(const resource in ruin.store) {
                         if(creep.pos.isNearTo(ruin)) {
                             creep.withdraw(ruin, resource);
                         }
@@ -122,13 +122,13 @@ const run = function (creep) {
         let targets = creep.room.find(FIND_STRUCTURES, {
             filter: building => (building.structureType == STRUCTURE_CONTAINER || building.structureType == STRUCTURE_SPAWN || building.structureType == STRUCTURE_STORAGE || building.structureType == STRUCTURE_TERMINAL || building.structureType == STRUCTURE_TOWER || building.structureType == STRUCTURE_LAB || building.structureType == STRUCTURE_FACTORY || building.structureType == STRUCTURE_POWER_SPAWN) && _.keys(building.store).length > 0
         });
-        let targetsList = [];
+        const targetsList = [];
         let specialTargets;
-        let specialTargetsList = [];
+        const specialTargetsList = [];
 
         if(targets.length > 0) {
             targets = targets.filter(target => _.keys(target.store).length > 0);
-            for(let target of targets) {
+            for(const target of targets) {
                 if(_.keys(target.store).length == 1 && _.keys(target.store)[0] == RESOURCE_ENERGY)  {
                     targetsList.push(target);
                 }
@@ -137,7 +137,7 @@ const run = function (creep) {
                 }
             }
             specialTargets = targets.filter(function(building) {return building.structureType == STRUCTURE_LAB || building.structureType == STRUCTURE_FACTORY || building.structureType == STRUCTURE_TERMINAL || building.structureType == STRUCTURE_POWER_BANK;});
-            for(let target of specialTargets) {
+            for(const target of specialTargets) {
                 if(_.keys(target.store).length == 1 && _.keys(target.store)[0] == RESOURCE_ENERGY)  {
                     targetsList.push(target);
                 }
@@ -158,7 +158,7 @@ const run = function (creep) {
 
         if(specialTarget) {
             if(creep.pos.isNearTo(specialTarget)) {
-                for(let resource in specialTarget.store) {
+                for(const resource in specialTarget.store) {
 
                         console.log(`[Withdraw From Special Target] - ${creep.name} withdrawing ${resource}.`);
 
@@ -169,7 +169,7 @@ const run = function (creep) {
             }
         } else if(target) {
             if(creep.pos.isNearTo(target)) {
-                for(let resource in target.store) {
+                for(const resource in target.store) {
                         creep.withdraw(target, resource);
                 }
             }

@@ -6,7 +6,7 @@
     creep.memory.moving = false;
 
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         if(!result) {
             return;
         }
@@ -14,7 +14,7 @@
 
 
     if(!creep.memory.go && creep.memory.squad && creep.memory.squad.a) {
-        let a:any = Game.getObjectById(creep.memory.squad.a);
+        const a:any = Game.getObjectById(creep.memory.squad.a);
         if(a) {
             creep.moveTo(new RoomPosition(a.pos.x + 1,a.pos.y,a.room.name));
         }
@@ -29,17 +29,17 @@
      return Object.keys(hashmap).reduce((a, b) => hashmap[a] > hashmap[b] ? a : b)
      }
 
-    let creepBodyType = getMostFrequent(creepBody);
+    const creepBodyType = getMostFrequent(creepBody);
      creep.memory.bodyType = creepBodyType;
 
 
-    let structures = creep.room.find(FIND_STRUCTURES, {filter: building => !building.my && building.structureType !== STRUCTURE_CONTAINER && building.structureType !== STRUCTURE_ROAD && building.structureType !== STRUCTURE_CONTROLLER && building.structureType !== STRUCTURE_KEEPER_LAIR});
-    let enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
-    let enemyCreepInRangeThree = creep.pos.findInRange(enemyCreeps, 3);
+    const structures = creep.room.find(FIND_STRUCTURES, {filter: building => !building.my && building.structureType !== STRUCTURE_CONTAINER && building.structureType !== STRUCTURE_ROAD && building.structureType !== STRUCTURE_CONTROLLER && building.structureType !== STRUCTURE_KEEPER_LAIR});
+    const enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+    const enemyCreepInRangeThree = creep.pos.findInRange(enemyCreeps, 3);
     let targetCreep;
     if(enemyCreepInRangeThree.length > 0) {
         let attack_able = false;
-        for(let e_creep of enemyCreepInRangeThree) {
+        for(const e_creep of enemyCreepInRangeThree) {
 
             if (getMostFrequent(e_creep.body) !== "heal" || creepBodyType !== "ranged_attack") {
                 if (e_creep.pos.x == 0 || e_creep.pos.x == 49 || e_creep.pos.y == 0 || e_creep.pos.y == 49) {
@@ -48,7 +48,7 @@
                 }
                 else {
 
-                    let lookStructuresOnEnemyCreep = e_creep.pos.lookFor(LOOK_STRUCTURES);
+                    const lookStructuresOnEnemyCreep = e_creep.pos.lookFor(LOOK_STRUCTURES);
                     if (lookStructuresOnEnemyCreep.length > 0) {
                         if (lookStructuresOnEnemyCreep.length == 1 && lookStructuresOnEnemyCreep[0].structureType == STRUCTURE_ROAD ||
                             lookStructuresOnEnemyCreep.length == 1 && lookStructuresOnEnemyCreep[0].structureType == STRUCTURE_CONTAINER ||
@@ -57,7 +57,7 @@
                             attack_able = true;
                             targetCreep = e_creep;
                         }
-                        for (let structure of lookStructuresOnEnemyCreep) {
+                        for (const structure of lookStructuresOnEnemyCreep) {
                             if (structure.structureType == STRUCTURE_RAMPART) {
                                 attack_able = false;
                             }
@@ -85,7 +85,7 @@
 
     }
     if(structures.length > 0) {
-        let closestStructure = creep.pos.findClosestByRange(structures);
+        const closestStructure = creep.pos.findClosestByRange(structures);
         if(creep.pos.getRangeTo(closestStructure) <= 3) {
             if(creepBodyType == "ranged_attack" && !targetCreep) {
                 creep.rangedAttack(closestStructure);
@@ -121,30 +121,30 @@
     if(!creep.memory.squad) {
         creep.memory.squad = {};
     }
-    let squad = [];
+    const squad = [];
     if(!creep.memory.squad.a) {
-        let squadcreepa = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepA");}});
+        const squadcreepa = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepA");}});
         if(squadcreepa.length > 0) {
             squadcreepa.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.squad.a = squadcreepa[0].id;
         }
     }
     if(!creep.memory.squad.b) {
-        let squadcreepb = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepB");}});
+        const squadcreepb = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepB");}});
         if(squadcreepb.length > 0) {
             squadcreepb.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.squad.b = squadcreepb[0].id;
         }
     }
     if(!creep.memory.squad.y) {
-        let squadcreepy = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepY");}});
+        const squadcreepy = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepY");}});
         if(squadcreepy.length > 0) {
             squadcreepy.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.squad.y = squadcreepy[0].id;
         }
     }
     if(!creep.memory.squad.z) {
-        let squadcreepz = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepZ");}});
+        const squadcreepz = creep.room.find(FIND_MY_CREEPS, {filter: (myCreep) => {return (myCreep.memory.role == "SquadCreepZ");}});
         if(squadcreepz.length > 0) {
             squadcreepz.sort((a,b) => b.ticksToLive - a.ticksToLive);
             creep.memory.squad.z = squadcreepz[0].id;
@@ -178,7 +178,7 @@
         z = squad[3];
 
 
-        let aliveCreeps = [];
+        const aliveCreeps = [];
 
         if(a) {
             aliveCreeps.push(a);
@@ -198,7 +198,7 @@
         if(aliveCreeps.length > 0) {
             let target;
             let lowest = creep.hitsMax;
-            for(let squadmember of aliveCreeps) {
+            for(const squadmember of aliveCreeps) {
                 if(squadmember.hits < lowest) {
                     lowest = squadmember.hits;
                     target = squadmember;
@@ -212,7 +212,7 @@
             }
             else {
                 if(a) {
-                    let lastHealCreep = Game.getObjectById(a.memory.lastHeal)
+                    const lastHealCreep = Game.getObjectById(a.memory.lastHeal)
                     if(lastHealCreep && creep.pos.isNearTo(lastHealCreep)) {
                         creep.heal(lastHealCreep)
                     }
@@ -222,7 +222,7 @@
 
 
         if(a && a.memory.target) {
-            let targetStructure:any = Game.getObjectById(a.memory.target);
+            const targetStructure:any = Game.getObjectById(a.memory.target);
             if(targetStructure && (targetStructure.structureType == STRUCTURE_WALL || targetStructure.structureType == STRUCTURE_CONTAINER ||
                 targetStructure.structureType == STRUCTURE_ROAD || creep.pos.getRangeTo(targetStructure) > 1)) {
                 if(creepBodyType == "ranged_attack" && !targetCreep) {

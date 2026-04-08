@@ -7,7 +7,7 @@ const run = function (creep: Creep) {
   creep.memory.moving = false;
 
   if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-    let result = creep.Boost();
+    const result = creep.Boost();
     if(!result) {
         return;
     }
@@ -16,7 +16,7 @@ const run = function (creep: Creep) {
 
   const hostile = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
   if (hostile) {
-    let result = creep.attack(hostile);
+    const result = creep.attack(hostile);
 
     if(result === 0 && (Game.time % 25 === 0 || hostile.hits !== hostile.hitsMax)) {
       creep.room.roomTowersAttackEnemy(hostile);

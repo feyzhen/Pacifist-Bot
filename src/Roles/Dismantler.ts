@@ -6,7 +6,7 @@
 
  function findLocked(creep) {
 
-    let buildingsToDismantle = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_WALL});
+    const buildingsToDismantle = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_WALL});
 
     if(buildingsToDismantle.length > 0) {
         return buildingsToDismantle[0].id;
@@ -16,10 +16,10 @@
 
 
  const run = function (creep) {
-    ;
+    
 
     if(creep.memory.locked && creep.memory.locked != false) {
-        let dismantleTarget = Game.getObjectById(creep.memory.locked);
+        const dismantleTarget = Game.getObjectById(creep.memory.locked);
         if(dismantleTarget == undefined) {
             creep.memory.locked = false;
         }
@@ -31,7 +31,7 @@
 
 
     if(creep.memory.locked && creep.memory.locked != false) {
-        let dismantleTarget = Game.getObjectById(creep.memory.locked);
+        const dismantleTarget = Game.getObjectById(creep.memory.locked);
         if(creep.dismantle(dismantleTarget) == ERR_NOT_IN_RANGE) {
             creep.moveTo(dismantleTarget, {reusePath:25});
         }

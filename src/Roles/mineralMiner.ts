@@ -3,17 +3,17 @@
  * @param {Creep} creep
  **/
  const run = function (creep) {
-    ;
+    
     creep.memory.moving = false;
 
 
 
     if(!creep.memory.deposit) {
-        let found_deposit = creep.room.find(FIND_MINERALS);
+        const found_deposit = creep.room.find(FIND_MINERALS);
         creep.memory.deposit = found_deposit[0];
     }
 
-    let deposit:any = Game.getObjectById(creep.memory.deposit.id);
+    const deposit:any = Game.getObjectById(creep.memory.deposit.id);
     if(deposit.mineralAmount == 0) {
         creep.memory.suicide = true;
     }
@@ -35,7 +35,7 @@
         }
     }
     else {
-        let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+        const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
 
         if(storage && storage.store[deposit.mineralType] < 19500) {
             if(creep.pos.isNearTo(storage)) {
@@ -48,7 +48,7 @@
         }
 
 
-        let terminal = creep.room.terminal;
+        const terminal = creep.room.terminal;
 
         if(terminal && terminal.store[deposit.mineralType] < 5000) {
             if(creep.pos.isNearTo(terminal)) {

@@ -3,23 +3,23 @@
  * @param {Creep} creep
  **/
 const run = function (creep) {
-    ;
+    
     if(creep.memory.suicide) {
         creep.recycle();
         return;
     }
 
-    let controller = creep.room.controller;
+    const controller = creep.room.controller;
     let openControllerPositions;
     if(controller) {
         openControllerPositions = controller.pos.getOpenPositionsIgnoreCreepsCheckStructs();
     }
 
-    let buildings = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType !== STRUCTURE_ROAD && s.structureType !== STRUCTURE_CONTAINER && s.structureType !== STRUCTURE_CONTROLLER && s.pos.x >= 1 && s.pos.x <= 48 && s.pos.y >= 1 && s.pos.y <= 48});
+    const buildings = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType !== STRUCTURE_ROAD && s.structureType !== STRUCTURE_CONTAINER && s.structureType !== STRUCTURE_CONTROLLER && s.pos.x >= 1 && s.pos.x <= 48 && s.pos.y >= 1 && s.pos.y <= 48});
 
     if(controller && controller.my && controller.level == 1 && controller.ticksToDowngrade > 19900) {
         if(buildings.length > 0) {
-            for(let building of buildings) {
+            for(const building of buildings) {
                 building.destroy();
             }
         }
@@ -52,7 +52,7 @@ const run = function (creep) {
 
 
 
-    let route:any = Game.map.findRoute(creep.room.name, creep.memory.targetRoom, {
+    const route:any = Game.map.findRoute(creep.room.name, creep.memory.targetRoom, {
         routeCallback(roomName, fromRoomName) {
             if(Game.map.getRoomStatus(roomName).status !== "normal") {
                 return Infinity;

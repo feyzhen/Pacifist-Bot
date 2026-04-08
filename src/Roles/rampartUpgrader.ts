@@ -22,14 +22,14 @@
     }
     if(creep.memory.repairing) {
         if(!creep.memory.locked) {
-            let rampartsInRoom = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART});
+            const rampartsInRoom = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART});
             if(rampartsInRoom.length > 0) {
                 rampartsInRoom.sort((a,b) => a.hits - b.hits);
                 creep.memory.locked = rampartsInRoom[0].id
             }
         }
         if(creep.memory.locked) {
-            let target = Game.getObjectById(creep.memory.locked);
+            const target = Game.getObjectById(creep.memory.locked);
             if(target) {
                 if(creep.pos.getRangeTo(target) <= 3) {
                     creep.repair(target);

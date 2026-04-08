@@ -23,13 +23,13 @@ function calc_incoming_damage(pos: RoomPosition, towers: Array<StructureTower>, 
   let totalTowerDamage = 0;
 
   hostileCreeps.forEach(Hostile => {
-    let range = pos.getRangeTo(Hostile);
+    const range = pos.getRangeTo(Hostile);
     if (range > 3) return;
     let meleeWorthy = false;
     if (range === 1) {
       meleeWorthy = true;
     }
-    for (let part of Hostile.body) {
+    for (const part of Hostile.body) {
       let boostMultiplier = 1;
 
       if (part.boost) {
@@ -94,7 +94,7 @@ function calc_incoming_damage_potential_next_tick(
 
   hostileCreeps.forEach(Hostile => {
     let range = pos.getRangeTo(Hostile);
-    let pathRange = Hostile.pos.findPathTo(pos, { ignoreCreeps: true, ignoreRoads: true, swampCost: 1 }).length;
+    const pathRange = Hostile.pos.findPathTo(pos, { ignoreCreeps: true, ignoreRoads: true, swampCost: 1 }).length;
     if(pathRange > range) {
       range = pathRange;
     }
@@ -106,7 +106,7 @@ function calc_incoming_damage_potential_next_tick(
     else if(range === 3 && Hostile.fatigue === 0 && fatigue === 0 && meleeWorthy || range === 5 && Hostile.fatigue === 0 && fatigue === 0 && mosquitosNearby < 3 && Game.time % 5 < 3) {
       if (mosquitosNearby < 2) advance = false;
     }
-    for (let part of Hostile.body) {
+    for (const part of Hostile.body) {
       let boostMultiplier = 1;
 
       if (part.boost) {
@@ -167,7 +167,7 @@ function calc_incoming_damage_potential_next_tick_next_pos(
   let totalTowerDamage = 0;
 
   hostileCreeps.forEach(Hostile => {
-    let range = pos.getRangeTo(Hostile);
+    const range = pos.getRangeTo(Hostile);
     if (
       range > 4 ||
       (range === 4 && Hostile.fatigue !== 0) ||
@@ -181,7 +181,7 @@ function calc_incoming_damage_potential_next_tick_next_pos(
     ) {
       meleeWorthy = true;
     }
-    for (let part of Hostile.body) {
+    for (const part of Hostile.body) {
       let boostMultiplier = 1;
 
       if (part.boost) {

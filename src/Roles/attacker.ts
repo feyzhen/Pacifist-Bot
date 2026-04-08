@@ -3,14 +3,14 @@
  * @param {Creep} creep
  **/
 const run = function (creep) {
-    ;
+    
 
 
     if(creep.memory.targetRoom && creep.memory.targetRoom !== creep.room.name) {
-        let enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+        const enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
 
         if(enemyCreeps.length > 0) {
-            let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+            const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
 
             if(creep.attack(closestEnemyCreep) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(closestEnemyCreep);
@@ -24,10 +24,10 @@ const run = function (creep) {
         return creep.moveToRoom(creep.memory.targetRoom);
     }
     else {
-        let enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+        const enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
         let Structures;
 
-        let lowHitWalls = creep.room.find(FIND_STRUCTURES, {
+        const lowHitWalls = creep.room.find(FIND_STRUCTURES, {
             filter: object => object.structureType == STRUCTURE_WALL && object.hits < 10000
         });
 
@@ -41,7 +41,7 @@ const run = function (creep) {
         }
 
         if(lowHitWalls.length > 0) {
-            let closestLowHitWall = creep.pos.findClosestByRange(lowHitWalls);
+            const closestLowHitWall = creep.pos.findClosestByRange(lowHitWalls);
             if(creep.pos.isNearTo(closestLowHitWall)) {
                 creep.attack(closestLowHitWall);
             }
@@ -53,7 +53,7 @@ const run = function (creep) {
 
 
         if(enemyCreeps.length > 0) {
-            let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+            const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
 
             if(creep.attack(closestEnemyCreep) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(closestEnemyCreep);
@@ -66,7 +66,7 @@ const run = function (creep) {
         }
 
         if(Structures.length > 0) {
-            let closestStructure = creep.pos.findClosestByRange(Structures);
+            const closestStructure = creep.pos.findClosestByRange(Structures);
             if(creep.pos.isNearTo(closestStructure)) {
                 creep.attack(closestStructure);
             }
@@ -77,7 +77,7 @@ const run = function (creep) {
         }
 
         if(enemyCreeps.length > 0) {
-        let closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+        const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
             if(creep.pos.isNearTo(closestEnemyCreep)) {
                 creep.attack(closestEnemyCreep);
             }

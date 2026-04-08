@@ -16,7 +16,7 @@ const run = function (creep) {
 
 
     if(!creep.memory.target) {
-        let powerBanks = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_POWER_BANK});
+        const powerBanks = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_POWER_BANK});
         if(powerBanks.length > 0) {
             creep.memory.target = powerBanks[0].id;
         }
@@ -27,7 +27,7 @@ const run = function (creep) {
     }
 
     if(creep.memory.target) {
-        let target:any = Game.getObjectById(creep.memory.target);
+        const target:any = Game.getObjectById(creep.memory.target);
         if(target) {
 
             if(target.hits <= 180000 && !creep.memory.spawnedGoblin) {

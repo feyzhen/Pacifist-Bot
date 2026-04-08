@@ -12,7 +12,7 @@ const run = function (creep) {
         return;
     }
     if(creep.ticksToLive < 120) {
-        let powerSpawn:any = Game.getObjectById(creep.room.memory.Structures.powerSpawn);
+        const powerSpawn:any = Game.getObjectById(creep.room.memory.Structures.powerSpawn);
         if(powerSpawn) {
             if(creep.pos.isNearTo(powerSpawn)) {
                 creep.renew(powerSpawn);
@@ -24,10 +24,10 @@ const run = function (creep) {
         }
     }
 
-    let storage:any = creep.room.storage;
-    let terminal = creep.room.terminal;
+    const storage:any = creep.room.storage;
+    const terminal = creep.room.terminal;
 
-    let danger = creep.room.memory.danger;
+    const danger = creep.room.memory.danger;
 
 
 
@@ -42,7 +42,7 @@ const run = function (creep) {
     if(creep.memory.full ) {
         if(storage) {
             if(creep.pos.isNearTo(storage)) {
-                for(let resource in creep.store) {
+                for(const resource in creep.store) {
                     if(creep.transfer(storage, resource, creep.store[resource] - 50) === 0 && resource === RESOURCE_OPS) {
                         creep.memory.full = false;
                     }
@@ -55,7 +55,7 @@ const run = function (creep) {
         }
     }
 
-        for(let power in creep.powers) {
+        for(const power in creep.powers) {
 
             if(parseInt(power) == PWR_GENERATE_OPS) {
 
@@ -76,20 +76,20 @@ const run = function (creep) {
                 if(creep.powers[power].cooldown == 0 && !danger) {
                     if(!creep.memory.sources) {
                         creep.memory.sources = [];
-                        let sources = creep.room.find(FIND_SOURCES);
+                        const sources = creep.room.find(FIND_SOURCES);
                         if(sources.length > 0) {
-                            for(let source of sources) {
+                            for(const source of sources) {
                                 creep.memory.sources.push({id:source.id, lastBuff:0})
                             }
                         }
                     }
                     if(creep.memory.sources) {
                         let index = 0;
-                        for(let source of creep.memory.sources) {
+                        for(const source of creep.memory.sources) {
                             if(Game.time - 300 > source.lastBuff) {
-                                let sourceObj:any = Game.getObjectById(source.id);
+                                const sourceObj:any = Game.getObjectById(source.id);
                                 if(sourceObj) {
-                                    let result = usePowerInRange(creep, power, 3, sourceObj);
+                                    const result = usePowerInRange(creep, power, 3, sourceObj);
                                     if(result && result == "success") {
                                         creep.memory.sources[index].lastBuff = Game.time;
                                     }
@@ -104,17 +104,17 @@ const run = function (creep) {
             else if(parseInt(power) == PWR_OPERATE_OBSERVER) {
                 if(creep.powers[power].cooldown == 0) {
                     if(!creep.memory.observer) {
-                        let observer = creep.room.find(FIND_MY_STRUCTURES, {filter: { structureType : STRUCTURE_OBSERVER}});
+                        const observer = creep.room.find(FIND_MY_STRUCTURES, {filter: { structureType : STRUCTURE_OBSERVER}});
                         if(observer.length > 0) {
                             creep.memory.observer = {id:observer[0].id, lastBuff:0};
                         }
                     }
                     if(creep.memory.observer) {
-                        let lastBuffTimer = creep.powers[power].level * 200;
+                        const lastBuffTimer = creep.powers[power].level * 200;
                         if(Game.time - lastBuffTimer > creep.memory.observer.lastBuff) {
-                            let observer:any = Game.getObjectById(creep.memory.observer.id);
+                            const observer:any = Game.getObjectById(creep.memory.observer.id);
                             if(observer) {
-                                let result = usePowerInRange(creep, power, 3, observer);
+                                const result = usePowerInRange(creep, power, 3, observer);
                                 if(result && result == "success") {
                                     creep.memory.observer.lastBuff = Game.time;
                                 }

@@ -4,7 +4,7 @@ const run = function (creep) {
 		return;
 	}
 	// const start = Game.cpu.getUsed()
-	let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+	const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
 
     if(creep.room.controller && creep.room.controller.level == 4 && !storage && creep.room.find(FIND_MY_CREEPS).length < 9) {
         creep.memory.role = "builder";
@@ -19,7 +19,7 @@ const run = function (creep) {
 	// 	creep.room.createConstructionSite(creep.pos, STRUCTURE_ROAD);
 	// }
 
-	let controllerLink:any = Game.getObjectById(creep.room.memory.Structures.controllerLink);
+	const controllerLink:any = Game.getObjectById(creep.room.memory.Structures.controllerLink);
 
 	if(creep.memory.upgrading && creep.store[RESOURCE_ENERGY] == 0) {
 		creep.memory.upgrading = false;
@@ -47,9 +47,9 @@ const run = function (creep) {
 			if(creep.pos.isNearTo(controllerLink)) {
 				creep.withdraw(controllerLink, RESOURCE_ENERGY);
 				if(creep.ticksToLive % 23 == 0) {
-					let lookForRoadsOnCreepPos = creep.pos.lookFor(LOOK_STRUCTURES);
+					const lookForRoadsOnCreepPos = creep.pos.lookFor(LOOK_STRUCTURES);
 					if(lookForRoadsOnCreepPos.length > 0) {
-						for(let building of lookForRoadsOnCreepPos) {
+						for(const building of lookForRoadsOnCreepPos) {
 							if(building.structureType == STRUCTURE_ROAD) {
 								creep.MoveCostMatrixRoadPrio(creep.room.controller, 2);
 							}
@@ -65,13 +65,13 @@ const run = function (creep) {
 		else if(creep.room.controller.level < 7) {
 
 			if(storage == undefined) {
-				let result = creep.acquireEnergyWithContainersAndOrDroppedEnergy();
+				const result = creep.acquireEnergyWithContainersAndOrDroppedEnergy();
 				if(result == 0) {
 					creep.MoveCostMatrixRoadPrio(creep.room.controller, 3)
 				}
 			}
 			else {
-				let result = creep.withdrawStorage(storage);
+				const result = creep.withdrawStorage(storage);
 				if(result == 0) {
 					creep.MoveCostMatrixRoadPrio(creep.room.controller, 3)
 				}

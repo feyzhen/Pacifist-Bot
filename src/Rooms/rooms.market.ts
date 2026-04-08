@@ -1,11 +1,11 @@
 function market(room):any {
     if(room.terminal && room.terminal.cooldown == 0 && room.storage && room.memory.Structures.spawn && Game.getObjectById(room.memory.Structures.spawn) && Game.time % 10 == 0 && Game.cpu.bucket > 1000) {
-        let BaseResources = [RESOURCE_HYDROGEN, RESOURCE_OXYGEN, RESOURCE_UTRIUM, RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_CATALYST];
-        let Mineral:any = Game.getObjectById(room.memory.mineral) || room.findMineral();
+        const BaseResources = [RESOURCE_HYDROGEN, RESOURCE_OXYGEN, RESOURCE_UTRIUM, RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_CATALYST];
+        const Mineral:any = Game.getObjectById(room.memory.mineral) || room.findMineral();
 
 
 
-        let resourceToSell = Mineral.mineralType;
+        const resourceToSell = Mineral.mineralType;
         // if(room.terminal.store[RESOURCE_ENERGY] >= 1500 && room.terminal.store[RESOURCE_HYDROGEN] >= 20000) {
         //     resourceToSell = RESOURCE_HYDROGEN;
         // }
@@ -32,14 +32,14 @@ function market(room):any {
         // }
 
         if(room.terminal.store.getUsedCapacity() > 280000 && room.terminal.store[resourceToSell] > 100000) {
-            let orders = Game.market.getAllOrders(order => order.resourceType == resourceToSell &&
+            const orders = Game.market.getAllOrders(order => order.resourceType == resourceToSell &&
                 order.type == ORDER_BUY);
 
             console.log(resourceToSell, "buy orders found:", orders.length);
             orders.sort(function(a,b){return b.price - a.price;});
             if(orders[0] != undefined) {
-                let orderQuantity = 500;
-                let result = Game.market.deal(orders[0].id, orderQuantity, room.name);
+                const orderQuantity = 500;
+                const result = Game.market.deal(orders[0].id, orderQuantity, room.name);
                 if(result == 0) {
                     console.log("Successful sell on", resourceToSell, "at the price of", orders[0].price, "and quantity of", orderQuantity);
                     return;
@@ -60,7 +60,7 @@ function market(room):any {
 
         if(room.terminal.store[resourceToSell] >= 30000) {
             if(room.memory.market.sellOrders.roomMineral.ID && Game.market.orders[room.memory.market.sellOrders.roomMineral.ID]) {
-                let order = Game.market.orders[room.memory.market.sellOrders.roomMineral.ID];
+                const order = Game.market.orders[room.memory.market.sellOrders.roomMineral.ID];
                 if(order.remainingAmount <= 1000)  {
                     Game.market.extendOrder(room.memory.market.sellOrders.roomMineral.ID, 4000)
                 }
@@ -79,7 +79,7 @@ function market(room):any {
             else {
                 let foundOrder = false;
 
-                let Orders = Game.market.orders;
+                const Orders = Game.market.orders;
 
                 // for(let orderID in Orders) {
                 //     let myOrder = Game.market.orders[orderID];
@@ -88,8 +88,8 @@ function market(room):any {
                 //     }
                 // }
 
-                for(let orderID in Orders) {
-                    let myOrder = Game.market.orders[orderID];
+                for(const orderID in Orders) {
+                    const myOrder = Game.market.orders[orderID];
                     if(myOrder.resourceType == resourceToSell && myOrder.type == ORDER_SELL && myOrder.roomName == room.name) {
                         foundOrder = true;
                         room.memory.market.sellOrders.roomMineral.ID = orderID;
@@ -100,7 +100,7 @@ function market(room):any {
 
                 if(!foundOrder) {
 
-                    let recPrice = CalcPriceForOrder(resourceToSell, room.terminal.store[resourceToSell])
+                    const recPrice = CalcPriceForOrder(resourceToSell, room.terminal.store[resourceToSell])
 
                     Game.market.createOrder({
                         type: ORDER_SELL,
@@ -115,19 +115,19 @@ function market(room):any {
         }
 
         function CalcPriceForOrder(resourceToSell, resourceStored) {
-            let resourceData = Game.market.getHistory(resourceToSell);
+            const resourceData = Game.market.getHistory(resourceToSell);
             let myTotalAverage = 0;
             let myTotalStDevAverage = 0;
             let weightNumber = 1;
             if(resourceData && resourceData.length > 0) {
-                for(let day of resourceData) {
+                for(const day of resourceData) {
 
                     myTotalAverage += day.avgPrice * weightNumber;
                     myTotalStDevAverage += day.stddevPrice * weightNumber;
                     weightNumber ++;
                 }
-                let Average = myTotalAverage / 105;
-                let AverageStDev = myTotalStDevAverage / 105;
+                const Average = myTotalAverage / 105;
+                const AverageStDev = myTotalStDevAverage / 105;
                 console.log(Average, "averageprice", AverageStDev, "average St Dev")
 
                 if(resourceStored >= 100000) {
@@ -184,10 +184,10 @@ function market(room):any {
         if(room.terminal.store[RESOURCE_ENERGY] >= 2000) {
 
             if(room.memory.Structures.spawn && Game.getObjectById(room.memory.Structures.spawn) && room.storage) {
-                for(let resource of BaseResources) {
+                for(const resource of BaseResources) {
                     if(room.terminal.store[resource] < 8000 && resource != Mineral.mineralType) {
                         if(Memory.my_goods[resource] && Memory.my_goods[resource].length > 0) {
-                            for(let room_with_mineral of Memory.my_goods[resource]) {
+                            for(const room_with_mineral of Memory.my_goods[resource]) {
                                 if(!Game.rooms[room_with_mineral]) {
                                     Memory.my_goods[resource].filter(function(r) {return r !== room_with_mineral;});
                                     break;
@@ -218,9 +218,9 @@ function market(room):any {
 
             if(Game.market.credits > 1000000 && Game.shard.name == "shard3" || Game.shard.name !== "shard3" && Game.market.credits >= 10000) {
                 if(room.terminal.store.getFreeCapacity() > 1000) {
-                    for(let resource of BaseResources) {
+                    for(const resource of BaseResources) {
                         if(room.terminal.store[resource] < 8000 && resource != Mineral.mineralType || room.terminal.store[resource] < 1000 && resource == Mineral.mineralType) {
-                            let result = buy_resource(resource, 2);
+                            const result = buy_resource(resource, 2);
                             if(result == 0) {
                                 return;
                             }
@@ -228,9 +228,9 @@ function market(room):any {
                     }
 
 
-                    for(let resource of BaseResources) {
+                    for(const resource of BaseResources) {
                         if(room.terminal.store[resource] < 7000 && resource != Mineral.mineralType || room.terminal.store[resource] < 1000 && resource == Mineral.mineralType) {
-                            let result = buy_resource(resource, 50);
+                            const result = buy_resource(resource, 50);
                             if(result == 0) {
                                 return;
                             }
@@ -238,18 +238,18 @@ function market(room):any {
                     }
 
 
-                    for(let resource of BaseResources) {
+                    for(const resource of BaseResources) {
                         if(room.terminal.store[resource] < 6000 && resource != Mineral.mineralType || room.terminal.store[resource] < 1000 && resource == Mineral.mineralType) {
-                            let result = buy_resource(resource, 100);
+                            const result = buy_resource(resource, 100);
                             if(result == 0) {
                                 return;
                             }
                         }
                     }
 
-                    for(let resource of BaseResources) {
+                    for(const resource of BaseResources) {
                         if(room.terminal.store[resource] < 5000 && resource != Mineral.mineralType || room.terminal.store[resource] < 1000 && resource == Mineral.mineralType) {
-                            let result = buy_resource(resource, 500);
+                            const result = buy_resource(resource, 500);
                             if(result == 0) {
                                 return;
                             }
@@ -260,7 +260,7 @@ function market(room):any {
                         // check if terminal + storage have less than 5000 power
                         // if so, buy 5000 power
                         if(room.terminal.store[RESOURCE_POWER] + room.storage.store[RESOURCE_POWER] < 5000) {
-                            let result = buy_resource(RESOURCE_POWER, 5000, 5000);
+                            const result = buy_resource(RESOURCE_POWER, 5000, 5000);
                             if(result == 0) {
                                 return;
                             }
@@ -282,38 +282,38 @@ function market(room):any {
             // }
 
 
-            let SellResources = [RESOURCE_MIST, RESOURCE_GHODIUM_MELT, RESOURCE_COMPOSITE, RESOURCE_CRYSTAL, RESOURCE_LIQUID,
+            const SellResources = [RESOURCE_MIST, RESOURCE_GHODIUM_MELT, RESOURCE_COMPOSITE, RESOURCE_CRYSTAL, RESOURCE_LIQUID,
             RESOURCE_OXIDANT, RESOURCE_REDUCTANT, RESOURCE_ZYNTHIUM_BAR, RESOURCE_LEMERGIUM_BAR, RESOURCE_UTRIUM_BAR, RESOURCE_KEANIUM_BAR, RESOURCE_PURIFIER,
             RESOURCE_METAL, RESOURCE_BIOMASS, RESOURCE_SILICON,RESOURCE_KEANIUM_ACID,RESOURCE_GHODIUM_HYDRIDE,RESOURCE_GHODIUM_ACID,RESOURCE_OPS];
 
 
 
-            for(let resource of SellResources) {
+            for(const resource of SellResources) {
 
                 if(resource === RESOURCE_OPS && room.terminal.store[resource] < 35000) {
                     continue;
                 }
 
                 if(room.terminal.store[resource] >= 1000) {
-                    let result = sell_resource(resource, 2, 1000);
+                    const result = sell_resource(resource, 2, 1000);
                     if(result == 0) {
                         return;
                     }
                 }
                 if(room.terminal.store[resource] >= 100 && Game.time % 100 == 0) {
-                    let result = sell_resource(resource, 2, 100);
+                    const result = sell_resource(resource, 2, 100);
                     if(result == 0) {
                         return;
                     }
                 }
                 if(room.terminal.store[resource] >= 1 && Game.time % 1000 == 0) {
-                    let result = sell_resource(resource, 2, 10);
+                    const result = sell_resource(resource, 2, 10);
                     if(result == 0) {
                         return;
                     }
                 }
                 if(room.terminal.store[resource] >= 1 && Game.time % 10000 == 0) {
-                    let result = sell_resource(resource, 2, 1);
+                    const result = sell_resource(resource, 2, 1);
                     if(result == 0) {
                         return;
                     }
@@ -343,17 +343,17 @@ function market(room):any {
         }
 
         function buy_resource(resource:ResourceConstant, OrderPrice:number=5, OrderAmount=1000):any | void {
-            let OrderMaxEnergy = OrderAmount * 4;
+            const OrderMaxEnergy = OrderAmount * 4;
             let orders = Game.market.getAllOrders({type: ORDER_SELL, resourceType: resource});
             orders = _.filter(orders, (order) => Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price <= OrderPrice);
             if(orders.length > 0) {
                 orders.sort((a,b) => a.price - b.price);
-                let orderID = orders[0].id;
-                let newOrderAmount = orders[0].amount;
+                const orderID = orders[0].id;
+                const newOrderAmount = orders[0].amount;
                 console.log(JSON.stringify(orders[0]))
                 console.log(Game.market.calcTransactionCost(newOrderAmount, room.name, orders[0].roomName));
 
-                let result = Game.market.deal(orderID, newOrderAmount, room.name);
+                const result = Game.market.deal(orderID, newOrderAmount, room.name);
                 if(result == 0) {
                     console.log(
                       newOrderAmount,
@@ -375,7 +375,7 @@ function market(room):any {
         }
 
         function sell_resource(resource:ResourceConstant, OrderPrice:number=5, OrderAmount=100):any | void {
-            let OrderMaxEnergy = OrderAmount * 8;
+            const OrderMaxEnergy = OrderAmount * 8;
             let orders = Game.market.getAllOrders({type: ORDER_BUY, resourceType: resource});
             orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price >= OrderPrice);
             if(orders.length > 0) {
@@ -385,12 +385,12 @@ function market(room):any {
                 //     return false;
                 // }
 
-                let orderID = orders[0].id;
+                const orderID = orders[0].id;
 
                 console.log(JSON.stringify(orders[0]))
                 console.log(Game.market.calcTransactionCost(OrderAmount, room.name, orders[0].roomName))
 
-                let result = Game.market.deal(orderID, OrderAmount, room.name);
+                const result = Game.market.deal(orderID, OrderAmount, room.name);
                 if(result == 0) {
                     console.log(OrderAmount, resource, "Sold at Price:", orders[0].price, "=", OrderAmount * orders[0].price);
                     return result;
@@ -405,22 +405,22 @@ function market(room):any {
         }
 
 
-        let storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+        const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
         if(room.terminal.store[RESOURCE_ENERGY] > 500 && room.terminal.store[RESOURCE_ENERGY] < 10000 && storage && storage.store[RESOURCE_ENERGY] < 40000) {
 
-            let OrderPrice = 20;
-            let OrderAmount = 5000;
-            let OrderMaxEnergy = OrderAmount / 2;
+            const OrderPrice = 20;
+            const OrderAmount = 5000;
+            const OrderMaxEnergy = OrderAmount / 2;
             let orders = Game.market.getAllOrders({type: ORDER_SELL, resourceType: RESOURCE_ENERGY});
             orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price <= OrderPrice);
             if(orders.length > 0) {
                 orders.sort((a,b) => a.price - b.price);
-                let orderID = orders[0].id;
+                const orderID = orders[0].id;
 
                 console.log(JSON.stringify(orders[0]))
                 console.log(Game.market.calcTransactionCost(OrderAmount, room.name, orders[0].roomName))
 
-                let result = Game.market.deal(orderID, OrderAmount, room.name);
+                const result = Game.market.deal(orderID, OrderAmount, room.name);
                 if(result == 0) {
                     console.log(OrderAmount, RESOURCE_ENERGY, "Bought at Price:", orders[0].price, "=", OrderAmount * orders[0].price);
                     return;
@@ -449,7 +449,7 @@ function market(room):any {
                 "XKH2O":[],
             };
         }
-        let boostsToNeed = [RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE,
+        const boostsToNeed = [RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE,
                             RESOURCE_CATALYZED_KEANIUM_ALKALIDE,
                             RESOURCE_CATALYZED_UTRIUM_ACID,
                             RESOURCE_CATALYZED_LEMERGIUM_ACID,
@@ -458,7 +458,7 @@ function market(room):any {
                             RESOURCE_CATALYZED_ZYNTHIUM_ACID,
                             RESOURCE_CATALYZED_KEANIUM_ACID];
 
-        for(let boost of boostsToNeed) {
+        for(const boost of boostsToNeed) {
             if(storage && storage.store[boost] < 10000 && room.terminal.store[boost] < 3000) {
                 if(!Memory.resource_requests[boost].includes(room.name)) {
                     Memory.resource_requests[boost].push(room.name);
@@ -470,15 +470,15 @@ function market(room):any {
         }
 
 
-        for(let boost of boostsToNeed) {
+        for(const boost of boostsToNeed) {
             if(room.terminal && room.terminal.store[boost] > 500 && storage && storage.store[boost] > 18000) {
                 if(Memory.resource_requests[boost].length > 0) {
-                    for(let roomName of Memory.resource_requests[boost]) {
+                    for(const roomName of Memory.resource_requests[boost]) {
                         if(roomName !== room.name && Game.rooms[roomName] && Game.rooms[roomName].memory.Structures.spawn && Game.getObjectById(Game.rooms[roomName].memory.Structures.spawn) && Game.rooms[roomName].storage) {
-                            let roomObj = Game.rooms[roomName];
+                            const roomObj = Game.rooms[roomName];
                             if(roomObj && roomObj.controller && roomObj.controller.level >= 6) {
-                                let theirTerminal = roomObj.terminal;
-                                let theirStorage:any = Game.getObjectById(roomObj.memory.Structures.storage);
+                                const theirTerminal = roomObj.terminal;
+                                const theirStorage:any = Game.getObjectById(roomObj.memory.Structures.storage);
                                 if(theirTerminal && theirStorage && theirTerminal.store.getFreeCapacity() > 10000 && theirStorage.store.getFreeCapacity() > 10000) {
                                     room.terminal.send(boost, 500, roomName, "enjoy this " + boost + " other room!");
                                     console.log("sending", roomName, "500", boost)
@@ -498,241 +498,241 @@ function market(room):any {
 
 
         if(room.terminal.store[RESOURCE_CONDENSATE] >= 10) {
-            let result = sell_resource(RESOURCE_CONDENSATE, 999, 10);
+            const result = sell_resource(RESOURCE_CONDENSATE, 999, 10);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_CONCENTRATE] >= 10) {
-            let result = sell_resource(RESOURCE_CONCENTRATE, 9999, 10);
+            const result = sell_resource(RESOURCE_CONCENTRATE, 9999, 10);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_CONCENTRATE] >= 2) {
-            let result = sell_resource(RESOURCE_CONCENTRATE, 9999, 2);
+            const result = sell_resource(RESOURCE_CONCENTRATE, 9999, 2);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_EXTRACT] >= 5) {
-            let result = sell_resource(RESOURCE_EXTRACT, 80000, 5);
+            const result = sell_resource(RESOURCE_EXTRACT, 80000, 5);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_EXTRACT] >= 1) {
-            let result = sell_resource(RESOURCE_EXTRACT, 80000, 1);
+            const result = sell_resource(RESOURCE_EXTRACT, 80000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_SPIRIT] >= 1) {
-            let result = sell_resource(RESOURCE_SPIRIT, 199999, 1);
+            const result = sell_resource(RESOURCE_SPIRIT, 199999, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_EMANATION] >= 1) {
-            let result = sell_resource(RESOURCE_EMANATION, 800000, 1);
+            const result = sell_resource(RESOURCE_EMANATION, 800000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_ESSENCE] >= 1) {
-            let result = sell_resource(RESOURCE_ESSENCE, 2000000, 1);
+            const result = sell_resource(RESOURCE_ESSENCE, 2000000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_CONDENSATE] > 0) {
-            let result = sell_resource(RESOURCE_CONDENSATE, 999, room.terminal.store[RESOURCE_CONDENSATE]);
+            const result = sell_resource(RESOURCE_CONDENSATE, 999, room.terminal.store[RESOURCE_CONDENSATE]);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_CONCENTRATE] > 0) {
-            let result = sell_resource(RESOURCE_CONCENTRATE, 9999, room.terminal.store[RESOURCE_CONCENTRATE]);
+            const result = sell_resource(RESOURCE_CONCENTRATE, 9999, room.terminal.store[RESOURCE_CONCENTRATE]);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_WIRE] >= 10) {
-            let result = sell_resource(RESOURCE_WIRE, 999, 10);
+            const result = sell_resource(RESOURCE_WIRE, 999, 10);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_SWITCH] >= 10) {
-            let result = sell_resource(RESOURCE_SWITCH, 9999, 10);
+            const result = sell_resource(RESOURCE_SWITCH, 9999, 10);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_SWITCH] >= 2) {
-            let result = sell_resource(RESOURCE_SWITCH, 9999, 2);
+            const result = sell_resource(RESOURCE_SWITCH, 9999, 2);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_TRANSISTOR] >= 5) {
-            let result = sell_resource(RESOURCE_TRANSISTOR, 80000, 5);
+            const result = sell_resource(RESOURCE_TRANSISTOR, 80000, 5);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_TRANSISTOR] >= 1) {
-            let result = sell_resource(RESOURCE_TRANSISTOR, 80000, 1);
+            const result = sell_resource(RESOURCE_TRANSISTOR, 80000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_MICROCHIP] >= 1) {
-            let result = sell_resource(RESOURCE_MICROCHIP, 199999, 1);
+            const result = sell_resource(RESOURCE_MICROCHIP, 199999, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_CIRCUIT] >= 1) {
-            let result = sell_resource(RESOURCE_CIRCUIT, 800000, 1);
+            const result = sell_resource(RESOURCE_CIRCUIT, 800000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_DEVICE] >= 1) {
-            let result = sell_resource(RESOURCE_DEVICE, 2000000, 1);
+            const result = sell_resource(RESOURCE_DEVICE, 2000000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_WIRE] > 0) {
-            let result = sell_resource(RESOURCE_WIRE, 999, room.terminal.store[RESOURCE_WIRE]);
+            const result = sell_resource(RESOURCE_WIRE, 999, room.terminal.store[RESOURCE_WIRE]);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_SWITCH] > 0) {
-            let result = sell_resource(RESOURCE_SWITCH, 9999, room.terminal.store[RESOURCE_SWITCH]);
+            const result = sell_resource(RESOURCE_SWITCH, 9999, room.terminal.store[RESOURCE_SWITCH]);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_CELL] >= 10) {
-            let result = sell_resource(RESOURCE_CELL, 999, 10);
+            const result = sell_resource(RESOURCE_CELL, 999, 10);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_PHLEGM] >= 10) {
-            let result = sell_resource(RESOURCE_PHLEGM, 9999, 10);
+            const result = sell_resource(RESOURCE_PHLEGM, 9999, 10);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_PHLEGM] >= 2) {
-            let result = sell_resource(RESOURCE_PHLEGM, 9999, 2);
+            const result = sell_resource(RESOURCE_PHLEGM, 9999, 2);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_TISSUE] >= 5) {
-            let result = sell_resource(RESOURCE_TISSUE, 80000, 5);
+            const result = sell_resource(RESOURCE_TISSUE, 80000, 5);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_TISSUE] >= 1) {
-            let result = sell_resource(RESOURCE_TISSUE, 80000, 1);
+            const result = sell_resource(RESOURCE_TISSUE, 80000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_MUSCLE] >= 1) {
-            let result = sell_resource(RESOURCE_MUSCLE, 199999, 1);
+            const result = sell_resource(RESOURCE_MUSCLE, 199999, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_ORGANOID] >= 1) {
-            let result = sell_resource(RESOURCE_ORGANOID, 800000, 1);
+            const result = sell_resource(RESOURCE_ORGANOID, 800000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_ORGANISM] >= 1) {
-            let result = sell_resource(RESOURCE_ORGANISM, 2000000, 1);
+            const result = sell_resource(RESOURCE_ORGANISM, 2000000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_CELL] > 0) {
-            let result = sell_resource(RESOURCE_CELL, 999, room.terminal.store[RESOURCE_CELL]);
+            const result = sell_resource(RESOURCE_CELL, 999, room.terminal.store[RESOURCE_CELL]);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_PHLEGM] > 0) {
-            let result = sell_resource(RESOURCE_PHLEGM, 9999, room.terminal.store[RESOURCE_PHLEGM]);
+            const result = sell_resource(RESOURCE_PHLEGM, 9999, room.terminal.store[RESOURCE_PHLEGM]);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_ALLOY] >= 10) {
-            let result = sell_resource(RESOURCE_ALLOY, 999, 10);
+            const result = sell_resource(RESOURCE_ALLOY, 999, 10);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_TUBE] >= 10) {
-            let result = sell_resource(RESOURCE_TUBE, 9999, 10);
+            const result = sell_resource(RESOURCE_TUBE, 9999, 10);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_TUBE] >= 2) {
-            let result = sell_resource(RESOURCE_TUBE, 9999, 2);
+            const result = sell_resource(RESOURCE_TUBE, 9999, 2);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_FIXTURES] >= 5) {
-            let result = sell_resource(RESOURCE_FIXTURES, 80000, 5);
+            const result = sell_resource(RESOURCE_FIXTURES, 80000, 5);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_FIXTURES] >= 1) {
-            let result = sell_resource(RESOURCE_FIXTURES, 80000, 1);
+            const result = sell_resource(RESOURCE_FIXTURES, 80000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_FRAME] >= 1) {
-            let result = sell_resource(RESOURCE_FRAME, 199999, 1);
+            const result = sell_resource(RESOURCE_FRAME, 199999, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_HYDRAULICS] >= 1) {
-            let result = sell_resource(RESOURCE_HYDRAULICS, 800000, 1);
+            const result = sell_resource(RESOURCE_HYDRAULICS, 800000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_MACHINE] >= 1) {
-            let result = sell_resource(RESOURCE_MACHINE, 2000000, 1);
+            const result = sell_resource(RESOURCE_MACHINE, 2000000, 1);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_ALLOY] > 0) {
-            let result = sell_resource(RESOURCE_ALLOY, 999, room.terminal.store[RESOURCE_ALLOY]);
+            const result = sell_resource(RESOURCE_ALLOY, 999, room.terminal.store[RESOURCE_ALLOY]);
             if(result == 0) {
                 return;
             }
         }
         if(room.terminal.store[RESOURCE_TUBE] > 0) {
-            let result = sell_resource(RESOURCE_TUBE, 9999, room.terminal.store[RESOURCE_TUBE]);
+            const result = sell_resource(RESOURCE_TUBE, 9999, room.terminal.store[RESOURCE_TUBE]);
             if(result == 0) {
                 return;
             }
@@ -768,14 +768,14 @@ function market(room):any {
 
 
         if(Game.resources.pixel > 0 && room.terminal && Game.time % 100 == 0) {
-            let OrderPrice = 50000;
+            const OrderPrice = 50000;
 
             let orders = Game.market.getAllOrders({type: ORDER_BUY, resourceType: PIXEL});
             orders = _.filter(orders, (order) => order.amount >= 1 && order.price >= OrderPrice);
             if(orders.length > 0) {
                 orders.sort((a,b) => b.price - a.price);
-                let orderID = orders[0].id;
-                let result = Game.market.deal(orderID, 1, room.name);
+                const orderID = orders[0].id;
+                const result = Game.market.deal(orderID, 1, room.name);
                 if(result == 0) {
                     console.log(1, PIXEL, "Sold at Price:", orders[0].price, "=", 1 * orders[0].price);
                     return;
@@ -790,9 +790,9 @@ function market(room):any {
 
         }
     }
-    let storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
     if(storage && storage.store[RESOURCE_ENERGY] > 300000 && Game.time % 110 == 0 && Game.cpu.bucket > 9000 && room.terminal.cooldown == 0 && room.terminal.store.getFreeCapacity() > 50000) {
-        let crawler_list = [
+        const crawler_list = [
             RESOURCE_ENERGY,RESOURCE_POWER,RESOURCE_HYDROGEN,RESOURCE_LEMERGIUM,RESOURCE_GHODIUM,
             RESOURCE_SILICON,RESOURCE_METAL,RESOURCE_BIOMASS,RESOURCE_MIST,RESOURCE_HYDROXIDE,RESOURCE_ZYNTHIUM_KEANITE,RESOURCE_UTRIUM_LEMERGITE,RESOURCE_UTRIUM_HYDRIDE,
             RESOURCE_UTRIUM_OXIDE,RESOURCE_KEANIUM_HYDRIDE,RESOURCE_KEANIUM_OXIDE,RESOURCE_LEMERGIUM_HYDRIDE,RESOURCE_LEMERGIUM_OXIDE,RESOURCE_ZYNTHIUM_HYDRIDE,
@@ -807,16 +807,16 @@ function market(room):any {
             RESOURCE_MACHINE,RESOURCE_CONDENSATE,RESOURCE_CONCENTRATE,RESOURCE_EXTRACT,RESOURCE_SPIRIT,RESOURCE_EMANATION,RESOURCE_ESSENCE
         ]
 
-        let shuffled_crawler_list = crawler_list
+        const shuffled_crawler_list = crawler_list
             .map(value => ({ value, sort: Math.random() }))
             .sort((a, b) => a.sort - b.sort)
             .map(({ value }) => value);
 
         if(room.terminal.store[RESOURCE_ENERGY] >= 2000) {
             let count = 0;
-            let price = 3;
-            for(let resource of shuffled_crawler_list) {
-                let result = buy_resource_crawler(resource, price);
+            const price = 3;
+            for(const resource of shuffled_crawler_list) {
+                const result = buy_resource_crawler(resource, price);
                 if(result == 0) {
                     return;
                 }
@@ -828,18 +828,18 @@ function market(room):any {
         }
 
         function buy_resource_crawler(resource:ResourceConstant, OrderPrice:number=5):any | void {
-            let OrderAmount = 50;
-            let OrderMaxEnergy = OrderAmount * 8;
+            const OrderAmount = 50;
+            const OrderMaxEnergy = OrderAmount * 8;
             let orders = Game.market.getAllOrders({type: ORDER_SELL, resourceType: resource});
             orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price <= OrderPrice);
             if(orders.length > 0) {
                 orders.sort((a,b) => a.price - b.price);
-                let orderID = orders[0].id;
+                const orderID = orders[0].id;
 
                 console.log(JSON.stringify(orders[0]))
                 console.log(Game.market.calcTransactionCost(OrderAmount, room.name, orders[0].roomName))
 
-                let result = Game.market.deal(orderID, OrderAmount, room.name);
+                const result = Game.market.deal(orderID, OrderAmount, room.name);
                 if(result == 0) {
                     console.log(OrderAmount, resource, "Bought at Price:", orders[0].price, "=", OrderAmount * orders[0].price);
                     return result;
@@ -868,8 +868,8 @@ function market(room):any {
     }
     if(targetRampRoom && Game.time % 20 == 0 && room.name != targetRampRoom && Game.rooms[targetRampRoom] && Game.rooms[targetRampRoom].controller && Game.rooms[targetRampRoom].controller.my && Game.rooms[targetRampRoom].controller.level >= 6 &&
         Game.rooms[targetRampRoom].terminal && Game.rooms[targetRampRoom].terminal.store[RESOURCE_ENERGY] < 80000 && Game.rooms[targetRampRoom].terminal.store.getFreeCapacity() > 50000 && Game.rooms[targetRampRoom].memory.Structures.spawn && Game.getObjectById(Game.rooms[targetRampRoom].memory.Structures.spawn) && Game.rooms[targetRampRoom].storage) {
-            let theirRoom:any = Game.rooms[targetRampRoom];
-            let theirStorage = Game.getObjectById(theirRoom.memory.Structures.storage) || theirRoom.findStorage();
+            const theirRoom:any = Game.rooms[targetRampRoom];
+            const theirStorage = Game.getObjectById(theirRoom.memory.Structures.storage) || theirRoom.findStorage();
             if(theirStorage && theirStorage.store[RESOURCE_ENERGY] < 455000 && room.terminal.store[RESOURCE_ENERGY] >= 40000 && storage && (storage.store[RESOURCE_ENERGY] > 200000 && Memory.CPU.reduce && theirStorage.store[RESOURCE_ENERGY] < 300000 || storage.store[RESOURCE_ENERGY] > 290000 && !Memory.CPU.reduce)) {
                 room.terminal.send(RESOURCE_ENERGY, 10000, targetRampRoom, "enjoy this energy, other room!");
                 console.log("sending room", targetRampRoom, "10000 energy")
@@ -883,10 +883,10 @@ function market(room):any {
             room.memory.market.sellOrders.energy = {};
         }
         if(room.memory.market?.sellOrders?.energy?.ID) {
-            let order = Game.market.orders[room.memory.market.sellOrders.energy.ID];
+            const order = Game.market.orders[room.memory.market.sellOrders.energy.ID];
             if(order && order.remainingAmount < 20000) {
                 Game.market.extendOrder(order.id, 20000 - order.remainingAmount);
-                let newPrice = CalcPriceForOrder(RESOURCE_ENERGY);
+                const newPrice = CalcPriceForOrder(RESOURCE_ENERGY);
                 if(newPrice > order.price) Game.market.changeOrderPrice(order.id,newPrice);
             }
 
@@ -896,15 +896,15 @@ function market(room):any {
         }
         else if(!room.memory.market?.sellOrders?.energy?.ID) {
             let found = false;
-            for(let orderID in Game.market.orders) {
-                let order = Game.market.orders[orderID];
+            for(const orderID in Game.market.orders) {
+                const order = Game.market.orders[orderID];
                 if(order.roomName == room.name && order.resourceType == RESOURCE_ENERGY && order.type == ORDER_SELL) {
                     room.memory.market.sellOrders.energy.ID = orderID;
                     found = true;
                 }
             }
             if(!found) {
-                let result = Game.market.createOrder({
+                const result = Game.market.createOrder({
                     type: ORDER_SELL,
                     resourceType: RESOURCE_ENERGY,
                     price: CalcPriceForOrder(RESOURCE_ENERGY),
@@ -921,17 +921,17 @@ function market(room):any {
         }
 
         function CalcPriceForOrder(resourceToSell) {
-            let resourceData = Game.market.getHistory(resourceToSell);
+            const resourceData = Game.market.getHistory(resourceToSell);
             let myTotalAverage = 0;
             let weightNumber = 1;
 
             if (resourceData && resourceData.length > 0) {
-                for (let day of resourceData) {
+                for (const day of resourceData) {
                     myTotalAverage += day.avgPrice * weightNumber;
                     weightNumber++;
                 }
 
-                let Average = myTotalAverage / 105;
+                const Average = myTotalAverage / 105;
                 console.log(Average, "average price");
 
                 return Average + 1;
@@ -945,17 +945,17 @@ function market(room):any {
 
 
         function CalcPriceForOrder(resourceToSell) {
-            let resourceData = Game.market.getHistory(resourceToSell);
+            const resourceData = Game.market.getHistory(resourceToSell);
             let myTotalAverage = 0;
             let weightNumber = 1;
 
             if (resourceData && resourceData.length > 0) {
-                for (let day of resourceData) {
+                for (const day of resourceData) {
                     myTotalAverage += day.avgPrice * weightNumber;
                     weightNumber++;
                 }
 
-                let Average = myTotalAverage / 105;
+                const Average = myTotalAverage / 105;
                 console.log(Average, "average price");
 
                 return Average + 1;
@@ -967,9 +967,9 @@ function market(room):any {
 
         let foundInRoomEnergyOrder = false;
 
-        let Orders = Game.market.orders;
-        for(let orderID in Orders) {
-            let order = Game.market.orders[orderID];
+        const Orders = Game.market.orders;
+        for(const orderID in Orders) {
+            const order = Game.market.orders[orderID];
 
 
             if(order.resourceType == RESOURCE_ENERGY && order.type == ORDER_BUY && order.roomName == room.name) {

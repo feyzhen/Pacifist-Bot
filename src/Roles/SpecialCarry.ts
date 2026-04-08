@@ -29,7 +29,7 @@ const run = function (creep) {
 	}
 
 
-    let storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
+    const storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
 
 
 
@@ -49,7 +49,7 @@ const run = function (creep) {
 
         if (creep.memory.full) {
           if (!creep.memory.creep_target) {
-            let SpecialRepairers = creep.room.find(FIND_MY_CREEPS, {
+            const SpecialRepairers = creep.room.find(FIND_MY_CREEPS, {
               filter: c => {
                 return c.memory.role == "SpecialRepair";
               }
@@ -61,7 +61,7 @@ const run = function (creep) {
           }
 
           if (creep.memory.creep_target) {
-            let target: any = Game.getObjectById(creep.memory.creep_target);
+            const target: any = Game.getObjectById(creep.memory.creep_target);
             if (!target) {
               creep.memory.creep_target = false;
               return;

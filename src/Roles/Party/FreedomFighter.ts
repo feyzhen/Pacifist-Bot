@@ -6,7 +6,7 @@ const run = function (creep) {
   creep.memory.moving = false;
 
   if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-      let result = creep.Boost();
+      const result = creep.Boost();
       if(!result) {
           return;
       }
@@ -14,10 +14,10 @@ const run = function (creep) {
 
   if(creep.memory.line === 1) {
     if(!creep.memory.party) {
-      let party = creep.room.find(FIND_MY_CREEPS, {filter: c => (c.memory.role === "FreedomFighter" || c.memory.role === "CCKparty") && c.memory.boostlabs && !c.memory.boostlabs.length});
+      const party = creep.room.find(FIND_MY_CREEPS, {filter: c => (c.memory.role === "FreedomFighter" || c.memory.role === "CCKparty") && c.memory.boostlabs && !c.memory.boostlabs.length});
       if(party.length === creep.memory.lineLength) {
         party.sort((a,b) => a.memory.line - b.memory.line);
-        let partyIDs = party.map(c => c.id);
+        const partyIDs = party.map(c => c.id);
         creep.memory.party = partyIDs;
       }
     }
@@ -31,15 +31,15 @@ const run = function (creep) {
 
       let allGood = true;
       let readyToAttackController = true;
-      let lowestHealthInParty = party.reduce((lowest, creep) => creep.hits < lowest.hits && creep.hits !== creep.hitsMax ? creep : lowest, party[party.length-1]);
-      for(let partyMember of party) {
+      const lowestHealthInParty = party.reduce((lowest, creep) => creep.hits < lowest.hits && creep.hits !== creep.hitsMax ? creep : lowest, party[party.length-1]);
+      for(const partyMember of party) {
         let overrideMove = false;
 
         if(partyMember.memory.role === "FreedomFighter") {
           let heal = true;
-          let hostileCreepsInRange3 = partyMember.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
+          const hostileCreepsInRange3 = partyMember.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
           if(hostileCreepsInRange3.length > 0) {
-            let closestHostile = partyMember.pos.findClosestByRange(hostileCreepsInRange3);
+            const closestHostile = partyMember.pos.findClosestByRange(hostileCreepsInRange3);
             if(partyMember.pos.isNearTo(closestHostile)) {
               partyMember.rangedMassAttack();
               partyMember.attack(closestHostile);
@@ -50,8 +50,8 @@ const run = function (creep) {
             }
           }
           else if(partyMember.room.name !== partyMember.memory.homeRoom && (!partyMember.room.controller || !partyMember.room.controller.my && !partyMember.room.controller.reservation)) {
-            let structures = creep.room.find(FIND_STRUCTURES);
-            let closestStructure = partyMember.pos.findClosestByRange(structures);
+            const structures = creep.room.find(FIND_STRUCTURES);
+            const closestStructure = partyMember.pos.findClosestByRange(structures);
             partyMember.rangedAttack(closestStructure);
           }
 
@@ -72,7 +72,7 @@ const run = function (creep) {
 
         else if(partyMember.memory.role === "CCKparty") {
           if(partyMember.room.name === partyMember.memory.targetRoom) {
-            let controller = partyMember.room.controller;
+            const controller = partyMember.room.controller;
             if(controller && party[party.length -1].pos.getRangeTo(controller) <= 8 && !partyMember.pos.isNearTo(controller)) {
               partyMember.moveTo(controller, {reusePath:0});
               readyToAttackController = false;
@@ -116,7 +116,7 @@ const run = function (creep) {
         }
         else if(allGood || (creep.room.name === creep.memory.targetRoom  && (creep.pos.x < 45 || creep.pos.x > 5 || creep.pos.y < 45 || creep.pos.y > 5))) {
           if(creep.room.name === creep.memory.targetRoom) {
-            let controller = creep.room.controller;
+            const controller = creep.room.controller;
             if(controller && creep.pos.getRangeTo(controller) > 4) {
               GoToController(creep, controller.pos, 3);
             }
@@ -130,9 +130,9 @@ const run = function (creep) {
         }
       }
       if(readyToAttackController) {
-        for(let partyMember of party) {
+        for(const partyMember of party) {
           if(partyMember.memory.role === "CCKparty") {
-            let controller = partyMember.room.controller;
+            const controller = partyMember.room.controller;
             if(controller) {
               partyMember.attackController(controller);
               if(controller.upgradeBlocked > 0) {
@@ -167,9 +167,9 @@ function GoToController(creep, target, range) {
           creep.memory.path = false;
       }
       if(!creep.memory.path || creep.memory.path.length == 0 || !creep.memory.MoveTargetId || creep.memory.MoveTargetId != target.id || target.roomName !== creep.room.name) {
-          let costMatrix = GoToTheController;
+          const costMatrix = GoToTheController;
 
-          let path = PathFinder.search(
+          const path = PathFinder.search(
               creep.pos, {pos:target, range:range},
               {
                   maxOps: 1000,
@@ -182,8 +182,8 @@ function GoToController(creep, target, range) {
       }
 
 
-      let pos = creep.memory.path[0];
-      let direction = creep.pos.getDirectionTo(pos);
+      const pos = creep.memory.path[0];
+      const direction = creep.pos.getDirectionTo(pos);
       creep.move(direction);
       creep.memory.moving = true;
       creep.memory.path.shift();
@@ -193,12 +193,12 @@ function GoToController(creep, target, range) {
 
 
 const GoToTheController = (roomName: string): boolean | CostMatrix => {
-  let room = Game.rooms[roomName];
+  const room = Game.rooms[roomName];
   if (!room || room == undefined || room === undefined || room == null || room === null) {
       return false;
   }
 
-  let costs = new PathFinder.CostMatrix;
+  const costs = new PathFinder.CostMatrix;
 
   const terrain = new Room.Terrain(roomName);
 
@@ -219,8 +219,8 @@ const GoToTheController = (roomName: string): boolean | CostMatrix => {
       }
   }
 
-  let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-  for(let eCreep of EnemyCreeps) {
+  const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+  for(const eCreep of EnemyCreeps) {
       costs.set(eCreep.pos.x, eCreep.pos.y, 255);
   }
 
@@ -230,8 +230,8 @@ const GoToTheController = (roomName: string): boolean | CostMatrix => {
       }
   });
 
-  let myCreeps = room.find(FIND_MY_CREEPS);
-  for(let myCreep of myCreeps) {
+  const myCreeps = room.find(FIND_MY_CREEPS);
+  for(const myCreep of myCreeps) {
       if(myCreep.memory.role == "DismantleControllerWalls") {
           costs.set(myCreep.pos.x, myCreep.pos.y, 140);
       }

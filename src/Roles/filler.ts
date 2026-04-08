@@ -12,7 +12,7 @@ const run = function (creep) {
 		return;
 	}
     if(creep.ticksToLive == 22 && creep.memory.storage && creep.room.find(FIND_MY_CREEPS, {filter: (c) => {return (c.memory.role == "filler")}}).length == 1) {
-        let newName = 'filler-'+ Math.floor(Math.random() * Game.time) + "-" + creep.room.name;
+        const newName = 'filler-'+ Math.floor(Math.random() * Game.time) + "-" + creep.room.name;
         if(creep.room.controller.level <= 3 && creep.room.memory.spawn_list) {
             creep.room.memory.spawn_list.unshift([CARRY,MOVE], newName, {memory: {role: 'filler'}});
         }
@@ -36,7 +36,7 @@ const run = function (creep) {
 	}
     if(!creep.memory.MaxStorage) {
         let carryPartsAmount = 0
-        for(let part of creep.body) {
+        for(const part of creep.body) {
             if(part.type == CARRY) {
                 carryPartsAmount += 1;
             }
@@ -44,22 +44,22 @@ const run = function (creep) {
         creep.memory.MaxStorage = carryPartsAmount * 50;
     }
 
-    let MaxStorage = creep.memory.MaxStorage;
+    const MaxStorage = creep.memory.MaxStorage;
 
 
     if(creep.memory.fleeing) {
         // find hostiles with attack or ranged attack
-        let hostiles = creep.room.find(FIND_HOSTILE_CREEPS);
-        let meleeHostiles = hostiles.filter(c => c.getActiveBodyparts(ATTACK) > 0 );
-        let rangedHostiles = hostiles.filter(c => c.getActiveBodyparts(RANGED_ATTACK) > 0 );
+        const hostiles = creep.room.find(FIND_HOSTILE_CREEPS);
+        const meleeHostiles = hostiles.filter(c => c.getActiveBodyparts(ATTACK) > 0 );
+        const rangedHostiles = hostiles.filter(c => c.getActiveBodyparts(RANGED_ATTACK) > 0 );
         if(rangedHostiles.length) {
-            let closestRangedHostile = creep.pos.findClosestByRange(rangedHostiles);
+            const closestRangedHostile = creep.pos.findClosestByRange(rangedHostiles);
             if(creep.pos.getRangeTo(closestRangedHostile) <= 5) {
                 return;
             }
         }
         else if(meleeHostiles.length) {
-            let closestMeleeHostile = creep.pos.findClosestByRange(meleeHostiles);
+            const closestMeleeHostile = creep.pos.findClosestByRange(meleeHostiles);
             if(creep.pos.getRangeTo(closestMeleeHostile) <= 3) {
                 return;
             }
@@ -90,7 +90,7 @@ const run = function (creep) {
         }
         if(bin && bin.store[RESOURCE_ENERGY] >= MaxStorage) {
             if(creep.pos.isNearTo(bin)) {
-                let result = creep.withdraw(bin, RESOURCE_ENERGY);
+                const result = creep.withdraw(bin, RESOURCE_ENERGY);
                 if(result == 0) {
                     creep.memory.full = true;
                 }
@@ -100,7 +100,7 @@ const run = function (creep) {
             }
         }
         else if(storage && storage.store[RESOURCE_ENERGY] > 0) {
-            let result = creep.withdrawStorage(storage);
+            const result = creep.withdrawStorage(storage);
             if(result == 0) {
                 creep.memory.full = true;
             }
@@ -124,15 +124,15 @@ const run = function (creep) {
             }
             if(target) {
                 if(creep.pos.isNearTo(target)) {
-                    let result = creep.transfer(target, RESOURCE_ENERGY);
+                    const result = creep.transfer(target, RESOURCE_ENERGY);
                     if(result == 0) {
-                        let indexOfTargetId = creep.room.memory.reserveFill.indexOf(target.id);
+                        const indexOfTargetId = creep.room.memory.reserveFill.indexOf(target.id);
                         if(indexOfTargetId !== -1) {
                             creep.room.memory.reserveFill = creep.room.memory.reserveFill.splice(indexOfTargetId, 1);
                         }
                     }
                     if(creep.store[RESOURCE_ENERGY] > target.store.getFreeCapacity(RESOURCE_ENERGY)) {
-                        let newTarget = creep.findFillerTarget();
+                        const newTarget = creep.findFillerTarget();
                         if(newTarget && creep.pos.getRangeTo(newTarget) > 1) {
                             creep.MoveCostMatrixRoadPrio(newTarget, 1);
                         }

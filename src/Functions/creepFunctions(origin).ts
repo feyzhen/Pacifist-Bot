@@ -34,19 +34,19 @@ interface Creep {
 // CREEP PROTOTYPES
 Creep.prototype.findFillerTarget = function findFillerTarget():any {
 
-    let reserveFill = this.room.memory.reserveFill;
+    const reserveFill = this.room.memory.reserveFill;
 
 
     if(this.memory.role == "ControllerLinkFiller" && (!this.room.memory.Structures.controllerLink || Game.time % 10000 == 0) && this.room.controller && this.room.controller.level >= 2) {
         if(this.room.controller && this.room.controller.level < 7) {
             let containers = this.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_CONTAINER && building.id !== this.room.memory.Structures.bin && building.id !== this.room.memory.Structures.storage && building.pos.getRangeTo(this.room.controller) == 3});
             if(containers.length > 0) {
-                let controllerLink = this.room.controller.pos.findClosestByRange(containers);
+                const controllerLink = this.room.controller.pos.findClosestByRange(containers);
                 if(containers.length > 1) {
-                    let sources = this.room.find(FIND_SOURCES);
+                    const sources = this.room.find(FIND_SOURCES);
                     if(controllerLink.pos.findInRange(sources, 1).length > 0) {
                         containers = containers.filter(function(con) {return con.id !== controllerLink.id;});
-                        let newControllerLink = this.room.controller.pos.findClosestByRange(containers);
+                        const newControllerLink = this.room.controller.pos.findClosestByRange(containers);
                         this.room.memory.Structures.controllerLink = newControllerLink.id;
                     }
                 }
@@ -57,9 +57,9 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
             }
         }
         else {
-            let links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
+            const links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
             if(links.length > 0) {
-                let controllerLink = this.room.controller.pos.findClosestByRange(links);
+                const controllerLink = this.room.controller.pos.findClosestByRange(links);
                 if(controllerLink.pos.getRangeTo(this.room.controller) <= 4)  {
                     this.room.memory.Structures.controllerLink = controllerLink.id;
                 }
@@ -68,7 +68,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
 
     if(this.memory.role == "ControllerLinkFiller" && this.room.controller && this.room.memory.Structures.controllerLink) {
-        let controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
+        const controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
         if(controllerLink) {
             if(controllerLink.structureType == STRUCTURE_CONTAINER && controllerLink.store.getFreeCapacity() >= 200) {
                 if(this.room.controller.level >= 7) {
@@ -98,7 +98,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
         let outputLab7;
         let outputLab8;
 
-        let Labs = [];
+        const Labs = [];
 
         if(this.room.memory.labs.outputLab1) {
             outputLab1 = Game.getObjectById(this.room.memory.labs.outputLab1)
@@ -133,7 +133,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
             Labs.push(outputLab8)
         }
 
-        for(let lab of Labs) {
+        for(const lab of Labs) {
             if(lab && (lab.store[RESOURCE_ENERGY] <= 2000 - this.memory.MaxStorage*2 || lab.store[RESOURCE_ENERGY] < 1200) && !reserveFill.includes(lab.id)) {
                 if(!this.room.memory.reserveFill.includes(lab.id)) {
                     this.room.memory.reserveFill.push(lab.id);
@@ -145,9 +145,9 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
     if(this.room.energyAvailable < this.room.energyCapacityAvailable) {
 
-        let spawnAndExtensions = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_SPAWN || building.structureType == STRUCTURE_EXTENSION) && building.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && !reserveFill.includes(building.id)});
+        const spawnAndExtensions = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_SPAWN || building.structureType == STRUCTURE_EXTENSION) && building.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && !reserveFill.includes(building.id)});
         if(spawnAndExtensions.length > 0) {
-            let t = this.pos.findClosestByRange(spawnAndExtensions);
+            const t = this.pos.findClosestByRange(spawnAndExtensions);
             if(!this.room.memory.reserveFill.includes(t.id)) {
                 this.room.memory.reserveFill.push(t.id);
             }
@@ -158,18 +158,18 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
 
 
-    let towers2 = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store.getFreeCapacity(RESOURCE_ENERGY) >= 100 && !reserveFill.includes(building.id))});
+    const towers2 = this.room.find(FIND_MY_STRUCTURES, {filter: building => (building.structureType == STRUCTURE_TOWER && building.store.getFreeCapacity(RESOURCE_ENERGY) >= 100 && !reserveFill.includes(building.id))});
     if(towers2.length > 0) {
-        let t = this.pos.findClosestByRange(towers2);
+        const t = this.pos.findClosestByRange(towers2);
         if(!this.room.memory.reserveFill.includes(t.id)) {
             this.room.memory.reserveFill.push(t.id);
         }        this.memory.t = t.id;
         return t;
     }
 
-    let storage = Game.getObjectById(this.memory.storage) || this.findStorage() || this.room.storage;
+    const storage = Game.getObjectById(this.memory.storage) || this.findStorage() || this.room.storage;
     if(this.room.memory.Structures.factory) {
-        let factory:any = Game.getObjectById(this.room.memory.Structures.factory);
+        const factory:any = Game.getObjectById(this.room.memory.Structures.factory);
         if(factory && factory.store[RESOURCE_ENERGY] < 20000 && storage && storage.store[RESOURCE_ENERGY] > 450000 && storage.store[RESOURCE_BATTERY] < 200 && !reserveFill.includes(factory.id)) {
             if(!this.room.memory.reserveFill.includes(factory.id)) {
                 this.room.memory.reserveFill.push(factory.id);
@@ -179,8 +179,8 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
 
     if(this.room.memory.Structures.extraLinks) {
-        for(let linkID of this.room.memory.Structures.extraLinks) {
-            let extraLink:any = Game.getObjectById(linkID);
+        for(const linkID of this.room.memory.Structures.extraLinks) {
+            const extraLink:any = Game.getObjectById(linkID);
             if(extraLink && extraLink.store[RESOURCE_ENERGY] < 800 && storage && storage.store[RESOURCE_ENERGY] > 100000 && !reserveFill.includes(extraLink.id)) {
                 if(!this.room.memory.reserveFill.includes(extraLink.id)) {
                     this.room.memory.reserveFill.push(extraLink.id);
@@ -192,7 +192,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
 
 
     if(this.room.memory.Structures.powerSpawn) {
-        let powerSpawn:any = Game.getObjectById(this.room.memory.Structures.powerSpawn);
+        const powerSpawn:any = Game.getObjectById(this.room.memory.Structures.powerSpawn);
         if(powerSpawn && powerSpawn.store[RESOURCE_ENERGY] < 2500 && storage && storage.store[RESOURCE_ENERGY] > 280000 && !reserveFill.includes(powerSpawn.id)) {
             if(!this.room.memory.reserveFill.includes(powerSpawn.id)) {
                 this.room.memory.reserveFill.push(powerSpawn.id);
@@ -209,12 +209,12 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
         if(this.room.controller.level < 7) {
             let containers = this.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_CONTAINER && building.id !== this.room.memory.Structures.bin && building.id !== this.room.memory.Structures.storage && building.pos.getRangeTo(this.room.controller) == 3});
             if(containers.length > 0) {
-                let controllerLink = this.room.controller.pos.findClosestByRange(containers);
+                const controllerLink = this.room.controller.pos.findClosestByRange(containers);
                 if(containers.length > 1) {
-                    let sources = this.room.find(FIND_SOURCES);
+                    const sources = this.room.find(FIND_SOURCES);
                     if(controllerLink.pos.findInRange(sources, 1).length > 0) {
                         containers = containers.filter(function(con) {return con.id !== controllerLink.id;});
-                        let newControllerLink = this.room.controller.pos.findClosestByRange(containers);
+                        const newControllerLink = this.room.controller.pos.findClosestByRange(containers);
                         this.room.memory.Structures.controllerLink = newControllerLink.id;
                     }
                 }
@@ -225,9 +225,9 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
             }
         }
         else {
-            let links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
+            const links = this.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK && building.pos.getRangeTo(this.room.controller) <= 3});
             if(links.length > 0) {
-                let controllerLink = this.room.controller.pos.findClosestByRange(links);
+                const controllerLink = this.room.controller.pos.findClosestByRange(links);
                 if(controllerLink.pos.getRangeTo(this.room.controller) <= 4)  {
                     this.room.memory.Structures.controllerLink = controllerLink.id;
                 }
@@ -236,7 +236,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
     }
 
     if(this.memory.role == "filler" && this.room.energyAvailable == this.room.energyCapacityAvailable && this.room.controller && this.room.memory.Structures.controllerLink) {
-        let controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
+        const controllerLink:any = Game.getObjectById(this.room.memory.Structures.controllerLink);
         if(controllerLink) {
             if(controllerLink.structureType == STRUCTURE_CONTAINER && controllerLink.store.getFreeCapacity() > 1800) {
                 if(this.room.controller.level >= 7) {
@@ -262,7 +262,7 @@ Creep.prototype.findFillerTarget = function findFillerTarget():any {
 Creep.prototype.evacuate = function evacuate():any {
     if(this.room.memory.defence && this.room.memory.defence.nuke && this.room.memory.defence.evacuate || this.memory.nukeHaven) {
         if(!this.memory.nukeTimer) {
-            let nukes = this.room.find(FIND_NUKES).filter(function(nuke) {return nuke.timeToLand < 300;});;
+            const nukes = this.room.find(FIND_NUKES).filter(function(nuke) {return nuke.timeToLand < 300;});
             if(nukes.length > 0) {
                 nukes.sort((a,b) => a.timeToLand - b.timeToLand);
                 this.memory.nukeTimer = nukes[0].timeToLand + 1;
@@ -278,8 +278,8 @@ Creep.prototype.evacuate = function evacuate():any {
         if(this.memory.nukeTimer > 0) {
 
             if(!this.memory.nukeHaven) {
-                let possibleRooms = Object.values(Game.map.describeExits(this.room.name)).filter(roomname => Game.map.getRoomStatus(roomname).status === Game.map.getRoomStatus(this.room.name).status);
-                let index = Math.floor(Math.random() * possibleRooms.length);
+                const possibleRooms = Object.values(Game.map.describeExits(this.room.name)).filter(roomname => Game.map.getRoomStatus(roomname).status === Game.map.getRoomStatus(this.room.name).status);
+                const index = Math.floor(Math.random() * possibleRooms.length);
                 this.memory.nukeHaven = possibleRooms[index];
             }
             if(this.memory.nukeHaven) {
@@ -308,21 +308,21 @@ Creep.prototype.Boost = function Boost():any {
         return;
     }
     else {
-        let labs = [];
-        for(let labID of this.memory.boostlabs) {
+        const labs = [];
+        for(const labID of this.memory.boostlabs) {
             labs.push(Game.getObjectById(labID));
         }
-        let closestLab = this.pos.findClosestByRange(labs);
+        const closestLab = this.pos.findClosestByRange(labs);
         if(closestLab.mineralAmount <  30) {
             if(this.ticksToLive < 1100 && this.getActiveBodyparts(CLAIM)===0) {
-                let idToRemove = closestLab.id;
+                const idToRemove = closestLab.id;
                 this.memory.boostlabs = this.memory.boostlabs.filter(labid => labid !== idToRemove);
             }
             this.MoveCostMatrixRoadPrio(closestLab, 3);
         }
         else {
             if(this.pos.isNearTo(closestLab)) {
-                let result = closestLab.boostCreep(this);
+                const result = closestLab.boostCreep(this);
                 if(result == 0) {
                     if(this.room.memory.labs.outputLab1 && this.room.memory.labs.outputLab1 == closestLab.id && this.room.memory.labs.status.boost.lab1?.use) {
                         this.room.memory.labs.status.boost.lab1.use -= 1;
@@ -352,7 +352,7 @@ Creep.prototype.Boost = function Boost():any {
                         }
                     }
 
-                    let idToRemove = closestLab.id;
+                    const idToRemove = closestLab.id;
                     this.memory.boostlabs = this.memory.boostlabs.filter(labid => labid !== idToRemove);
                     return true;
                 }
@@ -413,22 +413,22 @@ Creep.prototype.Speak = function Speak() {
         this.say("knock", true);
     }
     else if(this.saying == "knock") {
-        let closest = this.pos.findClosestByRange(this.room.find(FIND_MY_CREEPS, {filter: creep => creep.pos.getRangeTo(this) > 0}));
+        const closest = this.pos.findClosestByRange(this.room.find(FIND_MY_CREEPS, {filter: creep => creep.pos.getRangeTo(this) > 0}));
         closest.say("Who's", true);
     }
     else if(this.saying == "Who's") {
         this.say("there?", true);
     }
     else if(this.saying == "there?") {
-        let closest = this.pos.findClosestByRange(this.room.find(FIND_MY_CREEPS, {filter: creep => creep.pos.getRangeTo(this) > 0}));
+        const closest = this.pos.findClosestByRange(this.room.find(FIND_MY_CREEPS, {filter: creep => creep.pos.getRangeTo(this) > 0}));
         closest.say("Hatch", true);
     }
     else if(this.saying == "Hatch") {
-        let closest = this.pos.findClosestByRange(this.room.find(FIND_MY_CREEPS, {filter: creep => creep.pos.getRangeTo(this) > 0}));
+        const closest = this.pos.findClosestByRange(this.room.find(FIND_MY_CREEPS, {filter: creep => creep.pos.getRangeTo(this) > 0}));
         closest.say("hatch who?", true);
     }
     else if(this.saying == "hatch who?") {
-        let closest = this.pos.findClosestByRange(this.room.find(FIND_MY_CREEPS, {filter: creep => creep.pos.getRangeTo(this) > 0}));
+        const closest = this.pos.findClosestByRange(this.room.find(FIND_MY_CREEPS, {filter: creep => creep.pos.getRangeTo(this) > 0}));
         closest.say("Bless you!", true);
     }
     else if(this.saying == "I Could") {
@@ -438,7 +438,7 @@ Creep.prototype.Speak = function Speak() {
         this.say("Cigarette", true);
     }
 
-    let randomNum = Math.floor(Math.random() * 17004);
+    const randomNum = Math.floor(Math.random() * 17004);
 
     if(randomNum == 0) {
         this.say("AB42", true);
@@ -483,7 +483,7 @@ Creep.prototype.findSource = function() {
 }
 
 Creep.prototype.findSpawn = function() {
-    let spawns = this.room.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_SPAWN);}});
+    const spawns = this.room.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_SPAWN);}});
     if(spawns.length) {
         this.memory.spawn = spawns[0].id;
         return spawns[0]
@@ -493,19 +493,19 @@ Creep.prototype.findSpawn = function() {
 
 Creep.prototype.findStorage = function() {
     if(this.room.controller && this.room.controller.level >= 4) {
-        let storage = this.room.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_STORAGE);}});
+        const storage = this.room.find(FIND_MY_STRUCTURES, {filter: (structure) => {return (structure.structureType == STRUCTURE_STORAGE);}});
         if(storage.length) {
             this.memory.storage = storage[0].id;
             return storage[0];
         }
     }
     else if(this.room.controller && this.room.controller.level < 4 && this.room.controller.level != 0) {
-        let spawn:any = Game.getObjectById(this.memory.spawn) || this.findSpawn();
+        const spawn:any = Game.getObjectById(this.memory.spawn) || this.findSpawn();
         if(spawn && spawn.pos.y >= 2) {
-            let storagePosition = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, this.room.name);
-            let storagePositionStructures = storagePosition.lookFor(LOOK_STRUCTURES);
+            const storagePosition = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, this.room.name);
+            const storagePositionStructures = storagePosition.lookFor(LOOK_STRUCTURES);
             if(storagePositionStructures.length > 0) {
-                for(let building of storagePositionStructures) {
+                for(const building of storagePositionStructures) {
                     if(building.structureType == STRUCTURE_CONTAINER) {
                         this.memory.storage = building.id;
                         return building;
@@ -517,21 +517,21 @@ Creep.prototype.findStorage = function() {
 }
 
 Creep.prototype.findClosestLink = function() {
-    let links = this.room.find(FIND_MY_STRUCTURES, {filter: { structureType : STRUCTURE_LINK}});
+    const links = this.room.find(FIND_MY_STRUCTURES, {filter: { structureType : STRUCTURE_LINK}});
     if(links.length) {
-        let closestLink = this.pos.findClosestByRange(links);
+        const closestLink = this.pos.findClosestByRange(links);
         this.memory.closestLink = closestLink.id;
         return closestLink;
     }
 }
 
 Creep.prototype.findClosestLinkToStorage = function():any {
-    let storage = Game.getObjectById(this.memory.storage) || this.findStorage();
+    const storage = Game.getObjectById(this.memory.storage) || this.findStorage();
     if(storage && storage.pos.x >= 2) {
-        let storageLinkPosition = new RoomPosition(storage.pos.x - 2, storage.pos.y, this.room.name);
-        let lookForBuildingsOnStorageLinkPosition = storageLinkPosition.lookFor(LOOK_STRUCTURES);
+        const storageLinkPosition = new RoomPosition(storage.pos.x - 2, storage.pos.y, this.room.name);
+        const lookForBuildingsOnStorageLinkPosition = storageLinkPosition.lookFor(LOOK_STRUCTURES);
         if(lookForBuildingsOnStorageLinkPosition.length > 0) {
-            for(let building of lookForBuildingsOnStorageLinkPosition) {
+            for(const building of lookForBuildingsOnStorageLinkPosition) {
                 if(building.structureType == STRUCTURE_LINK) {
                     this.memory.closestLink = building.id;
                     return building;
@@ -547,9 +547,9 @@ Creep.prototype.findClosestLinkToStorage = function():any {
 
 Creep.prototype.withdrawStorage = function withdrawStorage(storage) {
     if(storage) {
-        let StructureType = storage.structureType;
-        let StorageEnergyStore = storage.store[RESOURCE_ENERGY];
-        let Role = this.memory.role;
+        const StructureType = storage.structureType;
+        const StorageEnergyStore = storage.store[RESOURCE_ENERGY];
+        const Role = this.memory.role;
         if(StorageEnergyStore < 2000 && Role != "filler" && StructureType == STRUCTURE_STORAGE) {
             if(Game.time % 50 == 1) {
                 console.log("Storage requires 2000 energy to withdraw. Try again later.", this.room.name)
@@ -566,7 +566,7 @@ Creep.prototype.withdrawStorage = function withdrawStorage(storage) {
         }
         else {
             if(this.pos.isNearTo(storage)) {
-                let result = this.withdraw(storage, RESOURCE_ENERGY);
+                const result = this.withdraw(storage, RESOURCE_ENERGY);
                 return result;
             }
             else {
@@ -608,10 +608,10 @@ Creep.prototype.moveToRoomAvoidEnemyRooms = function (targetRoom) {
     }
 
     if(this.memory.role === "Guard" && this.memory.targetRoom !== targetRoom) {
-        let hostileCreeps = this.room.find(FIND_HOSTILE_CREEPS);
-        let hostileCreepsWithAttack = hostileCreeps.filter(creep => creep.getActiveBodyparts(ATTACK) > 25 || creep.getActiveBodyparts(RANGED_ATTACK) > 25);
+        const hostileCreeps = this.room.find(FIND_HOSTILE_CREEPS);
+        const hostileCreepsWithAttack = hostileCreeps.filter(creep => creep.getActiveBodyparts(ATTACK) > 25 || creep.getActiveBodyparts(RANGED_ATTACK) > 25);
         if(hostileCreepsWithAttack.length > 0) {
-            let closestHostileCreep = this.pos.findClosestByRange(hostileCreepsWithAttack);
+            const closestHostileCreep = this.pos.findClosestByRange(hostileCreepsWithAttack);
             if(this.pos.getRangeTo(closestHostileCreep) <= 9) {
                 this.moveToRoomAvoidEnemyRooms(this.memory.homeRoom);
                 return;
@@ -626,11 +626,11 @@ Creep.prototype.moveToRoomAvoidEnemyRooms = function (targetRoom) {
 
         else if (isValidRoomName(this.room.name) && (Game.time % 2 === 0 || this.hitsMax <= 4500)) {
 
-            let strongholds = this.room.find(FIND_HOSTILE_STRUCTURES, {filter: s => s.structureType === STRUCTURE_INVADER_CORE && s.level > 0});
+            const strongholds = this.room.find(FIND_HOSTILE_STRUCTURES, {filter: s => s.structureType === STRUCTURE_INVADER_CORE && s.level > 0});
             if(strongholds.length && strongholds[0].effects && strongholds[0].effects.length &&
                 strongholds[0].effects[0].effect === EFFECT_COLLAPSE_TIMER) {
 
-                let timerUntilGone = strongholds[0].effects[0].ticksRemaining;
+                const timerUntilGone = strongholds[0].effects[0].ticksRemaining;
 
                 if (!Memory.AvoidRoomsTemp) {
                     Memory.AvoidRoomsTemp = {};
@@ -757,9 +757,9 @@ Creep.prototype.harvestEnergy = function harvestEnergy() {
             }
 
             if(this.memory.danger) {
-                let HostileCreeps = this.room.find(FIND_HOSTILE_CREEPS);
+                const HostileCreeps = this.room.find(FIND_HOSTILE_CREEPS);
                 if(HostileCreeps.length > 0) {
-                    let closestHostileToCreep = this.pos.findClosestByRange(HostileCreeps);
+                    const closestHostileToCreep = this.pos.findClosestByRange(HostileCreeps);
                     if(closestHostileToCreep && this.pos.getRangeTo(closestHostileToCreep) <= 3) {
                         this.room.roomTowersHealMe(this);
                     }
@@ -775,13 +775,13 @@ Creep.prototype.harvestEnergy = function harvestEnergy() {
 Creep.prototype.acquireEnergyWithContainersAndOrDroppedEnergy = function acquireEnergyWithContainersAndOrDroppedEnergy() {
     // let Containers = this.room.find(FIND_STRUCTURES, {filter: (i) => i.structureType == STRUCTURE_CONTAINER && i.store[RESOURCE_ENERGY] > this.store.getFreeCapacity()});
 
-    let room = this.room;
+    const room = this.room;
     let container;
 
     if(!this.room.memory.Structures) {
         this.room.memory.Structures = {};
     }
-    let spawn:any = Game.getObjectById(this.memory.spawn);
+    const spawn:any = Game.getObjectById(this.memory.spawn);
     container = Game.getObjectById(this.room.memory.Structures.container) || room.findContainers(this.store.getFreeCapacity());
 
     if(container && this.pos.isNearTo(container)) {
@@ -799,9 +799,9 @@ Creep.prototype.acquireEnergyWithContainersAndOrDroppedEnergy = function acquire
     }
 
     if(dropped_resources.length > 0) {
-        let closestDroppedEnergy = this.pos.findClosestByRange(dropped_resources);
+        const closestDroppedEnergy = this.pos.findClosestByRange(dropped_resources);
         if(this.pos.isNearTo(closestDroppedEnergy)) {
-            let result = this.pickup(closestDroppedEnergy, RESOURCE_ENERGY);
+            const result = this.pickup(closestDroppedEnergy, RESOURCE_ENERGY);
             return result;
         }
         else {
@@ -825,7 +825,7 @@ Creep.prototype.acquireEnergyWithContainersAndOrDroppedEnergy = function acquire
 
     if(container) {
         if(this.pos.isNearTo(container)) {
-            let result = this.withdraw(container, RESOURCE_ENERGY);
+            const result = this.withdraw(container, RESOURCE_ENERGY);
             return result;
         }
         else {
@@ -839,12 +839,12 @@ Creep.prototype.acquireEnergyWithContainersAndOrDroppedEnergy = function acquire
         return;
     }
 
-    let dropped_resources_last_chance = this.room.find(FIND_DROPPED_RESOURCES, {filter: (i) => i.resourceType == RESOURCE_ENERGY});
+    const dropped_resources_last_chance = this.room.find(FIND_DROPPED_RESOURCES, {filter: (i) => i.resourceType == RESOURCE_ENERGY});
 
     if(dropped_resources_last_chance.length > 0) {
         dropped_resources_last_chance.sort((a,b) => b.amount - a.amount);
         if(this.pos.isNearTo(dropped_resources_last_chance[0])) {
-            let result = this.pickup(dropped_resources_last_chance[0], RESOURCE_ENERGY);
+            const result = this.pickup(dropped_resources_last_chance[0], RESOURCE_ENERGY);
             return result;
         }
         else {
@@ -860,8 +860,8 @@ Creep.prototype.acquireEnergyWithContainersAndOrDroppedEnergy = function acquire
 }
 
 Creep.prototype.roadCheck = function roadCheck() {
-    let creepBlock = this.pos;
-    let answer = creepBlock.lookFor(LOOK_STRUCTURES, {filter: building => building.structureType == STRUCTURE_ROAD})
+    const creepBlock = this.pos;
+    const answer = creepBlock.lookFor(LOOK_STRUCTURES, {filter: building => building.structureType == STRUCTURE_ROAD})
     if(answer.length > 0) {
         return true;
     }
@@ -872,12 +872,12 @@ Creep.prototype.roadCheck = function roadCheck() {
 }
 
 Creep.prototype.roadlessLocation = function roadlessLocation(repairTarget) {
-    let nearbyBlocks = this.pos.getNearbyPositions()
-    let blockFound = [];
+    const nearbyBlocks = this.pos.getNearbyPositions()
+    const blockFound = [];
     _.forEach(nearbyBlocks, function(block) {
         if(block.getRangeTo(repairTarget) == 3) {
-            let structures = block.lookFor(LOOK_STRUCTURES);
-            let creeps = block.lookFor(LOOK_CREEPS);
+            const structures = block.lookFor(LOOK_STRUCTURES);
+            const creeps = block.lookFor(LOOK_CREEPS);
             if(structures.length == 0 && creeps.length == 0) {
                 blockFound.push(block);
                 return;
@@ -888,9 +888,9 @@ Creep.prototype.roadlessLocation = function roadlessLocation(repairTarget) {
         let closestBlock = 100;
         let currentClosest = null;
         if(this.room.memory.Structures && this.room.memory.Structures.storage) {
-            let storage = Game.getObjectById(this.memory.storage) || this.findStorage();
-            for(let block of blockFound) {
-                let range = block.getRangeTo(storage);
+            const storage = Game.getObjectById(this.memory.storage) || this.findStorage();
+            for(const block of blockFound) {
+                const range = block.getRangeTo(storage);
                 if(range < closestBlock) {
                     currentClosest = block;
                     closestBlock = range;
@@ -906,8 +906,8 @@ Creep.prototype.roadlessLocation = function roadlessLocation(repairTarget) {
         let found;
         _.forEach(nearbyBlocks, function(block) {
             if(block.getRangeTo(repairTarget) <= 3) {
-                let structures = block.lookFor(LOOK_STRUCTURES);
-                let creeps = block.lookFor(LOOK_CREEPS);
+                const structures = block.lookFor(LOOK_STRUCTURES);
+                const creeps = block.lookFor(LOOK_CREEPS);
                 if(structures.length == 0 && creeps.length == 0) {
                     found = block;
                     return;
@@ -985,7 +985,7 @@ Creep.prototype.fleeHomeIfInDanger = function fleeHomeIfInDanger(): void | strin
 
 Creep.prototype.moveAwayIfNeedTo = function moveAwayIfNeedTo() {
     function findOpenBlocks(creep) {
-        let positions = []
+        const positions = []
         // Check bounds before adding positions
         if(creep.pos.x > 0) {
             if(creep.pos.y > 0) positions.push([creep.pos.x -1, creep.pos.y -1, creep.room.name]);
@@ -1002,18 +1002,18 @@ Creep.prototype.moveAwayIfNeedTo = function moveAwayIfNeedTo() {
 
         let creep_nearby = false;
         let empty_block = false;
-        for (let position of positions) {
+        for (const position of positions) {
             if (!position || position.length !== 3 || typeof position[0] !== 'number' || typeof position[1] !== 'number' || typeof position[2] !== 'string' || position[0] < 0 || position[0] > 49 || position[1] < 0 || position[1] > 49) {
                 continue;
             }
-            let positioninroom = new RoomPosition(position[0], position[1], position[2]);
+            const positioninroom = new RoomPosition(position[0], position[1], position[2]);
 
-            let lookTerrain = positioninroom.lookFor(LOOK_TERRAIN);
+            const lookTerrain = positioninroom.lookFor(LOOK_TERRAIN);
             if(lookTerrain[0] != "wall") {
-                let lookForCreeps = positioninroom.lookFor(LOOK_CREEPS);
-                let lookForStructures = positioninroom.lookFor(LOOK_STRUCTURES);
+                const lookForCreeps = positioninroom.lookFor(LOOK_CREEPS);
+                const lookForStructures = positioninroom.lookFor(LOOK_STRUCTURES);
                 if(lookForCreeps.length > 0 && lookForCreeps[0].store.getFreeCapacity() == 0 && lookForCreeps[0].memory.role != "EnergyManager" && lookForCreeps[0].memory.role != "upgrader" && lookForCreeps[0].memory.role != "EnergyMiner" && lookForCreeps[0].memory.role != "upgrader" && lookForCreeps[0].memory.role != "repair" && lookForCreeps[0].memory.role != "filler") {
-                    let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+                    const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
                     if(!storage || lookForCreeps[0].pos.getRangeTo(storage) >= creep.pos.getRangeTo(storage)) {
                         creep_nearby = true;
                     }
@@ -1032,9 +1032,9 @@ Creep.prototype.moveAwayIfNeedTo = function moveAwayIfNeedTo() {
         return false;
     }
 
-    let position = findOpenBlocks(this)
+    const position = findOpenBlocks(this)
     if(position !== false && Array.isArray(position) && position.length === 3 && typeof position[0] === 'number' && typeof position[1] === 'number' && typeof position[2] === 'string' && position[0] >= 0 && position[0] <= 49 && position[1] >= 0 && position[1] <= 49) {
-        let LocationToMove =  new RoomPosition(position[0], position[1], position[2]);
+        const LocationToMove =  new RoomPosition(position[0], position[1], position[2]);
         this.moveTo(LocationToMove);
         // console.log(this.room.name, "moving away now")
         return "i moved";
@@ -1046,7 +1046,7 @@ Creep.prototype.moveAwayIfNeedTo = function moveAwayIfNeedTo() {
 
 Creep.prototype.Sweep = function Sweep() {
     if(!this.memory.lockedDropped || Game.getObjectById(this.memory.lockedDropped) == null) {
-        let sources=  this.room.find(FIND_SOURCES);
+        const sources=  this.room.find(FIND_SOURCES);
         if(!sources.length) return "nothing to sweep";
         let droppedResources = this.room.find(FIND_DROPPED_RESOURCES);
         if(this.room.controller && this.room.controller.level <= 3) droppedResources = droppedResources.filter(function(resource) {return resource.pos.getRangeTo(resource.pos.findClosestByRange(sources)) > 1;});
@@ -1084,7 +1084,7 @@ Creep.prototype.Sweep = function Sweep() {
         }
     }
 
-    let target = Game.getObjectById(this.memory.lockedDropped);
+    const target = Game.getObjectById(this.memory.lockedDropped);
 
     if(this.pickup(target) == 0) {
         return "picked up";
@@ -1108,13 +1108,13 @@ Creep.prototype.recycle = function recycle() {
         return this.moveToRoomAvoidEnemyRooms(this.memory.homeRoom);
     }
 
-    let StructuresObject = this.room.memory.Structures;
+    const StructuresObject = this.room.memory.Structures;
     let bin;
 
     if(this.ticksToLive < 600 && this.room.memory.labs) {
         let boosted = false;
-        let body = this.body;
-        for(let part of body) {
+        const body = this.body;
+        for(const part of body) {
             if(part.boost) {
                 boosted= true;
                 break;
@@ -1212,7 +1212,7 @@ Creep.prototype.recycle = function recycle() {
                 if(this.pos.isNearTo(lab)) {
 
 
-                    let result = lab.unboostCreep(this);
+                    const result = lab.unboostCreep(this);
                     if(result === 0) {
                         // make the lab have timer of 1
                         this.room.memory.labs.paused = this.room.memory.labs.paused.map((pausedLab) => {
@@ -1226,16 +1226,16 @@ Creep.prototype.recycle = function recycle() {
                     }
                 }
                 else {
-                    let sweepers = this.room.find(FIND_MY_CREEPS, {filter: c => c.memory.role === 'sweeper'});
+                    const sweepers = this.room.find(FIND_MY_CREEPS, {filter: c => c.memory.role === 'sweeper'});
                     if(sweepers.length > 0) {
-                        for(let sweeper of sweepers) {
+                        for(const sweeper of sweepers) {
                             if(!sweeper.memory.full) sweeper.MoveCostMatrixIgnoreRoads(lab, 3);
                         }
                     }
                     this.MoveCostMatrixRoadPrio(lab, 1)
                 }
                 if(!this.memory.spawnedSweeper && this.room.find(FIND_MY_CREEPS, {filter: c => c.memory.role === 'sweeper'}).length < 1) {
-                    let newName = 'Sweeper-' + Math.floor(Math.random() * Game.time) + "-" + this.room.name;
+                    const newName = 'Sweeper-' + Math.floor(Math.random() * Game.time) + "-" + this.room.name;
                     this.room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE], newName, {memory: {role: 'sweeper'}});
                     console.log('Adding Sweeper to Spawn List: ' + newName);
                     this.memory.spawnedSweeper = true;
@@ -1254,12 +1254,12 @@ Creep.prototype.recycle = function recycle() {
             })[0];
             if(bin) {
                 if(this.pos.isEqualTo(bin)) {
-                    let spawnPosition = new RoomPosition(this.pos.x, this.pos.y + 1, this.room.name);
-                    let StructuresOnSpawnLocation = spawnPosition.lookFor(LOOK_STRUCTURES);
+                    const spawnPosition = new RoomPosition(this.pos.x, this.pos.y + 1, this.room.name);
+                    const StructuresOnSpawnLocation = spawnPosition.lookFor(LOOK_STRUCTURES);
                     if(StructuresOnSpawnLocation.length > 0) {
-                        for(let building of StructuresOnSpawnLocation) {
+                        for(const building of StructuresOnSpawnLocation) {
                             if(building.structureType == STRUCTURE_SPAWN) {
-                                let spawn:any = building;
+                                const spawn:any = building;
                                 if(spawn) {
                                     spawn.recycleCreep(this)
 
@@ -1277,9 +1277,9 @@ Creep.prototype.recycle = function recycle() {
             }
             else {
                 delete this.room.memory.Structures.bin
-                let spawns = this.room.find(FIND_MY_SPAWNS);
+                const spawns = this.room.find(FIND_MY_SPAWNS);
                 if(spawns.length) {
-                    let spawn = spawns[0];
+                    const spawn = spawns[0];
                     if(spawn) {
                         if(this.pos.isNearTo(spawn)) {
                             spawn.recycleCreep(this);
@@ -1297,11 +1297,11 @@ Creep.prototype.recycle = function recycle() {
         }
         else {
             if(StructuresObject.storage || this.room.storage) {
-                let storage:any = Game.getObjectById(StructuresObject.storage) || this.room.storage;
+                const storage:any = Game.getObjectById(StructuresObject.storage) || this.room.storage;
                 if(storage) {
-                    let binPos = new RoomPosition(storage.pos.x, storage.pos.y+1, storage.room.name);
-                    let lookForBin = binPos.lookFor(LOOK_STRUCTURES);
-                    for(let s of lookForBin) {
+                    const binPos = new RoomPosition(storage.pos.x, storage.pos.y+1, storage.room.name);
+                    const lookForBin = binPos.lookFor(LOOK_STRUCTURES);
+                    for(const s of lookForBin) {
                         if(s.structureType == STRUCTURE_CONTAINER) {
                             StructuresObject.bin = s.id;
                             break;
@@ -1317,8 +1317,8 @@ Creep.prototype.recycle = function recycle() {
 }
 
 Creep.prototype.RangedAttackFleeFromMelee = function RangedAttackFleeFromMelee(fleeTarget) {
-    let FleePath = PathFinder.search(this.pos,{pos:fleeTarget.pos, range:3}, {flee:true});
-    let FirstPathGuy = FleePath.path[0];
+    const FleePath = PathFinder.search(this.pos,{pos:fleeTarget.pos, range:3}, {flee:true});
+    const FirstPathGuy = FleePath.path[0];
     this.move(this.pos.getDirectionTo(FirstPathGuy));
     return;
 }
@@ -1337,7 +1337,7 @@ Creep.prototype.fleeFromMelee = function(fleeTarget) {
     // Consider terrain walls (walls and border edges of the room) as impassable
     for (let x = 0; x < 50; x++) {
         for (let y = 0; y < 50; y++) {
-            let terrainHere = terrain.get(x, y)
+            const terrainHere = terrain.get(x, y)
             if (terrainHere === TERRAIN_MASK_WALL) {
                 costMatrix.set(x, y, 255);
             }
@@ -1391,7 +1391,7 @@ Creep.prototype.fleeFromRanged = function(fleeTarget) {
     // Consider terrain walls (walls and border edges of the room) as impassable
     for (let x = 0; x < 50; x++) {
         for (let y = 0; y < 50; y++) {
-            let terrainHere = terrain.get(x, y)
+            const terrainHere = terrain.get(x, y)
             if (terrainHere === TERRAIN_MASK_WALL) {
                 costMatrix.set(x, y, 255);
             }
@@ -1435,10 +1435,10 @@ Creep.prototype.fleeFromRanged = function(fleeTarget) {
 Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction) {
     if(direction == 1) {
         if(this.pos.y != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y - 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y - 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -1458,10 +1458,10 @@ Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction
     }
     else if(direction == 2) {
         if(this.pos.x != 49 && this.pos.y != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y - 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y - 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -1481,10 +1481,10 @@ Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction
     }
     else if(direction == 3) {
         if(this.pos.x != 49) {
-            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -1504,10 +1504,10 @@ Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction
     }
     else if(direction == 4) {
         if(this.pos.x != 49 && this.pos.y != 49) {
-            let targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y + 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x + 1, this.pos.y + 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -1528,10 +1528,10 @@ Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction
     }
     else if(direction == 5) {
         if(this.pos.y != 49) {
-            let targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y + 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x, this.pos.y + 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -1551,10 +1551,10 @@ Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction
     }
     else if(direction == 6) {
         if(this.pos.y != 49 && this.pos.x != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y + 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y + 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -1574,10 +1574,10 @@ Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction
     }
     else if(direction == 7) {
         if(this.pos.x != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -1598,10 +1598,10 @@ Creep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(direction
     }
     else if(direction == 8) {
         if(this.pos.x != 0 && this.pos.y != 0) {
-            let targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y - 1, this.room.name)
-            let lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
+            const targetRoomPosition = new RoomPosition(this.pos.x - 1, this.pos.y - 1, this.room.name)
+            const lookCreep = targetRoomPosition.lookFor(LOOK_CREEPS);
             if(lookCreep.length == 0) {
-                let powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
+                const powerCreeps:any = targetRoomPosition.lookFor(LOOK_POWER_CREEPS);
                 if(powerCreeps.length > 0) {
                     lookCreep.push(powerCreeps[0]);
                 }
@@ -1635,7 +1635,7 @@ Creep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(target,
             if(this.memory.fleeing || this.room.memory.danger) {
                 costMatrix = roomCallbackRoadPrioFlee;
             }
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 this.pos, {pos:target.pos, range:range},
                 {
                     maxOps: 1000,
@@ -1644,15 +1644,15 @@ Creep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(target,
                 }
             );
 
-            let pos = path.path[0];
-            let direction = this.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = this.pos.getDirectionTo(pos);
             this.SwapPositionWithCreep(direction);
             this.memory.path = path.path;
             this.memory.MoveTargetId = target.id;
         }
 
-        let pos = this.memory.path[0];
-        let direction = this.pos.getDirectionTo(pos);
+        const pos = this.memory.path[0];
+        const direction = this.pos.getDirectionTo(pos);
         this.move(direction);
         this.memory.moving = true;
         this.memory.path.shift();
@@ -1662,12 +1662,12 @@ Creep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(target,
 
 
 const roomCallbackRoadPrio = (roomName: string, role:string|null=null): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -1716,19 +1716,19 @@ const roomCallbackRoadPrio = (roomName: string, role:string|null=null): boolean 
         }
     });
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 61);
         }
         else if(role !== "EnergyMiner" && creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 21);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 26);
             }
@@ -1796,15 +1796,15 @@ Creep.prototype.MoveToSourceSafely = function MoveToSourceSafely(target, range) 
             this.memory.path = false;
         }
 
-        let myRamparts = this.room.find(FIND_MY_STRUCTURES, {filter: (s) => s.structureType == STRUCTURE_RAMPART});
+        const myRamparts = this.room.find(FIND_MY_STRUCTURES, {filter: (s) => s.structureType == STRUCTURE_RAMPART});
         if(myRamparts.length > 0) {
-            let rampartsInRange = target.pos.findInRange(myRamparts, 1);
+            const rampartsInRange = target.pos.findInRange(myRamparts, 1);
 
             if(rampartsInRange.length > 0) {
-                for(let rampart of rampartsInRange) {
-                    let lookForLink = rampart.pos.lookFor(LOOK_STRUCTURES);
+                for(const rampart of rampartsInRange) {
+                    const lookForLink = rampart.pos.lookFor(LOOK_STRUCTURES);
                     let found = false;
-                    for(let building of lookForLink) {
+                    for(const building of lookForLink) {
                         if(building.structureType == STRUCTURE_LINK || building.structureType == STRUCTURE_EXTENSION || building.structureType == STRUCTURE_TOWER) {
                             found = true;
                         }
@@ -1819,9 +1819,9 @@ Creep.prototype.MoveToSourceSafely = function MoveToSourceSafely(target, range) 
         }
 
         if(!this.memory.path || this.memory.path.length == 0 || !this.memory.MoveTargetId || this.memory.MoveTargetId != target.id) {
-            let costMatrix = roomCallbackSafeToSource;
+            const costMatrix = roomCallbackSafeToSource;
 
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 this.pos, {pos:target.pos, range:range},
                 {
                     maxOps: 1000,
@@ -1830,8 +1830,8 @@ Creep.prototype.MoveToSourceSafely = function MoveToSourceSafely(target, range) 
                 }
                 );
 
-            let pos = path.path[0];
-            let direction = this.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = this.pos.getDirectionTo(pos);
 
             this.SwapPositionWithCreep(direction);
             this.memory.path = path.path;
@@ -1840,8 +1840,8 @@ Creep.prototype.MoveToSourceSafely = function MoveToSourceSafely(target, range) 
 
 
 
-        let pos = this.memory.path[0];
-        let direction = this.pos.getDirectionTo(pos);
+        const pos = this.memory.path[0];
+        const direction = this.pos.getDirectionTo(pos);
 
         this.move(direction);
         this.memory.moving = true;
@@ -1852,12 +1852,12 @@ Creep.prototype.MoveToSourceSafely = function MoveToSourceSafely(target, range) 
 
 
 const roomCallbackSafeToSource = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -1905,8 +1905,8 @@ const roomCallbackSafeToSource = (roomName: string): boolean | CostMatrix => {
 
 
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         for(let i=-7; i<=7; i++) {
             for(let o=-7; o<=7; o++) {
                 if(eCreep && eCreep.pos.x + i >= 1 && eCreep.pos.x + i <= 48 && eCreep.pos.y + o >= 1 && eCreep.pos.y + 0 <= 48) {
@@ -1935,19 +1935,19 @@ const roomCallbackSafeToSource = (roomName: string): boolean | CostMatrix => {
 
 
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 6);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 21);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 6);
             }
@@ -2007,9 +2007,9 @@ Creep.prototype.roomCallbackRoadPrioUpgraderInPosition = function roomCallbackRo
         }
 
         if(!this.memory.path || this.memory.path.length == 0 || !this.memory.MoveTargetId || this.memory.MoveTargetId != target.id) {
-            let costMatrix:any = roomCallbackRoadPrioUpgraderInPosition;
+            const costMatrix:any = roomCallbackRoadPrioUpgraderInPosition;
 
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 this.pos, {pos:target.pos, range:range},
                 {
                     maxOps: 1000,
@@ -2018,8 +2018,8 @@ Creep.prototype.roomCallbackRoadPrioUpgraderInPosition = function roomCallbackRo
                 }
                 );
 
-            let pos = path.path[0];
-            let direction = this.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = this.pos.getDirectionTo(pos);
 
             this.SwapPositionWithCreep(direction);
             this.memory.path = path.path;
@@ -2028,8 +2028,8 @@ Creep.prototype.roomCallbackRoadPrioUpgraderInPosition = function roomCallbackRo
 
 
 
-        let pos = this.memory.path[0];
-        let direction = this.pos.getDirectionTo(pos);
+        const pos = this.memory.path[0];
+        const direction = this.pos.getDirectionTo(pos);
 
         this.move(direction);
         // this.memory.moving = true;
@@ -2041,12 +2041,12 @@ Creep.prototype.roomCallbackRoadPrioUpgraderInPosition = function roomCallbackRo
 
 
 const roomCallbackRoadPrioUpgraderInPosition = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -2107,19 +2107,19 @@ const roomCallbackRoadPrioUpgraderInPosition = (roomName: string): boolean | Cos
     });
 
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 30);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 20);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 10);
             }
@@ -2166,7 +2166,7 @@ Creep.prototype.MoveCostMatrixSwampPrio = function MoveCostMatrixSwampPrio(targe
         }
 
         if(!this.memory.path || this.memory.path.length == 0 || !this.memory.MoveTargetId || this.memory.MoveTargetId != target.id) {
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 this.pos, {pos:target.pos, range:range},
                 {
                     maxOps: 1000,
@@ -2175,8 +2175,8 @@ Creep.prototype.MoveCostMatrixSwampPrio = function MoveCostMatrixSwampPrio(targe
                 }
                 );
 
-            let pos = path.path[0];
-            let direction = this.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = this.pos.getDirectionTo(pos);
 
             this.SwapPositionWithCreep(direction);
 
@@ -2186,8 +2186,8 @@ Creep.prototype.MoveCostMatrixSwampPrio = function MoveCostMatrixSwampPrio(targe
 
 
 
-        let pos = this.memory.path[0];
-        let direction = this.pos.getDirectionTo(pos);
+        const pos = this.memory.path[0];
+        const direction = this.pos.getDirectionTo(pos);
 
         this.move(direction);
         this.memory.moving = true;
@@ -2197,12 +2197,12 @@ Creep.prototype.MoveCostMatrixSwampPrio = function MoveCostMatrixSwampPrio(targe
 }
 
 const roomCallbackSwampPrio = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -2248,19 +2248,19 @@ const roomCallbackSwampPrio = (roomName: string): boolean | CostMatrix => {
             costs.set(site.pos.x, site.pos.y, 255);
         }
     });
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 6);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 11);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 3);
             }
@@ -2297,7 +2297,7 @@ Creep.prototype.MoveCostMatrixIgnoreRoads = function MoveCostMatrixIgnoreRoads(t
             this.memory.path = false;
         }
         if(!this.memory.path || this.memory.path.length == 0 || !this.memory.MoveTargetId || this.memory.MoveTargetId != target.id) {
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 this.pos, {pos:target.pos, range:range},
                 {
                     maxOps: 1000,
@@ -2306,16 +2306,16 @@ Creep.prototype.MoveCostMatrixIgnoreRoads = function MoveCostMatrixIgnoreRoads(t
                 }
                 );
 
-            let pos = path.path[0];
-            let direction = this.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = this.pos.getDirectionTo(pos);
             this.SwapPositionWithCreep(direction);
             this.memory.path = path.path;
             this.memory.MoveTargetId = target.id;
         }
 
 
-        let pos = this.memory.path[0];
-        let direction = this.pos.getDirectionTo(pos);
+        const pos = this.memory.path[0];
+        const direction = this.pos.getDirectionTo(pos);
         this.move(direction);
         this.memory.moving = true;
         this.memory.path.shift();
@@ -2324,12 +2324,12 @@ Creep.prototype.MoveCostMatrixIgnoreRoads = function MoveCostMatrixIgnoreRoads(t
 }
 
 const roomCallbackIgnoreRoads = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -2376,19 +2376,19 @@ const roomCallbackIgnoreRoads = (roomName: string): boolean | CostMatrix => {
         }
     });
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 6);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 11);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 3);
             }
@@ -2422,12 +2422,12 @@ const roomCallbackIgnoreRoads = (roomName: string): boolean | CostMatrix => {
 }
 
 const roomCallbackRoadPrioFlee = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -2476,19 +2476,19 @@ const roomCallbackRoadPrioFlee = (roomName: string): boolean | CostMatrix => {
         }
     });
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 61);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 21);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 26);
             }
@@ -2525,8 +2525,8 @@ const roomCallbackRoadPrioFlee = (roomName: string): boolean | CostMatrix => {
         }
     });
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         if(eCreep.getActiveBodyparts(ATTACK)>0 || eCreep.getActiveBodyparts(RANGED_ATTACK)>0){
             if(eCreep.owner.username == "Invader" || eCreep.owner.username == "Source Keeper") {
                 for(let i=-5; i<5; i++) {
@@ -2590,7 +2590,7 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function MoveCostMa
             }
 
 
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 this.pos, {pos:target, range:range},
                 {
                     maxOps: 1000,
@@ -2598,16 +2598,16 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function MoveCostMa
                     roomCallback: (roomName) => costMatrix(roomName)
                 }
             );
-            let pos = path.path[0];
-            let direction = this.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = this.pos.getDirectionTo(pos);
             this.SwapPositionWithCreep(direction);
             this.memory.path = path.path;
             this.memory.MoveTargetId = target.id;
         }
 
 
-        let pos = this.memory.path[0];
-        let direction = this.pos.getDirectionTo(pos);
+        const pos = this.memory.path[0];
+        const direction = this.pos.getDirectionTo(pos);
         this.move(direction);
         this.memory.moving = true;
         this.memory.path.shift();
@@ -2617,15 +2617,15 @@ Creep.prototype.MoveCostMatrixRoadPrioAvoidEnemyCreepsMuch = function MoveCostMa
 }
 
 const roomCallbackRoadPrioAvoidEnemyCreepsMuchRam = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         if(eCreep.getActiveBodyparts(ATTACK)>0 || eCreep.getActiveBodyparts(RANGED_ATTACK)>0){
             if(eCreep.owner.username == "Invader" || eCreep.owner.username == "Source Keeper") {
                 for(let i=-5; i<5; i++) {
@@ -2695,19 +2695,19 @@ const roomCallbackRoadPrioAvoidEnemyCreepsMuchRam = (roomName: string): boolean 
         }
     });
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 5);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 7);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 3);
             }
@@ -2725,15 +2725,15 @@ const roomCallbackRoadPrioAvoidEnemyCreepsMuchRam = (roomName: string): boolean 
 }
 
 const roomCallbackRoadPrioAvoidEnemyCreepsMuch = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         if(eCreep.getActiveBodyparts(ATTACK)>0 || eCreep.getActiveBodyparts(RANGED_ATTACK)>0){
             if(eCreep.owner.username == "Invader" || eCreep.owner.username == "Source Keeper") {
                 for(let i=-5; i<5; i++) {
@@ -2803,19 +2803,19 @@ const roomCallbackRoadPrioAvoidEnemyCreepsMuch = (roomName: string): boolean | C
         }
     });
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 5);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 7);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 3);
             }
@@ -2837,16 +2837,16 @@ const roomCallbackRoadPrioAvoidEnemyCreepsMuch = (roomName: string): boolean | C
 
 
 const roomCallbackRoadPrioAvoidEnemyCreepsMuchForCarrierFull = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         if(eCreep.getActiveBodyparts(ATTACK)>0 || eCreep.getActiveBodyparts(RANGED_ATTACK)>0){
             if(eCreep.owner.username == "Invader" || eCreep.owner.username == "Source Keeper") {
                 for(let i=-5; i<5; i++) {
@@ -2916,19 +2916,19 @@ const roomCallbackRoadPrioAvoidEnemyCreepsMuchForCarrierFull = (roomName: string
         }
     });
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 5);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 7);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 3);
             }
@@ -2946,12 +2946,12 @@ const roomCallbackRoadPrioAvoidEnemyCreepsMuchForCarrierFull = (roomName: string
 }
 
 const roomCallbackRoadPrioAvoidEnemyCreepsMuchForCarrierEmpty = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -2985,8 +2985,8 @@ const roomCallbackRoadPrioAvoidEnemyCreepsMuchForCarrierEmpty = (roomName: strin
     });
 
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         if(eCreep.getActiveBodyparts(ATTACK)>0 || eCreep.getActiveBodyparts(RANGED_ATTACK)>0){
             if(eCreep.owner.username == "Invader" || eCreep.owner.username == "Source Keeper") {
                 for(let i=-5; i<5; i++) {
@@ -3021,19 +3021,19 @@ const roomCallbackRoadPrioAvoidEnemyCreepsMuchForCarrierEmpty = (roomName: strin
             costs.set(site.pos.x, site.pos.y, 255);
         }
     });
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 5);
         }
         else if(creep.memory.role == "EnergyMiner" && creep.memory.source) {
-            let source:any = Game.getObjectById(creep.memory.source)
+            const source:any = Game.getObjectById(creep.memory.source)
             if(creep.pos.isNearTo(source)) {
                 costs.set(creep.pos.x, creep.pos.y, 7);
             }
         }
         else if(creep.memory.role == "builder" && creep.memory.building && creep.memory.locked) {
-            let locked:any = Game.getObjectById(creep.memory.locked);
+            const locked:any = Game.getObjectById(creep.memory.locked);
             if(creep.pos.getRangeTo(locked) <= 3) {
                 costs.set(creep.pos.x, creep.pos.y, 3);
             }
@@ -3070,7 +3070,7 @@ Creep.prototype.moveToSafePositionToRepairRampart = function moveToSafePositionT
                 costMatrix = roomCallbackAvoidInvaders;
             }
 
-            let path = PathFinder.search(
+            const path = PathFinder.search(
                 this.pos, {pos:target.pos, range:range},
                 {
                     maxOps: 1000,
@@ -3079,8 +3079,8 @@ Creep.prototype.moveToSafePositionToRepairRampart = function moveToSafePositionT
                 }
                 );
 
-            let pos = path.path[0];
-            let direction = this.pos.getDirectionTo(pos);
+            const pos = path.path[0];
+            const direction = this.pos.getDirectionTo(pos);
 
             this.SwapPositionWithCreep(direction);
             this.memory.path = path.path;
@@ -3089,8 +3089,8 @@ Creep.prototype.moveToSafePositionToRepairRampart = function moveToSafePositionT
 
 
 
-        let pos = this.memory.path[0];
-        let direction = this.pos.getDirectionTo(pos);
+        const pos = this.memory.path[0];
+        const direction = this.pos.getDirectionTo(pos);
 
         this.move(direction);
         this.memory.moving = true;
@@ -3100,12 +3100,12 @@ Creep.prototype.moveToSafePositionToRepairRampart = function moveToSafePositionT
 }
 
 const roomCallbackAvoidInvaders = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -3125,8 +3125,8 @@ const roomCallbackAvoidInvaders = (roomName: string): boolean | CostMatrix => {
             costs.set(x, y, weight);
         }
     }
-    let myCreeps = room.find(FIND_MY_CREEPS);
-    for(let creep of myCreeps) {
+    const myCreeps = room.find(FIND_MY_CREEPS);
+    for(const creep of myCreeps) {
         if(creep.memory.role === "SpecialCarry") {
             costs.set(creep.pos.x, creep.pos.y, 25)
         }
@@ -3140,10 +3140,10 @@ const roomCallbackAvoidInvaders = (roomName: string): boolean | CostMatrix => {
             }
         }
         else if(struct.structureType == STRUCTURE_RAMPART) {
-            let lookForBuildingsHere = struct.pos.lookFor(LOOK_STRUCTURES);
+            const lookForBuildingsHere = struct.pos.lookFor(LOOK_STRUCTURES);
             if(lookForBuildingsHere.length > 1) {
                 let found = false;
-                for(let building of lookForBuildingsHere) {
+                for(const building of lookForBuildingsHere) {
                     if(building.structureType !== STRUCTURE_RAMPART && building.structureType !== STRUCTURE_ROAD && building.structureType !== STRUCTURE_CONTAINER) {
                         found = true;
                     }
@@ -3165,8 +3165,8 @@ const roomCallbackAvoidInvaders = (roomName: string): boolean | CostMatrix => {
         }
     });
 
-    let EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
-    for(let eCreep of EnemyCreeps) {
+    const EnemyCreeps = room.find(FIND_HOSTILE_CREEPS);
+    for(const eCreep of EnemyCreeps) {
         for(let i=-3; i<3; i++) {
             for(let o=-3; o<3; o++) {
                 if(eCreep && eCreep.pos.x + i >= 0 && eCreep.pos.x + i <= 49 && eCreep.pos.y + o >= 0 && eCreep.pos.y + 0 <= 49) {
@@ -3178,7 +3178,7 @@ const roomCallbackAvoidInvaders = (roomName: string): boolean | CostMatrix => {
 
 
 
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "RampartDefender") {
             costs.set(creep.pos.x, creep.pos.y, 255);
@@ -3198,7 +3198,7 @@ const roomCallbackAvoidInvaders = (roomName: string): boolean | CostMatrix => {
         }
     });
 
-    let storage:any = Game.getObjectById(Game.rooms[roomName].memory.Structures.storage);
+    const storage:any = Game.getObjectById(Game.rooms[roomName].memory.Structures.storage);
     if(storage) {
         if(room.name === "E41N58") {
             for(let i=-27; i<=27; i++) {
@@ -3232,12 +3232,12 @@ const roomCallbackAvoidInvaders = (roomName: string): boolean | CostMatrix => {
 }
 
 const roomCallbackForRangedRampartDefender = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -3266,9 +3266,9 @@ const roomCallbackForRangedRampartDefender = (roomName: string): boolean | CostM
             return;
         }
         else if(struct.structureType == STRUCTURE_RAMPART) {
-            let lookForBuildingsHere = struct.pos.lookFor(LOOK_STRUCTURES);
+            const lookForBuildingsHere = struct.pos.lookFor(LOOK_STRUCTURES);
             if(lookForBuildingsHere.length > 1) {
-                for(let building of lookForBuildingsHere) {
+                for(const building of lookForBuildingsHere) {
                     if(building.structureType !== STRUCTURE_RAMPART) {
                         return;
                     }
@@ -3294,7 +3294,7 @@ const roomCallbackForRangedRampartDefender = (roomName: string): boolean | CostM
             costs.set(site.pos.x, site.pos.y, 255);
         }
     });
-    let myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
+    const myCreepsNotSpawning = room.find(FIND_MY_CREEPS, {filter: (c) => {return (!c.spawning);}});
     myCreepsNotSpawning.forEach(function(creep) {
         if(creep.memory.role == "RampartDefender") {
             costs.set(creep.pos.x, creep.pos.y, 255);
@@ -3313,7 +3313,7 @@ const roomCallbackForRangedRampartDefender = (roomName: string): boolean | CostM
             for (let dx = -3; dx <= 3; dx++) {
                 for (let dy = -3; dy <= 3; dy++) {
                     if(c.pos.x + dx > 0 && c.pos.x + dx < 49 && c.pos.y + dy > 0 && c.pos.y + dy < 49) {
-                        let cost = costs.get(c.pos.x + dx, c.pos.y + dy);
+                        const cost = costs.get(c.pos.x + dx, c.pos.y + dy);
                         if(cost - 25 <= 255) {
                             costs.set(c.pos.x + dx, c.pos.y + dy, cost + 25);
                         }
@@ -3324,7 +3324,7 @@ const roomCallbackForRangedRampartDefender = (roomName: string): boolean | CostM
         }
     });
 
-    let storage:any = Game.getObjectById(Game.rooms[roomName].memory.Structures.storage);
+    const storage:any = Game.getObjectById(Game.rooms[roomName].memory.Structures.storage);
     if(storage) {
         if(room.name === "E41N58") {
             for(let i=-27; i<=27; i++) {
@@ -3365,12 +3365,12 @@ const roomCallbackForRangedRampartDefender = (roomName: string): boolean | CostM
 
 
 const roomCallbackForRampartDefender = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 
@@ -3400,9 +3400,9 @@ const roomCallbackForRampartDefender = (roomName: string): boolean | CostMatrix 
             }
         }
         else if(struct.structureType == STRUCTURE_RAMPART) {
-            let lookForBuildingsHere = struct.pos.lookFor(LOOK_STRUCTURES);
+            const lookForBuildingsHere = struct.pos.lookFor(LOOK_STRUCTURES);
             if(lookForBuildingsHere.length > 1) {
-                for(let building of lookForBuildingsHere) {
+                for(const building of lookForBuildingsHere) {
                     if(building.structureType !== STRUCTURE_RAMPART) {
                         return
                     }
@@ -3429,7 +3429,7 @@ const roomCallbackForRampartDefender = (roomName: string): boolean | CostMatrix 
         }
     });
 
-    let storage = <StructureStorage> room.storage;
+    const storage = <StructureStorage> room.storage;
     if(storage) {
         if(room.name === "E41N58") {
             for(let i=-27; i<=27; i++) {

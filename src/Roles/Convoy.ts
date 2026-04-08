@@ -13,7 +13,7 @@ const run = function (creep) {
     }
 
     if(!creep.memory.full && creep.ticksToLive > 1480 && creep.room.memory.Structures && creep.room.memory.Structures.storage) {
-        let storage = Game.getObjectById(creep.room.memory.Structures.storage);
+        const storage = Game.getObjectById(creep.room.memory.Structures.storage);
         if(storage) {
             if(creep.pos.isNearTo(storage)) {
                 if(creep.withdraw(storage, RESOURCE_ENERGY) == 0) {
@@ -35,7 +35,7 @@ const run = function (creep) {
     }
 
     if(creep.room.name == creep.memory.targetRoom && (creep.room.memory.Structures && creep.room.memory.Structures.storage || creep.room.storage)) {
-        let storage = Game.getObjectById(creep.room.memory.Structures.storage) || creep.room.storage;
+        const storage = Game.getObjectById(creep.room.memory.Structures.storage) || creep.room.storage;
         if(creep.memory.full && storage && storage.store.getFreeCapacity() > 100 && creep.store.getUsedCapacity() > 0) {
             if(creep.pos.isNearTo(storage)) {
                 if(creep.transfer(storage, RESOURCE_ENERGY) === 0) {
@@ -51,7 +51,7 @@ const run = function (creep) {
         }
     }
     else if(!creep.room.memory.Structures || !creep.room.memory.Structures.storage) {
-        let spawn = creep.pos.findClosestByRange(FIND_MY_SPAWNS);
+        const spawn = creep.pos.findClosestByRange(FIND_MY_SPAWNS);
         if(spawn) {
             if(creep.pos.isNearTo(spawn)) {
                 spawn.recycle(creep);

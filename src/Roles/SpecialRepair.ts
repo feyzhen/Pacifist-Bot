@@ -8,7 +8,7 @@ const run = function (creep) {
 
 
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
-        let result = creep.Boost();
+        const result = creep.Boost();
         if(!result) {
             return;
         }
@@ -21,7 +21,7 @@ const run = function (creep) {
 
 
     if(!creep.memory.rampart_to_repair) {
-        let rampartLocations = [];
+        const rampartLocations = [];
         if(creep.room.name === "E41N58") {
             for(let i = -25; i<=25; i++) {
                 for(let o = -25; o <=25; o++) {
@@ -48,18 +48,18 @@ const run = function (creep) {
         }
 
 
-        let storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
-        let RampartPositions = getNeighbours(storage.pos, rampartLocations);
+        const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
+        const RampartPositions = getNeighbours(storage.pos, rampartLocations);
 
-        let Ramparts = [];
+        const Ramparts = [];
 
-        for(let rampartposition of RampartPositions) {
+        for(const rampartposition of RampartPositions) {
             if(rampartposition.x <= 47 && rampartposition.x >= 2 && rampartposition.y <= 47 && rampartposition.y >= 2) {
-                let position = new RoomPosition(rampartposition.x, rampartposition.y, creep.room.name);
-                let lookForStructuresHere = position.lookFor(LOOK_STRUCTURES);
+                const position = new RoomPosition(rampartposition.x, rampartposition.y, creep.room.name);
+                const lookForStructuresHere = position.lookFor(LOOK_STRUCTURES);
 
                 if(lookForStructuresHere.length > 0) {
-                    for(let building of lookForStructuresHere) {
+                    for(const building of lookForStructuresHere) {
                         if(building.structureType == STRUCTURE_RAMPART) {
                             Ramparts.push(building);
                         }
@@ -89,8 +89,8 @@ const run = function (creep) {
     }
 
     if(creep.memory.rampart_to_repair) {
-        let target:any = Game.getObjectById(creep.memory.rampart_to_repair);
-        let storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
+        const target:any = Game.getObjectById(creep.memory.rampart_to_repair);
+        const storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
         let lookForCreepsAtTarget;
         if(target && creep.pos.getRangeTo(target) !== 0) {
             lookForCreepsAtTarget = target.pos.lookFor(LOOK_CREEPS);
@@ -102,9 +102,9 @@ const run = function (creep) {
                 creep.moveToSafePositionToRepairRampart(target, 3);
             }
             else if(creep.pos.getRangeTo(target) == 1 && storage && creep.pos.getRangeTo(storage) == 10 && lookForCreepsAtTarget.length == 1 && lookForCreepsAtTarget[0].my && lookForCreepsAtTarget[0].memory.role == "RampartDefender") {
-                let lookForBuildingsOnCreep = creep.pos.lookFor(LOOK_STRUCTURES);
+                const lookForBuildingsOnCreep = creep.pos.lookFor(LOOK_STRUCTURES);
                 if(lookForBuildingsOnCreep.length > 0) {
-                    for(let building of lookForBuildingsOnCreep) {
+                    for(const building of lookForBuildingsOnCreep) {
                         if(building.structureType == STRUCTURE_RAMPART) {
                             creep.memory.rampart_to_repair = building.id;
                             creep.memory.targets = false;
@@ -121,21 +121,21 @@ const run = function (creep) {
             else {
 
                 if(!creep.memory.targets || creep.ticksToLive % 44 == 0) {
-                    let rampartIDS = [];
+                    const rampartIDS = [];
                     let rampartsInRange = creep.pos.findInRange(creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART}), 3);
                     if(storage) {
                         rampartsInRange = rampartsInRange.filter(function(building) {return building.pos.getRangeTo(storage) > 4;});
                     }
 
-                    for(let rampart of rampartsInRange) {
+                    for(const rampart of rampartsInRange) {
                         rampartIDS.push(rampart.id);
                     }
                     creep.memory.targets = rampartIDS;
                 }
 
                 if(creep.memory.targets) {
-                    let targets = [];
-                    for(let rampartid of creep.memory.targets) {
+                    const targets = [];
+                    for(const rampartid of creep.memory.targets) {
                         targets.push(Game.getObjectById(rampartid));
                     }
 
@@ -147,7 +147,7 @@ const run = function (creep) {
 
                 }
                 if(creep.store[RESOURCE_ENERGY] < 72) {
-                    let droppedResources = creep.room.find(FIND_DROPPED_RESOURCES, {filter: r => r.resourceType == RESOURCE_ENERGY && creep.pos.getRangeTo(r) <= 1});
+                    const droppedResources = creep.room.find(FIND_DROPPED_RESOURCES, {filter: r => r.resourceType == RESOURCE_ENERGY && creep.pos.getRangeTo(r) <= 1});
                     if(droppedResources.length > 0) {
                         droppedResources.sort((a,b) => b.amount - a.amount);
                         creep.pickup(droppedResources[0]);
@@ -182,7 +182,7 @@ function getNeighbours(tile, listOfLocations) {
     // [-3,-4],[-1,-4],[1,-4],[3,-4],[-4,-3],[4,-3],[-4,-1],[4,-1],[-4,1],[4,1],[-4,3],[4,3],[-3,4],[-1,4],[1,4],[3,4],
     // [-4,-5],[-2,-5],[0,-5],[2,-5],[2,-5],[4,-5],[-5,-4],[5,-4],[-5,-2],[5,-2],[-5,0],[5,0],[-5,2],[5,2],[-5,4],[5,4],[-4,5],[-2,5],[0,5],[2,5],[4,5]];
 
-    let neighbours = [];
+    const neighbours = [];
     listOfLocations.forEach(function(delta) {
         neighbours.push({x: tile.x + delta[0], y: tile.y + delta[1]});
     });
@@ -191,12 +191,12 @@ function getNeighbours(tile, listOfLocations) {
 
 
 const roomCallbackSpecialRepair = (roomName: string): boolean | CostMatrix => {
-    let room = Game.rooms[roomName];
+    const room = Game.rooms[roomName];
     if (!room || room == undefined || room === undefined || room == null || room === null) {
         return false;
     }
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
     const terrain = new Room.Terrain(roomName);
 

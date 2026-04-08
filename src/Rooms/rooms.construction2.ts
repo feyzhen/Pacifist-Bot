@@ -1,14 +1,6 @@
-let checkerboard =
-[[-2,-2], [2,-2], [2,0],
-[-3,-3], [-1,-3],[-1,3], [1,-3], [3,-3], [-3,-1],[-3,1], [-3,3], [1,3], [3,3],
-[-4,-4],[-2,-4],[0,-4],[2,-4],[4,-4],[-4,-2],[-4,2],[-4,0],[4,0],[-4,4],[-2,4],[0,4],[2,4],[4,4],
-[-5,-5],[-5,3],[-3,-5],[-1,-5],[1,-5],[3,-5],[5,-5],[-5,-3],[5,-3],[-5,1],[-5,-1],[5,3],[-5,5],[-3,5],[-1,5],[1,5],[3,5],[5,5],
-[-6,-6],[-4,-6],[-2,-6],[0,-6],[2,-6],[4,-6],[6,-6],[-6,-4],[6,-4],[-6,-2],[-6,0],[-6,2],[6,-2],[6,0],[6,2],[-6,4],[6,4],[-6,6],[-4,6],[-2,6],[0,6],[2,6],[4,6],[6,6],
-[-5,-7],[-3,-7],[-1,-7],[1,-7],[3,-7],[5,-7],[-7,-5],[-7,-3],[-7,-1],[-7,1],[-7,3],[-7,5],[-5,7],[-3,7],[-1,7],[1,7],[3,7],[5,7],[7,5],[7,3],[7,1],[7,-1],[7,-3],[7,-5],
-[0,7],[7,0],[0,-7],[-7,0],[4,7],[-4,7],[7,4],[7,-4],[4,-7],[-4,-7],[-7,4],[-7,-4]];
 
 function getNeighbours(tile, listOfLocations) {
-    let neighbours = [];
+    const neighbours = [];
     listOfLocations.forEach(function(delta) {
         neighbours.push({x: tile.x + delta[0], y: tile.y + delta[1]});
     });
@@ -16,29 +8,29 @@ function getNeighbours(tile, listOfLocations) {
 }
 
 function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
-    let storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
     let buldingAlreadyHereCount = 0;
     let constructionSitesPlaced = 0;
 
-    let keepTheseRoads = [];
+    const keepTheseRoads = [];
 
 
     if(structure == STRUCTURE_RAMPART && !usingPathfinder) {
 
-        let listOfRampartPositions = []
+        const listOfRampartPositions = []
 
-        let positionArray = [];
+        const positionArray = [];
         _.forEach(neighbors, function(block) {
             positionArray.push(new RoomPosition(block.x, block.y, room.name))
         });
         positionArray.sort((a,b) => a.findPathTo(storage, {ignoreCreeps:true}).length - b.findPathTo(storage, {ignoreCreeps:true}).length);
         _.forEach(positionArray, function(blockSpot) {
             new RoomVisual(blockSpot.roomName).circle(blockSpot.x, blockSpot.y, {fill: 'transparent', radius: 0.25, stroke: '#000000'});
-            let lookForExistingConstructionSites = blockSpot.lookFor(LOOK_CONSTRUCTION_SITES);
-            let lookForExistingStructures = blockSpot.lookFor(LOOK_STRUCTURES);
-            let lookForTerrain = blockSpot.lookFor(LOOK_TERRAIN);
+            const lookForExistingConstructionSites = blockSpot.lookFor(LOOK_CONSTRUCTION_SITES);
+            const lookForExistingStructures = blockSpot.lookFor(LOOK_STRUCTURES);
+            const lookForTerrain = blockSpot.lookFor(LOOK_TERRAIN);
 
-            for(let building of lookForExistingStructures) {
+            for(const building of lookForExistingStructures) {
                 if((building as any).structureType === STRUCTURE_RAMPART && (building as any).hits > 5000000) {
                     return;
                 }
@@ -53,7 +45,7 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             }
 
 
-            let pathFromRampartToStorage = PathFinder.search(blockSpot, {pos:storage.pos, range:1}, {plainCost: 1, swampCost: 2, maxCost:50, roomCallback: () => RampartBorderCallbackFunction(room.name)});
+            const pathFromRampartToStorage = PathFinder.search(blockSpot, {pos:storage.pos, range:1}, {plainCost: 1, swampCost: 2, maxCost:50, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
             if(pathFromRampartToStorage.incomplete) {
@@ -62,12 +54,12 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
 
 
 
-            let exits = Game.map.describeExits(room.name);
+            const exits = Game.map.describeExits(room.name);
             let incomplete = true;
             if(exits[1] && incomplete) {
 
-                let positionInRoom = new RoomPosition(25, 25, exits[1]);
-                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
+                const positionInRoom = new RoomPosition(25, 25, exits[1]);
+                const pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
                 if(!pathFromRampartToOtherRoom.incomplete) {
@@ -78,8 +70,8 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
 
             if(exits[3] && incomplete) {
 
-                let positionInRoom = new RoomPosition(25, 25, exits[3]);
-                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
+                const positionInRoom = new RoomPosition(25, 25, exits[3]);
+                const pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
                 if(!pathFromRampartToOtherRoom.incomplete) {
@@ -89,8 +81,8 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
 
             if(exits[5] && incomplete) {
 
-                let positionInRoom = new RoomPosition(25, 25, exits[5]);
-                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
+                const positionInRoom = new RoomPosition(25, 25, exits[5]);
+                const pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
                 if(!pathFromRampartToOtherRoom.incomplete) {
@@ -99,8 +91,8 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             }
             if(exits[7] && incomplete) {
 
-                let positionInRoom = new RoomPosition(25, 25, exits[7]);
-                let pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
+                const positionInRoom = new RoomPosition(25, 25, exits[7]);
+                const pathFromRampartToOtherRoom = PathFinder.search(blockSpot, {pos:positionInRoom, range:22}, {plainCost: 1, swampCost: 1, maxCost:100, roomCallback: () => RampartBorderCallbackFunction(room.name)});
 
 
                 if(!pathFromRampartToOtherRoom.incomplete) {
@@ -150,28 +142,28 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
 
 
     if (structure == STRUCTURE_EXTENSION) {
-        let rampartsInRoomRange10FromStorage = room.find(FIND_MY_STRUCTURES).filter(function(s) {return s.structureType == STRUCTURE_RAMPART && s.pos.getRangeTo(storage) >= 8 && s.pos.getRangeTo(storage) <= 10;});
+        const rampartsInRoomRange10FromStorage = room.find(FIND_MY_STRUCTURES).filter(function(s) {return s.structureType == STRUCTURE_RAMPART && s.pos.getRangeTo(storage) >= 8 && s.pos.getRangeTo(storage) <= 10;});
         _.forEach(neighbors, function(block) {
             if(block.x < 1 || block.x > 48 || block.y < 1 || block.y > 48) {
                 return;
             }
-            let blockSpot = new RoomPosition(block.x, block.y, room.name);
-            let lookForExistingConstructionSites = blockSpot.lookFor(LOOK_CONSTRUCTION_SITES);
-            let lookForExistingStructures = blockSpot.lookFor(LOOK_STRUCTURES);
-            let lookForTerrain = blockSpot.lookFor(LOOK_TERRAIN);
+            const blockSpot = new RoomPosition(block.x, block.y, room.name);
+            const lookForExistingConstructionSites = blockSpot.lookFor(LOOK_CONSTRUCTION_SITES);
+            const lookForExistingStructures = blockSpot.lookFor(LOOK_STRUCTURES);
+            const lookForTerrain = blockSpot.lookFor(LOOK_TERRAIN);
 
-            let sources = room.find(FIND_SOURCES);
+            const sources = room.find(FIND_SOURCES);
 
 
 
             if(blockSpot.x <= 4 || blockSpot.x >= 45 || blockSpot.y <= 4 || blockSpot.y >= 45) {
-                let closestRampart = blockSpot.findClosestByRange(rampartsInRoomRange10FromStorage)
+                const closestRampart = blockSpot.findClosestByRange(rampartsInRoomRange10FromStorage)
                 if(blockSpot.getRangeTo(closestRampart) < 3) {
                     return;
                 }
             }
 
-            for(let source of sources) {
+            for(const source of sources) {
                 if(blockSpot.getRangeTo(source) <= 2) {
                     return;
                 }
@@ -181,7 +173,7 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
                 return;
             }
 
-            let Mineral:any = Game.getObjectById(room.memory.mineral) || room.findMineral();
+            const Mineral:any = Game.getObjectById(room.memory.mineral) || room.findMineral();
 
             if(blockSpot.getRangeTo(room.controller) <= 3 || blockSpot.getRangeTo(Mineral) <= 1) {
                 buldingAlreadyHereCount ++;
@@ -198,25 +190,25 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
 
             if(storage && storage.pos.getRangeTo(blockSpot) == 7) {
                 if(blockSpot.x >= storage.pos.x) {
-                    let lookForTerrainToLeft = new RoomPosition(blockSpot.x - 1,blockSpot.y, room.name).lookFor(LOOK_TERRAIN);
+                    const lookForTerrainToLeft = new RoomPosition(blockSpot.x - 1,blockSpot.y, room.name).lookFor(LOOK_TERRAIN);
                     if(lookForTerrainToLeft[0] == "wall") {
                         return;
                     }
                 }
                 if(blockSpot.x <= storage.pos.x) {
-                    let lookForTerrainToRight = new RoomPosition(blockSpot.x + 1,blockSpot.y, room.name).lookFor(LOOK_TERRAIN);
+                    const lookForTerrainToRight = new RoomPosition(blockSpot.x + 1,blockSpot.y, room.name).lookFor(LOOK_TERRAIN);
                     if(lookForTerrainToRight[0] == "wall") {
                         return;
                     }
                 }
                 if(blockSpot.y >= storage.pos.y) {
-                    let lookForTerrainToTop = new RoomPosition(blockSpot.x,blockSpot.y - 1, room.name).lookFor(LOOK_TERRAIN);
+                    const lookForTerrainToTop = new RoomPosition(blockSpot.x,blockSpot.y - 1, room.name).lookFor(LOOK_TERRAIN);
                     if(lookForTerrainToTop[0] == "wall") {
                         return;
                     }
                 }
                 if(blockSpot.y <= storage.pos.y) {
-                    let lookForTerrainToBottom = new RoomPosition(blockSpot.x,blockSpot.y + 1, room.name).lookFor(LOOK_TERRAIN);
+                    const lookForTerrainToBottom = new RoomPosition(blockSpot.x,blockSpot.y + 1, room.name).lookFor(LOOK_TERRAIN);
                     if(lookForTerrainToBottom[0] == "wall") {
                         return;
                     }
@@ -229,7 +221,7 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             if(lookForExistingStructures.length == 1 && lookForExistingStructures[0].structureType == STRUCTURE_ROAD) {
                 if (lookForTerrain[0] == "swamp" || lookForTerrain[0] == "plain") {
                     constructionSitesPlaced ++;
-                    let result = blockSpot.createConstructionSite(structure);
+                    const result = blockSpot.createConstructionSite(structure);
                     // if(result == 0) {
                     // if(result !== -8 && result !== -14) {
                         // lookForExistingStructures[0].destroy();
@@ -257,9 +249,9 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
             if(block.x < 1 || block.x > 48 || block.y < 1 || block.y > 48) {
                 return;
             }
-            let lookForExistingConstructionSites = block.lookFor(LOOK_CONSTRUCTION_SITES);
-            let lookForExistingStructures = block.lookFor(LOOK_STRUCTURES);
-            let lookForTerrain = block.lookFor(LOOK_TERRAIN);
+            const lookForExistingConstructionSites = block.lookFor(LOOK_CONSTRUCTION_SITES);
+            const lookForExistingStructures = block.lookFor(LOOK_STRUCTURES);
+            const lookForTerrain = block.lookFor(LOOK_TERRAIN);
 
             if(structure == STRUCTURE_ROAD) {
                 new RoomVisual(block.roomName).circle(block.x, block.y, {fill: 'transparent', radius: 0.25, stroke: 'orange'});
@@ -313,9 +305,9 @@ function pathBuilder(neighbors, structure, room, usingPathfinder=true) {
                 return;
             }
 
-            let lookForExistingConstructionSites = block.lookFor(LOOK_CONSTRUCTION_SITES);
-            let lookForExistingStructures = block.lookFor(LOOK_STRUCTURES);
-            let lookForTerrain = block.lookFor(LOOK_TERRAIN);
+            const lookForExistingConstructionSites = block.lookFor(LOOK_CONSTRUCTION_SITES);
+            const lookForExistingStructures = block.lookFor(LOOK_STRUCTURES);
+            const lookForTerrain = block.lookFor(LOOK_TERRAIN);
 
             if(structure == STRUCTURE_ROAD) {
                 new RoomVisual(block.roomName).circle(block.x, block.y, {fill: 'transparent', radius: 0.45, stroke: 'orange'});
@@ -382,7 +374,7 @@ function rampartPerimeter(tile) {
     [-11,-12],[-10,-12],[-9,-12],[-8,-12],[-7,-12],[-6,-12],[-5,-12],[-4,-12],[-3,-12],[-2,-12],[-1,-12]];
 
 
-    let neighbours = [];
+    const neighbours = [];
     perimeter.forEach(function(delta) {
         neighbours.push({x: tile.x + delta[0], y: tile.y + delta[1]});
     });
@@ -1415,23 +1407,23 @@ function Build_Remote_Roads(room) {
         console.log(`Room ${room.name} is in danger, skipping road building`);
         return;
     }
-    let storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
     if (!storage) {
         console.log(`No storage found in room ${room.name}`);
         return;
     }
 
-    let resourceData = _.get(room.memory, ['resources']);
+    const resourceData = _.get(room.memory, ['resources']);
     console.log(`Resource data for room ${room.name}:`, JSON.stringify(resourceData));
 
     _.forEach(resourceData, function(data, targetRoomName){
         // We want to build roads to remote rooms, not the current room
         if(room.name !== targetRoomName) {
             _.forEach(data.energy, function(values, sourceId:any) {
-                let source:any = Game.getObjectById(sourceId);
+                const source:any = Game.getObjectById(sourceId);
                 // Check if we have visibility of the source
                 if(source != null && storage) {
-                    let pathFromStorageToRemoteSource = PathFinder.search(
+                    const pathFromStorageToRemoteSource = PathFinder.search(
                         storage.pos,
                         {pos:source.pos, range:1},
                         {
@@ -1443,7 +1435,7 @@ function Build_Remote_Roads(room) {
                     );
 
                     if(!pathFromStorageToRemoteSource.incomplete) {
-                        let containerSpot = pathFromStorageToRemoteSource.path[pathFromStorageToRemoteSource.path.length - 1];
+                        const containerSpot = pathFromStorageToRemoteSource.path[pathFromStorageToRemoteSource.path.length - 1];
                         values.pathLength = pathFromStorageToRemoteSource.path.length;
 
                         if(containerSpot && Game.rooms[containerSpot.roomName]) {
@@ -1469,26 +1461,26 @@ function Build_Remote_Roads(room) {
 function Situational_Building(room) {
     if(room.controller.level == 4 && room.memory.data && room.memory.data.DOBug && (room.memory.data.DOGug == 3 || room.memory.data.DOBug == 4)) {
         if(room.memory.data.DOBug == 3) {
-            let spawns = room.find(FIND_MY_SPAWNS);
+            const spawns = room.find(FIND_MY_SPAWNS);
             let spawn;
             if(spawns.length > 0) {
                 spawn = spawns[0];
             }
-            let storagePosition = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, room.name);
-            let lookForStoragePositionBuildings = storagePosition.lookFor(LOOK_STRUCTURES);
-            for(let building of lookForStoragePositionBuildings) {
+            const storagePosition = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, room.name);
+            const lookForStoragePositionBuildings = storagePosition.lookFor(LOOK_STRUCTURES);
+            for(const building of lookForStoragePositionBuildings) {
                 if((building as any).structureType === STRUCTURE_CONTAINER) {
                     building.destroy();
                 }
             }
         }
         if(room.memory.data.DOBug == 4) {
-            let spawns = room.find(FIND_MY_SPAWNS);
+            const spawns = room.find(FIND_MY_SPAWNS);
             let spawn;
             if(spawns.length > 0) {
                 spawn = spawns[0];
             }
-            let storagePosition = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, room.name);
+            const storagePosition = new RoomPosition(spawn.pos.x, spawn.pos.y - 2, room.name);
             storagePosition.createConstructionSite(STRUCTURE_STORAGE);
         }
     }
@@ -1501,7 +1493,7 @@ function handleResourceDismantling(room) {
     }
 
     const buildingsToDismantle = [...room.memory.buildingsToDismantle];
-    
+
     for(const task of buildingsToDismantle) {
         const building = Game.getObjectById(task.id);
         if(!building) {
@@ -1536,7 +1528,7 @@ function handleResourceDismantling(room) {
             // 还有资源，检查是否需要生成搬运工
             const existingHaulers = countExistingHaulers(room, task.id);
             const neededHaulers = calculateHaulersNeeded(building);
-            
+
             if(existingHaulers < neededHaulers) {
                 spawnHauler(room, task);
             }
@@ -1548,35 +1540,35 @@ function handleResourceDismantling(room) {
 function calculateHaulersNeeded(structure): number {
     let totalResources = 0;
     if (structure.structureType === STRUCTURE_STORAGE) {
-      let storage = structure as StructureStorage;
+      const storage = structure as StructureStorage;
       if (storage.store) {
         totalResources = Object.values(storage.store).reduce((sum, amount) => sum + amount, 0);
       }
     } else if (structure.structureType === STRUCTURE_TERMINAL) {
-      let terminal = structure as StructureTerminal;
+      const terminal = structure as StructureTerminal;
       if (terminal.store) {
         totalResources = Object.values(terminal.store).reduce((sum, amount) => sum + amount, 0);
       }
     }
-    
+
     return Math.ceil(totalResources / 2000);
 }
 
 function countExistingHaulers(room, buildingId): number {
-    let haulers = Object.values(Game.creeps).filter(creep =>
+    const haulers = Object.values(Game.creeps).filter(creep =>
         creep.memory.homeRoom === room.name &&
         creep.memory.role === 'resourceHauler' &&
         creep.memory.targetBuildingId === buildingId
     );
-    
+
     return haulers.length;
 }
 
 function spawnHauler(room, task) {
-    let body = [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE];
-    let newName = 'ResourceHauler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+    const body = [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE];
+    const newName = 'ResourceHauler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
 
-    let spawns = room.find(FIND_MY_SPAWNS);
+    const spawns = room.find(FIND_MY_SPAWNS);
     if (spawns.length > 0 && spawns[0].spawnCreep(body, newName, {
         memory: {
             role: 'resourceHauler',
@@ -1694,14 +1686,14 @@ function executeDemolition(room: Room, layout: any, mode: string): void {
     // 识别和处理多余建筑
     for (const structure of existingStructures) {
         const structureKey = `${structure.structureType}_${structure.pos.x}_${structure.pos.y}`;
-        
+
         // 如果建筑不在布局中，考虑拆除
         if (!layoutPositions.has(structureKey)) {
             const shouldRemove = shouldRemoveStructure(structure, layout);
-            
+
             if (shouldRemove.shouldRemove) {
                 const safetyCheck = performSafetyCheck(structure, room);
-                
+
                 if (safetyCheck.safe) {
                     structure.destroy();
                     removedCount++;
@@ -1725,8 +1717,8 @@ function shouldRemoveStructure(structure: Structure, layout: any): { shouldRemov
     const reasons = [];
 
     // 低价值建筑
-    if (structure.structureType === STRUCTURE_ROAD || 
-        structure.structureType === STRUCTURE_CONTAINER || 
+    if (structure.structureType === STRUCTURE_ROAD ||
+        structure.structureType === STRUCTURE_CONTAINER ||
         structure.structureType === STRUCTURE_RAMPART) {
         reasons.push("低价值建筑");
     }
@@ -1756,7 +1748,7 @@ function shouldRemoveStructure(structure: Structure, layout: any): { shouldRemov
     const sameTypeStructures = structure.room.find(FIND_MY_STRUCTURES, {
         filter: s => s.structureType === structure.structureType
     });
-    
+
     const reasonableLimits = {
         [STRUCTURE_SPAWN]: 2,
         [STRUCTURE_STORAGE]: 1,
@@ -1825,18 +1817,18 @@ function handleMismatchedStructures(room: Room, layout: any): void {
 }
 
 const RampartBorderCallbackFunction = (roomName: string): boolean | CostMatrix => {
-    let currentRoom:any = Game.rooms[roomName];
+    const currentRoom:any = Game.rooms[roomName];
 
-    let costs = new PathFinder.CostMatrix;
+    const costs = new PathFinder.CostMatrix;
 
-    let storage = Game.getObjectById(currentRoom.memory.Structures.storage) || currentRoom.findStorage();
+    const storage = Game.getObjectById(currentRoom.memory.Structures.storage) || currentRoom.findStorage();
 
 
-    let rampartLocations = [];
+    const rampartLocations = [];
     for(let i = -10; i<11; i++) {
         for(let o = -10; o <11; o++) {
             if((i==10 || i==-10)) {
-                let combinedX = storage.pos.x + i;
+                const combinedX = storage.pos.x + i;
                 if(combinedX >= 2 && combinedX <= 47) {
                     rampartLocations.push([i,o]);
                 }
@@ -1856,7 +1848,7 @@ const RampartBorderCallbackFunction = (roomName: string): boolean | CostMatrix =
                 }
             }
             else if((o==10 || o==-10)) {
-                let combinedY = storage.pos.y + o;
+                const combinedY = storage.pos.y + o;
                 if(combinedY >= 2 && combinedY <= 47) {
                     rampartLocations.push([i,o]);
                 }
@@ -1877,8 +1869,8 @@ const RampartBorderCallbackFunction = (roomName: string): boolean | CostMatrix =
             }
         }
     }
-    let storageRampartNeighbors = getNeighbours(storage.pos, rampartLocations);
-    for(let location of storageRampartNeighbors) {
+    const storageRampartNeighbors = getNeighbours(storage.pos, rampartLocations);
+    for(const location of storageRampartNeighbors) {
         costs.set(location.x, location.y, 255);
     }
 

@@ -2,7 +2,7 @@ function mosquito_manager() {
   if (Game.cpu.bucket < 1500) return;
   if(!Memory.e) Memory.e = {mosquito: []};
 
-  for (let u of Memory.e.mosquito) {
+  for (const u of Memory.e.mosquito) {
     if (u.ts > 0) {
       /** @param {string} roomName */
       function findClosestRooms(roomName) {
@@ -11,14 +11,14 @@ function mosquito_manager() {
         myRoomNames = _.shuffle(myRoomNames);
 
         /** @type {Array<Room>} */
-        let myRooms = [];
+        const myRooms = [];
         for (const myRoomName of myRoomNames) {
           if (Game.map.getRoomLinearDistance(roomName, myRoomName) > range) {
             continue;
           }
-          let room = Game.rooms[myRoomName];
-          let storage = room.storage;
-          let terminal = room.terminal;
+          const room = Game.rooms[myRoomName];
+          const storage = room.storage;
+          const terminal = room.terminal;
           if (room && storage && terminal && room.controller && room.controller.my && room.controller.level === 8) {
             if (
               storage.store[RESOURCE_ENERGY] >= 10000
@@ -36,8 +36,8 @@ function mosquito_manager() {
         return closestRooms.slice(0, 3);
       }
 
-      let closestRooms = findClosestRooms(u.n);
-      for (let closestRoom of closestRooms) {
+      const closestRooms = findClosestRooms(u.n);
+      for (const closestRoom of closestRooms) {
         if (u.ts > 0) {
           if (global.spawn_mosquito(closestRoom.name, u.n)) {
             u.ts--;

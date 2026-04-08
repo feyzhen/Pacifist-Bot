@@ -14,13 +14,13 @@ const run = function (creep) {
     }
 
     console.log(creep.room.name);
-    let targetRoom = creep.memory.targetRoom;
+    const targetRoom = creep.memory.targetRoom;
     if(creep.room.name !== targetRoom) {
         if(creep.memory.locked_away == 0) {
             if(!creep.memory.full && creep.room.name === creep.memory.homeRoom) {
-                let storage = creep.room.storage;
+                const storage = creep.room.storage;
                 if(storage) {
-                    let result = creep.withdraw(storage, RESOURCE_ENERGY);
+                    const result = creep.withdraw(storage, RESOURCE_ENERGY);
                     if(result == ERR_NOT_IN_RANGE) {
                         creep.MoveCostMatrixRoadPrio(storage,1);
                         return;
@@ -90,8 +90,8 @@ const run = function (creep) {
             HostileCreeps = HostileCreeps.filter(function(c) {return  creep.pos.getRangeTo(c <= 15) && (c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0);});
             if(HostileCreeps.length > 0) {
 
-                    let roomsAvailable = Object.keys(Game.map.describeExits(creep.room.name));
-                    let badGuy = HostileCreeps[0];
+                    const roomsAvailable = Object.keys(Game.map.describeExits(creep.room.name));
+                    const badGuy = HostileCreeps[0];
 
                     if(badGuy.pos.x <= 25 && badGuy.pos.y <= 25) {
                         if(roomsAvailable.includes("5")) {
@@ -168,19 +168,19 @@ const run = function (creep) {
 
 
 
-        let controller = creep.room.controller;
+        const controller = creep.room.controller;
         if(controller) {
 
             if(!creep.memory.source) {
-                let sources = creep.room.find(FIND_SOURCES);
+                const sources = creep.room.find(FIND_SOURCES);
                 if(sources.length > 0) {
-                    let closestSourceToController = controller.pos.findClosestByRange(sources);
+                    const closestSourceToController = controller.pos.findClosestByRange(sources);
                     creep.memory.source = closestSourceToController.id;
                 }
             }
 
             if(!creep.memory.full) {
-                let droppedEnergy = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {
+                const droppedEnergy = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {
                     filter: (resource) => {
                         return resource.resourceType == RESOURCE_ENERGY;
                     }

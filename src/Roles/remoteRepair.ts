@@ -2,19 +2,19 @@ function findLockedRepair(creep) {
     if(!creep.memory.allowed_repairs) {
         creep.memory.allowed_repairs = [];
 
-        let roadsInRoom = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_ROAD});
+        const roadsInRoom = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType == STRUCTURE_ROAD});
         _.forEach(roadsInRoom, function(road) {
             if(_.includes(creep.room.memory.keepTheseRoads, road.id, 0)) {
                 creep.memory.allowed_repairs.push(road.id);
             }
         });
-        let sources = creep.room.find(FIND_SOURCES);
-        let nonRoadsInRoom = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType != STRUCTURE_ROAD && building.structureType !== STRUCTURE_WALL && building.structureType !== STRUCTURE_CONTROLLER && building.structureType !== STRUCTURE_RAMPART});
+        const sources = creep.room.find(FIND_SOURCES);
+        const nonRoadsInRoom = creep.room.find(FIND_STRUCTURES, {filter: building => building.structureType != STRUCTURE_ROAD && building.structureType !== STRUCTURE_WALL && building.structureType !== STRUCTURE_CONTROLLER && building.structureType !== STRUCTURE_RAMPART});
         _.forEach(nonRoadsInRoom, function(building) {
             // if(building.pos.lookFor(LOOK_CREEPS).length != 0) {
             if(building.structureType == STRUCTURE_CONTAINER) {
                 if(sources.length > 0) {
-                    let isNearToSource = creep.pos.isNearTo(creep.pos.findClosestByRange(sources));
+                    const isNearToSource = creep.pos.isNearTo(creep.pos.findClosestByRange(sources));
                     if(isNearToSource) {
                         creep.memory.allowed_repairs.push(building.id)
                     }
@@ -28,15 +28,15 @@ function findLockedRepair(creep) {
     }
 
     if(creep.memory.allowed_repairs.length > 0) {
-        let buildingsToRepair = [];
+        const buildingsToRepair = [];
         _.forEach(creep.memory.allowed_repairs, function(building) {
-            let buildingObj = Game.getObjectById(building);
+            const buildingObj = Game.getObjectById(building);
             if(buildingObj) {
                 buildingsToRepair.push(buildingObj);
             }
         });
         if(buildingsToRepair.length > 0) {
-            let closestBuildingToRepair = creep.pos.findClosestByRange(buildingsToRepair)
+            const closestBuildingToRepair = creep.pos.findClosestByRange(buildingsToRepair)
             if(closestBuildingToRepair && closestBuildingToRepair !== null) {
                 creep.memory.locked_repair = closestBuildingToRepair.id;
                 creep.say("🎯", true);
@@ -54,11 +54,11 @@ function findLockedRepair(creep) {
 }
 
 function findLockedBuild(creep) {
-	let buildingsToBuild = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
+	const buildingsToBuild = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
 
     if(buildingsToBuild.length > 0) {
 		creep.say("🎯", true);
-        let closestBuildingToBuild = creep.pos.findClosestByRange(buildingsToBuild);
+        const closestBuildingToBuild = creep.pos.findClosestByRange(buildingsToBuild);
         creep.memory.locked_build = closestBuildingToBuild.id;
     }
     else {
@@ -106,13 +106,13 @@ function findLockedBuild(creep) {
         }
 
         if(creep.memory.locked_build) {
-            let buildTarget:any = Game.getObjectById(creep.memory.locked_build);
+            const buildTarget:any = Game.getObjectById(creep.memory.locked_build);
             if(!buildTarget) {
                 creep.memory.locked_build = null;
             }
         }
         if(creep.memory.locked_repair) {
-            let repairTarget:any = Game.getObjectById(creep.memory.locked_repair);
+            const repairTarget:any = Game.getObjectById(creep.memory.locked_repair);
             if(!repairTarget || repairTarget.hits == repairTarget.hitsMax) {
                 creep.memory.locked_repair = null;
             }
@@ -121,7 +121,7 @@ function findLockedBuild(creep) {
 
         if(!creep.memory.locked_repair) {
             findLockedRepair(creep);
-            let target:any = Game.getObjectById(creep.memory.locked_repair);
+            const target:any = Game.getObjectById(creep.memory.locked_repair);
             if(target && target.hits < target.hitsMax) {
                 if(creep.repair(target) == ERR_NOT_IN_RANGE) {
                     creep.MoveCostMatrixRoadPrio(target, 3)
@@ -129,13 +129,13 @@ function findLockedBuild(creep) {
                 }
             }
             else if(target && target.hits == target.hitsMax) {
-                let index = creep.memory.allowed_repairs.indexOf(target.id);
+                const index = creep.memory.allowed_repairs.indexOf(target.id);
                 creep.memory.allowed_repairs.splice(index,1);
                 creep.memory.locked_repair = null;
             }
         }
         else if(creep.memory.locked_repair) {
-            let target:any = Game.getObjectById(creep.memory.locked_repair);
+            const target:any = Game.getObjectById(creep.memory.locked_repair);
             if(target && target.hits < target.hitsMax) {
                 if(creep.repair(target) == ERR_NOT_IN_RANGE) {
                     creep.MoveCostMatrixRoadPrio(target, 3)
@@ -146,7 +146,7 @@ function findLockedBuild(creep) {
                 }
             }
             else if(target && target.hits == target.hitsMax) {
-                let index = creep.memory.allowed_repairs.indexOf(target.id);
+                const index = creep.memory.allowed_repairs.indexOf(target.id);
                 creep.memory.allowed_repairs.splice(index,1);
                 creep.memory.locked_repair = null;
             }
@@ -154,7 +154,7 @@ function findLockedBuild(creep) {
 
         if(!creep.memory.locked_build && !creep.memory.locked_repair) {
             findLockedBuild(creep);
-            let target = Game.getObjectById(creep.memory.locked_build);
+            const target = Game.getObjectById(creep.memory.locked_build);
             if(target) {
                 if(creep.build(target) == ERR_NOT_IN_RANGE) {
                     creep.MoveCostMatrixRoadPrio(target, 3);
@@ -163,7 +163,7 @@ function findLockedBuild(creep) {
             }
         }
         else if(creep.memory.locked_build) {
-            let target = Game.getObjectById(creep.memory.locked_build);
+            const target = Game.getObjectById(creep.memory.locked_build);
             if(target && creep.build(target) == ERR_NOT_IN_RANGE) {
                 creep.MoveCostMatrixRoadPrio(target, 3)
                 return;

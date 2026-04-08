@@ -1,7 +1,7 @@
 function factory(room) {
     if(room.controller && room.controller.my && room.controller.level >= 7 && Game.time % 10 == 0 && Game.cpu.bucket > 3500) {
         if(!room.memory.Structures.factory) {
-            let factories = room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_FACTORY});
+            const factories = room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_FACTORY});
             if(factories.length > 0) {
                 room.memory.Structures.factory = factories[0].id;
             }
@@ -10,8 +10,8 @@ function factory(room) {
 
 
         if(room.memory.Structures.factory) {
-            let factory:any = Game.getObjectById(room.memory.Structures.factory);
-            let storage:any = Game.getObjectById(room.memory.Structures.storage);
+            const factory:any = Game.getObjectById(room.memory.Structures.factory);
+            const storage:any = Game.getObjectById(room.memory.Structures.storage);
             if(factory && factory.cooldown == 0 && factory.store[RESOURCE_ENERGY] >= 600 && storage.store[RESOURCE_BATTERY] === 0 && storage && storage.store[RESOURCE_ENERGY] > 250000) {
                 factory.produce(RESOURCE_BATTERY);
             }

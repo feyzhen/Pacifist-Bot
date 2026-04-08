@@ -13,7 +13,7 @@ const run = function (creep) {
         Memory.rooms[creep.memory.homeRoom].resources[creep.room.name].energy = {};
     }
 
-    let sources = creep.room.find(FIND_SOURCES);
+    const sources = creep.room.find(FIND_SOURCES);
 
     // Function to check if a source is reachable
     const isSourceReachable = (source) => {
@@ -22,9 +22,9 @@ const run = function (creep) {
             { pos: source.pos, range: 1 },
             {
                 roomCallback: (roomName) => {
-                    let room = Game.rooms[roomName];
+                    const room = Game.rooms[roomName];
                     if (!room) return false;
-                    let costs = new PathFinder.CostMatrix;
+                    const costs = new PathFinder.CostMatrix;
 
                     room.find(FIND_STRUCTURES).forEach(function(structure) {
                             costs.set(structure.pos.x, structure.pos.y, 255);
@@ -39,17 +39,17 @@ const run = function (creep) {
     };
 
     // Check if all sources are reachable
-    let allSourcesReachable = sources.every(isSourceReachable);
+    const allSourcesReachable = sources.every(isSourceReachable);
 
     if(sources.length <= 2 && allSourcesReachable && creep.room.controller && creep.room.controller.level == 0 && !creep.room.controller.reservation) {
-        for(let source of sources) {
+        for(const source of sources) {
             Memory.rooms[creep.memory.homeRoom].resources[creep.room.name].energy[source.id] = {};
             Memory.rooms[creep.memory.homeRoom].resources[creep.room.name].active = true;
         }
     }
     else {
         if(creep.room.controller?.level<3 && !creep.room.controller.my && !creep.room.controller.safeMode) {
-            let newName = 'Annoyer-' + Math.floor(Math.random() * Game.time) + "-" + creep.memory.homeRoom;
+            const newName = 'Annoyer-' + Math.floor(Math.random() * Game.time) + "-" + creep.memory.homeRoom;
             Memory.rooms[creep.memory.homeRoom].spawn_list.push([ATTACK, MOVE], newName, {memory: {role: 'annoy', homeRoom:creep.memory.homeRoom, targetRoom:creep.room.name}});
         }
         else {

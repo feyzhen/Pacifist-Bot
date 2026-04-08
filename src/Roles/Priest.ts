@@ -12,9 +12,9 @@ const run = function (creep) {
 
     if(!creep.memory.RoomToPreach || creep.memory.RoomToPreach == creep.room.name) {
 
-        let rooms = Object.values(Game.map.describeExits(creep.room.name))
+        const rooms = Object.values(Game.map.describeExits(creep.room.name))
 
-        let filtered_rooms = rooms.filter(function(roomname) {return !creep.memory.roomsVisited.includes(roomname) && Game.map.getRoomStatus(roomname).status == "normal";});
+        const filtered_rooms = rooms.filter(function(roomname) {return !creep.memory.roomsVisited.includes(roomname) && Game.map.getRoomStatus(roomname).status == "normal";});
 
         if(filtered_rooms.length > 0 ) {
             creep.memory.RoomToPreach = filtered_rooms[Math.floor(Math.random()*filtered_rooms.length)];

@@ -184,7 +184,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
   // TerrainDataExporter();
   // console.log(JSON.stringify(Memory.roomStatuses))
 
-  let tickTotal = (Game.cpu.getUsed() - startTotal).toFixed(2);
+  const tickTotal = (Game.cpu.getUsed() - startTotal).toFixed(2);
   console.log(tickTotal + "ms", "on this tick");
 
 
