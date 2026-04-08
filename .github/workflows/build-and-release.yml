@@ -62,8 +62,8 @@ jobs:
       run: |
         mkdir -p release
         cp -r dist/* release/ 2>/dev/null || echo "No dist directory found"
-        cp package.json release/
-        cp README.md release/ 2>/dev/null || echo "No README.md found"
+#        cp package.json release/
+#        cp README.md release/ 2>/dev/null || echo "No README.md found"
 
     - name: Create release archive
       run: |
