@@ -238,7 +238,40 @@ const run = function (creep) {
 
 
 
-            const closestLink = Game.getObjectById(creep.memory.sourceLink) || source.pos.findClosestByRange(creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_LINK && creep.pos.getRangeTo(s) < 5}));
+            // Initialize room.memory.sourceLinks if not exists
+            if(!creep.room.memory.sourceLinks) {
+                creep.room.memory.sourceLinks = {};
+            }
+            
+            // Get cached sourceLink or find and cache a new one
+            let closestLink: StructureLink | null = Game.getObjectById(creep.memory.sourceLink) as StructureLink;
+            if(!closestLink || !creep.room.memory.sourceLinks[creep.memory.sourceId]) {
+                // Find the closest link to the source (within 5 tiles)
+                const nearbyLinks = creep.room.find(FIND_MY_STRUCTURES, {
+                    filter: (s: StructureLink) => s.structureType == STRUCTURE_LINK && source.pos.getRangeTo(s) < 5
+                }) as StructureLink[];
+                
+                if(nearbyLinks.length > 0) {
+                    closestLink = source.pos.findClosestByRange(nearbyLinks) as StructureLink;
+                    // Cache the assignment
+                    creep.room.memory.sourceLinks[creep.memory.sourceId] = closestLink.id;
+                    creep.memory.sourceLink = closestLink.id;
+                } else {
+                    // No suitable link found, clear any existing cache
+                    creep.room.memory.sourceLinks[creep.memory.sourceId] = null;
+                    creep.memory.sourceLink = null;
+                }
+            } else {
+                // Use cached link but verify it still exists and is valid
+                closestLink = Game.getObjectById(creep.room.memory.sourceLinks[creep.memory.sourceId]) as StructureLink;
+                if(!closestLink || source.pos.getRangeTo(closestLink) >= 5) {
+                    // Cached link is invalid, clear and find new one
+                    creep.room.memory.sourceLinks[creep.memory.sourceId] = null;
+                    creep.memory.sourceLink = null;
+                    // Recursive call to find new link
+                    return; // Let next tick handle the finding
+                }
+            }
             if(closestLink && closestLink.store[RESOURCE_ENERGY] < 800) {
                 if(creep.pos.isNearTo(closestLink)) {
                     creep.transfer(closestLink, RESOURCE_ENERGY);
