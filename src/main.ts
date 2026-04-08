@@ -90,7 +90,7 @@ import "utils/layoutCommands"; // 加载布局管理命令
 import "./RoomVisual.js"; // 加载RoomVisual依赖
 import "./planner-wrapper.js"; // 加载自动规划包装器
 import mosquito_manager from "Misc/mosquito_manager";
-import { Build_Remote_Roads } from "Rooms/rooms.construction";
+import { Build_Remote_Roads } from "Rooms/rooms.construction2";
 
 global.ROLES = {
   Solomon: roleSolomon,

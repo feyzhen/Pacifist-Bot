@@ -1,4 +1,4 @@
-import construction from "./rooms.construction";
+import { buildFromLayout } from "./rooms.construction2";
 function spawning(room: any) {
     if(Game.cpu.bucket < 1000) return;
     if(!room.memory.spawn_list) {
@@ -800,7 +800,8 @@ function add_creeps_to_spawn_list(room, spawn) {
         }
         else if(room.memory.defence.nuke && nukes.length == 0) {
             room.memory.defence.nuke = false;
-            construction(room);
+            // 核弹威胁结束，使用新建造系统重建
+            buildFromLayout(room);
         }
         else {
             room.memory.defence.nuke = false;
