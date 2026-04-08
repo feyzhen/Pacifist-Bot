@@ -607,7 +607,7 @@ function add_creeps_to_spawn_list(room, spawn) {
         6: {
             build_creep: {
 
-                amount: 3,
+                amount: 1,
                 body:   getBody([WORK,WORK,CARRY,CARRY,MOVE], room, 50),
 
             },
@@ -620,7 +620,7 @@ function add_creeps_to_spawn_list(room, spawn) {
 
             filler_creep: {
 
-                amount: 1,
+                amount: 2,
                 body:   [CARRY,CARRY,CARRY,CARRY,MOVE,MOVE],
 
             },
@@ -634,7 +634,7 @@ function add_creeps_to_spawn_list(room, spawn) {
 
             repair_creep: {
 
-                amount: 4,
+                amount: 2,
                 body:   [WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
                         CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,
                         MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE],
