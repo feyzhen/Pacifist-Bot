@@ -2,6 +2,8 @@ import "./utils/Commands";
 import { ErrorMapper } from "./utils/ErrorMapper";
 import { memHack } from "utils/MemHack";
 import global from "./utils/Global";
+import { preTickBetterMove, endTickResolve} from "./超级移动优化";
+import { isWorkTile } from "./utils/superMoveUtils";
 
 // import TerrainDataExporter from "./utils/TerrainDataExporter";
 
@@ -157,6 +159,8 @@ global.ROLES = {
 
 export const loop = ErrorMapper.wrapLoop(() => {
 
+  // Initialize super move optimization for this tick
+  preTickBetterMove();
 
   const startTotal = Game.cpu.getUsed();
 
@@ -183,6 +187,9 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
   // TerrainDataExporter();
   // console.log(JSON.stringify(Memory.roomStatuses))
+
+  // Resolve all queued movements at the end of the tick
+  endTickResolve(isWorkTile);
 
   const tickTotal = (Game.cpu.getUsed() - startTotal).toFixed(2);
   console.log(tickTotal + "ms", "on this tick");
