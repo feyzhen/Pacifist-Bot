@@ -977,10 +977,13 @@ function construction(room) {
                                 }
                                 else {
                                     for(let building of lookForExistingStructures) {
-                                        if(building.structureType == STRUCTURE_ROAD) {
-                                            if(room.memory.keepTheseRoads && !_.includes(room.memory.keepTheseRoads, building.id, 0)) {
-                                                room.memory.keepTheseRoads.push(building.id);
-                                            }
+                                        if (building.structureType == STRUCTURE_ROAD) {
+                                          if (
+                                            room.memory.keepTheseRoads &&
+                                            !_.includes(room.memory.keepTheseRoads, building.id, 0)
+                                          ) {
+                                            room.memory.keepTheseRoads.push(building.id);
+                                          }
                                         }
                                     }
                                 }
@@ -997,7 +1000,7 @@ function construction(room) {
                         room.createConstructionSite(mineral.pos.x, mineral.pos.y, STRUCTURE_EXTRACTOR);
                     }
                     else {
-                        room.memory.extractor = extractor.id;
+                        room.memory.Structures.extractor = extractor.id;  // ✅ 修复extractor保存位置问题
                     }
 
                     let pathFromStorageToMineral = PathFinder.search(storage.pos, {pos:mineral.pos, range:1}, {plainCost: 1, swampCost: 3, roomCallback: (roomName) => makeStructuresCostMatrix(roomName)});
