@@ -113,19 +113,17 @@ Room.prototype.findStorageLink = function(): object | void {
     if(links.length > 0) {
         let storage = Game.getObjectById(this.memory.Structures.storage) || this.findStorage();
         if(!storage) return;
-        if(storage.pos.x < 2) return; // Would go out of bounds
-        let storageLinkPosition = new RoomPosition(storage.pos.x - 2, storage.pos.y, this.name);
-        let lookStructuresHere = storageLinkPosition.lookFor(LOOK_STRUCTURES);
-        if(lookStructuresHere.length > 0) {
-            for(let building of lookStructuresHere) {
-                if(building.structureType == STRUCTURE_LINK) {
-                    this.memory.Structures.StorageLink = building.id;
-                    return building;
-                }
-            }
+        
+        // Find links within 2 range of storage
+        let nearbyLinks = storage.pos.findInRange(links, 2);
+        if(nearbyLinks.length > 0) {
+            // Find the closest link to storage
+            let closestLink = storage.pos.findClosestByRange(nearbyLinks);
+            this.memory.Structures.StorageLink = closestLink.id;
+            return closestLink;
         }
         else {
-            this.memory.Structures.storageLink = undefined;
+            this.memory.Structures.StorageLink = undefined;
         }
     }
 }
