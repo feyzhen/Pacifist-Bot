@@ -89,21 +89,22 @@ function applyConstructionSites(costs: CostMatrix, room: Room): void {
 /** Shared stationary-creep cost table used by most movement callbacks. */
 function applyStationaryCreeps(costs: CostMatrix, room: Room, roleName: string | null = null): void {
     const ROLE_COSTS: Record<string, number> = {
-        upgrader:       61,  // set below per condition
-        EnergyMiner:    21,
-        builder:        26,
-        buildcontainer: 60,
-        repair:         60,
-        Convoy:         41,
-        ram:           100,
-        signifer:      100,
-        PowerMelee:     20,
-        PowerHeal:      14,
-        SpecialRepair:  10,
-        RampartDefender: 255,
-        CCK:            60,
-        CCKparty:       60,
-        reserve:        25,
+      upgrader: 61, // set below per condition
+      EnergyMiner: 21,
+      builder: 26,
+      buildcontainer: 60,
+      EnergyManager: 50,
+      repair: 60,
+      Convoy: 41,
+      ram: 100,
+      signifer: 100,
+      PowerMelee: 20,
+      PowerHeal: 14,
+      SpecialRepair: 10,
+      RampartDefender: 255,
+      CCK: 60,
+      CCKparty: 60,
+      reserve: 25
     };
 
     room.find(FIND_MY_CREEPS, { filter: (c: Creep) => !c.spawning }).forEach((creep: any) => {
