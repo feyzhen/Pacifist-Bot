@@ -384,7 +384,6 @@ function add_creeps_to_spawn_list(room, spawn) {
                     SpecialCarriers ++;
                     break;
                 }
-
             case "SquadCreepA":
                 if(isInRoom(creep, room)) {
                     CreepA ++;
@@ -1535,10 +1534,18 @@ function add_creeps_to_spawn_list(room, spawn) {
 
     if(room.memory.Structures.controllerLink && room.controller.level !== 8 && room.controller.level >= 3) {
         const controllerLink:any = Game.getObjectById(room.memory.Structures.controllerLink);
-        if(Game.time % 70 < 12 && controllerLink && controllerLink.store[RESOURCE_ENERGY] <= 100 && storage && storage.store[RESOURCE_ENERGY] > 1000) {
-            const name = 'ControllerLinkFiller-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-            room.memory.spawn_list.unshift(getBody([CARRY,CARRY,CARRY,CARRY,MOVE], room, 20), name, {memory: {role: 'ControllerLinkFiller'}});
-            console.log('Adding ControllerLinkFiller to Spawn List: ' + name);
+        if (
+          Game.time % 70 < 12 &&
+          controllerLink &&
+          controllerLink.store[RESOURCE_ENERGY] <= 100 &&
+          storage &&
+          storage.store[RESOURCE_ENERGY] > 1000
+        ) {
+          const name = "ControllerLinkFiller-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
+          room.memory.spawn_list.unshift(getBody([CARRY, CARRY, CARRY, CARRY, MOVE], room, 20), name, {
+            memory: { role: "ControllerLinkFiller" }
+          });
+          console.log("Adding ControllerLinkFiller to Spawn List: " + name);
         }
     }
 
@@ -1781,7 +1788,8 @@ function add_creeps_to_spawn_list(room, spawn) {
     }
 
 
-    if (MineralMiners < 1 && room.controller.level >= 6 && room.memory.Structures && room.memory.Structures.extractor && Game.getObjectById(room.memory.Structures.extractor) && !room.memory.danger && room.memory.danger_timer == 0 && storage && storage.store[RESOURCE_ENERGY] > 250000 && storage.store.getUsedCapacity() < 975000 && Game.cpu.bucket > 8000) {
+    // if (MineralMiners < 1 && room.controller.level >= 6 && room.memory.Structures && room.memory.Structures.extractor && Game.getObjectById(room.memory.Structures.extractor) && !room.memory.danger && room.memory.danger_timer == 0 && storage && storage.store[RESOURCE_ENERGY] > 250000 && storage.store.getUsedCapacity() < 975000 && Game.cpu.bucket > 8000) {
+    if (MineralMiners < 1 && room.controller.level >= 6 && room.memory.Structures && room.memory.Structures.extractor && Game.getObjectById(room.memory.Structures.extractor) && !room.memory.danger && room.memory.danger_timer == 0 && storage && storage.store[RESOURCE_ENERGY] > 50000 && storage.store.getUsedCapacity() < 975000) {
         const mineral = Game.getObjectById(room.memory.mineral) || room.findMineral();
         if(mineral.mineralAmount > 0 && storage.store[mineral.mineralType] < 100000) {
             const newName = 'MineralMiner-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
