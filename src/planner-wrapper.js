@@ -1591,6 +1591,63 @@ function findRoadToRamp(start, goals, pfCostMat, roads, extensionPos, rv) {
  * @param {CostMat} layoutCost
  * @param {RoomVisual} rv
  */
+/**
+ * 为 goalObjects 按照 link 优先级排序
+ * 优先级：1.controller(可能共用中央link) 2.最远source 3.其他资源点按距离排序
+ * @param {ClaimableRoom} room
+ * @param {RoomObject[]} goalObjects
+ * @param {{x:number, y:number}} centralLinkPos
+ * @param {{[x_y:string]:{x:number, y:number}}} goalNearestPos
+ * @returns {RoomObject[]}
+ */
+function sortGoalsByLinkPriority(room, goalObjects, centralLinkPos, goalNearestPos) {
+    // 分离不同类型的资源点
+    let sources = [];
+    let controller = null;
+    let mineral = null;
+
+    for (let goal of goalObjects) {
+        //@ts-ignore
+        if (goal.mineralType) {
+            mineral = goal;
+        } else if (goal.progressTotal !== undefined) {
+            controller = goal;
+        } else {
+            sources.push(goal);
+        }
+    }
+
+    // 按 distance 到 storage 的距离排序 sources（远的优先）
+    sources.sort((a, b) => {
+        let distA = getRange(a.pos.x, a.pos.y, centralLinkPos.x, centralLinkPos.y);
+        let distB = getRange(b.pos.x, b.pos.y, centralLinkPos.x, centralLinkPos.y);
+        return distB - distA; // 降序，远的在前
+    });
+
+    // 构建最终排序
+    let sortedGoals = [];
+
+    // 1. controller（如果 shareControllerLink 为 true，可能共用中央 link）
+    if (controller) {
+        sortedGoals.push(controller);
+    }
+
+    // 2. 最远的 source
+    if (sources.length > 0) {
+        sortedGoals.push(sources.shift()); // 取出最远的 source
+    }
+
+    // 3. 剩下的 sources（按距离排序，远的优先）
+    sortedGoals.push(...sources);
+
+    // 4. mineral（最后处理）
+    if (mineral) {
+        sortedGoals.push(mineral);
+    }
+
+    return sortedGoals;
+}
+
 function placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roads, fakeRoads, extensionPos, exitMaps, layout, layoutCost, vertexVisited, vertexDist, shareControllerLink, rv) {
     /**@type {RoomPosition[]} */
     let removedPosList = [], terrain = room.getTerrain().getRawBuffer();
@@ -1608,6 +1665,10 @@ function placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roa
     layout[STRUCTURE_CONTAINER] = layout[STRUCTURE_CONTAINER] || [];
     layout[STRUCTURE_RAMPART] = layout[STRUCTURE_RAMPART] || [];
     layout[WORK_POS] = [];
+
+    // 按 link 优先级排序 goalObjects
+    goalObjects = sortGoalsByLinkPriority(room, goalObjects, centralLinkPos, goalNearestPos);
+
     for (let goal of goalObjects) {
         let goalPos = goal.pos;
         let nearestPos = goalNearestPos[`${goalPos.x}_${goalPos.y}`] || goalPos, y50;
@@ -2831,21 +2892,21 @@ function savePlanToMemory(roomName) {
 global.RP = function(room) {
     // 运行规划并显示可视化，同时保存到缓存
     let roomName = typeof room === 'string' ? room : room.name;
-    
+
     // 清除旧缓存
     clearRoomPlanCache(roomName);
-    
+
     // 运行规划（显示可视化）
     let layout = plan(room, true);
-    
+
     if (!layout) {
         console.log(`[RP] 规划失败：房间 ${roomName}`);
         return false;
     }
-    
+
     // 保存到缓存
     saveToPlanCache(roomName, layout);
-    
+
     console.log(`[RP] 房间 ${roomName} 规划完成并已保存到缓存`);
     return layout;
 };  // 运行规划+可视化+保存缓存
