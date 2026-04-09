@@ -641,7 +641,7 @@ Creep.prototype.findSource = function () {
             source = this.pos.findClosestByRange(sources);
         }
     }
-    if (source) { this.memory.source = source.id; return source; }
+    if (source) { this.memory.source = source.id; this.memory.sourceId = source.id; return source; }
 };
 
 Creep.prototype.findSpawn = function () {

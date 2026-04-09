@@ -240,9 +240,12 @@ const run = function (creep) {
 
             // Initialize room.memory.sourceLinks if not exists
             if(!creep.room.memory.sourceLinks) {
+                console.log("Initializing sourceLinks for room: " + creep.room.name);
                 creep.room.memory.sourceLinks = {};
+            } else {
+                console.log("SourceLinks already initialized for room: " + creep.room.memory.sourceLinks);
             }
-            
+
             // Get cached sourceLink or find and cache a new one
             let closestLink: StructureLink | null = Game.getObjectById(creep.memory.sourceLink) as StructureLink;
             if(!closestLink || !creep.room.memory.sourceLinks[creep.memory.sourceId]) {
@@ -250,7 +253,7 @@ const run = function (creep) {
                 const nearbyLinks = creep.room.find(FIND_MY_STRUCTURES, {
                     filter: (s: StructureLink) => s.structureType == STRUCTURE_LINK && source.pos.getRangeTo(s) < 5
                 }) as StructureLink[];
-                
+
                 if(nearbyLinks.length > 0) {
                     closestLink = source.pos.findClosestByRange(nearbyLinks) as StructureLink;
                     // Cache the assignment

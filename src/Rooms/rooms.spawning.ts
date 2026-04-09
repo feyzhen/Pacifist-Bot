@@ -634,7 +634,7 @@ function add_creeps_to_spawn_list(room, spawn) {
 
             repair_creep: {
 
-                amount: 2,
+                amount: 3,
                 body:   [WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
                         CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,
                         MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE],
@@ -1105,7 +1105,7 @@ function add_creeps_to_spawn_list(room, spawn) {
                     const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
                     return storage && link.pos.getRangeTo(storage) < 5;
                 });
-                
+
                 if(sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
                     const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.unshift(spawnrules[6].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
@@ -1220,7 +1220,7 @@ function add_creeps_to_spawn_list(room, spawn) {
                     const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
                     return storage && link.pos.getRangeTo(storage) < 5;
                 });
-                
+
                 if(sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
                     const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.unshift(spawnrules[7].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
@@ -1341,7 +1341,7 @@ function add_creeps_to_spawn_list(room, spawn) {
                     const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
                     return storage && link.pos.getRangeTo(storage) < 5;
                 });
-                
+
                 if(sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
                     const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                     // If room is energy starved, spawn small emergency energy manager
@@ -1559,7 +1559,7 @@ function add_creeps_to_spawn_list(room, spawn) {
     }
 
 
-    if(Signers < 1 && room.controller.level >= 5 && !room.memory.danger && room.memory.danger_timer == 0 && room.controller.sign && room.controller.sign.text !== "check out my YT channel - marlyman123") {
+    if(Signers < 1 && room.controller.level >= 5 && !room.memory.danger && room.memory.danger_timer == 0 && room.controller.sign && room.controller.sign.text !== "种田流,请勿攻击。I'm a peace lover.Please don't attack me.Tell me if you need any room I claimed.") {
         const newName = 'Signer' + "-" + room.name;
         room.memory.spawn_list.push([MOVE], newName, {memory: {role: 'Sign', homeRoom: room.name}});
         console.log('Adding Signer to Spawn List: ' + newName);

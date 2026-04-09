@@ -15,13 +15,13 @@
 Creep.prototype.getEnergy = function(): any {
     // 如果已经满能量，返回false
     if (this.store.getFreeCapacity(RESOURCE_ENERGY) === 0) return false;
-    
+
     // 优先从容器获取
     const containers = this.room.find(FIND_STRUCTURES, {
-        filter: (s: any) => s.structureType === STRUCTURE_CONTAINER && 
+        filter: (s: any) => s.structureType === STRUCTURE_CONTAINER &&
                           s.store.getUsedCapacity(RESOURCE_ENERGY) > 0
     });
-    
+
     if (containers.length > 0) {
         const closestContainer = this.pos.findClosestByPath(containers);
         if (closestContainer) {
@@ -34,7 +34,7 @@ Creep.prototype.getEnergy = function(): any {
             }
         }
     }
-    
+
     // 从存储获取
     const storage = this.room.storage;
     if (storage && storage.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
@@ -46,7 +46,7 @@ Creep.prototype.getEnergy = function(): any {
             return true;
         }
     }
-    
+
     // 从终端获取
     const terminal = this.room.terminal;
     if (terminal && terminal.store.getUsedCapacity(RESOURCE_ENERGY) > 10000) {
@@ -58,12 +58,12 @@ Creep.prototype.getEnergy = function(): any {
             return true;
         }
     }
-    
+
     // 从掉落的能量获取
     const droppedEnergy = this.room.find(FIND_DROPPED_RESOURCES, {
         filter: (r: any) => r.resourceType === RESOURCE_ENERGY && r.amount > 50
     });
-    
+
     if (droppedEnergy.length > 0) {
         const closestDropped = this.pos.findClosestByPath(droppedEnergy);
         if (closestDropped) {
@@ -76,7 +76,7 @@ Creep.prototype.getEnergy = function(): any {
             }
         }
     }
-    
+
     // 从源点获取
     const sources = this.room.find(FIND_SOURCES);
     if (sources.length > 0) {
@@ -91,7 +91,7 @@ Creep.prototype.getEnergy = function(): any {
             }
         }
     }
-    
+
     return false;
 };
 
@@ -99,7 +99,7 @@ Creep.prototype.getEnergy = function(): any {
 Creep.prototype.storeEnergy = function(): any {
     // 如果没有能量，返回false
     if (this.store.getUsedCapacity(RESOURCE_ENERGY) === 0) return false;
-    
+
     // 优先存储到存储
     const storage = this.room.storage;
     if (storage && storage.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
@@ -111,7 +111,7 @@ Creep.prototype.storeEnergy = function(): any {
             return true;
         }
     }
-    
+
     // 存储到终端
     const terminal = this.room.terminal;
     if (terminal && terminal.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
@@ -123,13 +123,13 @@ Creep.prototype.storeEnergy = function(): any {
             return true;
         }
     }
-    
+
     // 存储到容器
     const containers = this.room.find(FIND_STRUCTURES, {
-        filter: (s: any) => s.structureType === STRUCTURE_CONTAINER && 
+        filter: (s: any) => s.structureType === STRUCTURE_CONTAINER &&
                           s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
     });
-    
+
     if (containers.length > 0) {
         const closestContainer = this.pos.findClosestByPath(containers);
         if (closestContainer) {
@@ -142,30 +142,30 @@ Creep.prototype.storeEnergy = function(): any {
             }
         }
     }
-    
+
     return false;
 };
 
 /** 转移能量到其他creep */
 Creep.prototype.transferEnergy = function(target?: Creep): any {
     if (this.store.getUsedCapacity(RESOURCE_ENERGY) === 0) return false;
-    
+
     let transferTarget = target;
-    
+
     if (!transferTarget) {
         // 寻找需要能量的creep
         const needyCreeps = this.room.find(FIND_MY_CREEPS, {
-            filter: (c: Creep) => c !== this && 
+            filter: (c: Creep) => c !== this &&
                                c.store.getFreeCapacity(RESOURCE_ENERGY) > 0
         });
-        
+
         if (needyCreeps.length === 0) return false;
-        
+
         transferTarget = this.pos.findClosestByPath(needyCreeps);
     }
-    
+
     if (!transferTarget) return false;
-    
+
     if (this.pos.isNearTo(transferTarget)) {
         this.transfer(transferTarget, RESOURCE_ENERGY);
         return true;
@@ -203,7 +203,7 @@ Creep.prototype.hasEmptyCapacity = function(): boolean {
 /** 获取工作状态 */
 Creep.prototype.getWorkingStatus = function(): string {
     const energyPercent = this.store.getUsedCapacity(RESOURCE_ENERGY) / this.store.getCapacity(RESOURCE_ENERGY);
-    
+
     if (energyPercent === 0) return "empty";
     if (energyPercent < 0.5) return "low";
     if (energyPercent < 1) return "medium";
@@ -543,7 +543,7 @@ Creep.prototype.findSource = function () {
             source = this.pos.findClosestByRange(sources);
         }
     }
-    if (source) { this.memory.source = source.id; return source; }
+    if (source) { this.memory.source = source.id; this.memory.sourceId = source.id; return source; }
 };
 
 Creep.prototype.findSpawn = function () {
@@ -577,10 +577,10 @@ Creep.prototype.findClosestLinkToStorage = function (): any {
         const pos = new RoomPosition((storage as any).pos.x - 2, (storage as any).pos.y, this.room.name);
         const links = this.room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_LINK } });
         const nearby = pos.findInRange(links, 2);
-        if (nearby.length) { 
-            const link = nearby[0] as any; 
-            this.memory.closestLink = link.id; 
-            return nearby[0]; 
+        if (nearby.length) {
+            const link = nearby[0] as any;
+            this.memory.closestLink = link.id;
+            return nearby[0];
         }
     }
     return this.findClosestLink();
@@ -607,11 +607,11 @@ Creep.prototype.Speak = function Speak(): void {
         "AB42": "BBB4", "BB14": "BBB4", "BBB4": "33472A",
         "33472A": "E41N58", "E41N58": "E41N58"
     };
-    
+
     if (!this.memory.saying) return;
     const msg = this.memory.saying;
     this.say(msg, true);
-    
+
     if (chain[msg]) {
         this.memory.saying = chain[msg];
     } else {
