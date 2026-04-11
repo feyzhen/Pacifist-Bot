@@ -19,7 +19,7 @@ import "./utils/Whitelist"; // registers global.addAlly / global.removeAlly / gl
 import rooms from "./Rooms/rooms";
 
 import "./Functions/powerCreepFunctions"
-import "./Functions/creepFunctions";
+import "./Functions/creepFunctions2";
 import "./Functions/roomFunctions";
 import "./Functions/roomPositionFunctions";
 

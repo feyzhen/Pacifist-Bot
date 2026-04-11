@@ -2746,7 +2746,7 @@ function spawn_energy_miner(resourceData:any, room, activeRemotes) {
                                 // [WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,WORK,CARRY,MOVE]
                             }
                             else {
-                                room.memory.spawn_list.unshift([MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,WORK,MOVE], newName,
+                                room.memory.spawn_list.unshift([MOVE,WORK,WORK,WORK,WORK,WORK,WORK,CARRY,MOVE], newName,
                                     {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
                             }
                             console.log('Adding Energy Miner to Spawn List: ' + newName);
@@ -2754,14 +2754,14 @@ function spawn_energy_miner(resourceData:any, room, activeRemotes) {
                         }
 
                         else if(room.energyCapacityAvailable >= 550) {
-                            if(room.controller.level >= 7) {
+                            if(room.controller.level >= 5) {
                                 room.memory.spawn_list.unshift([WORK,WORK,WORK,WORK,CARRY,MOVE], newName,
                                     {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
                             }
-                            else if(room.controller.level == 6) {
-                                room.memory.spawn_list.unshift([WORK,WORK,WORK,WORK,WORK,MOVE], newName,
-                                    {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
-                            }
+                            // else if(room.controller.level == 6) {
+                            //     room.memory.spawn_list.unshift([WORK,WORK,WORK,WORK,WORK,MOVE], newName,
+                            //         {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                            // }
                             else {
                                 room.memory.spawn_list.unshift([WORK,WORK,WORK,WORK,WORK,MOVE], newName,
                                     {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
