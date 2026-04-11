@@ -1,6 +1,6 @@
 import roomDefence from "./rooms.defence";
 import spawning from "./rooms.spawning";
-import { Build_Remote_Roads, Situational_Building, buildFromLayout } from "./rooms.construction2";
+import { Build_Remote_Roads, Situational_Building, buildFromLayout, syncLayoutRoadsToKeepTheseRoads } from "./rooms.construction2";
 import market from "./rooms.market";
 import labs from "./rooms.labs";
 import factory from "./rooms.factory";

@@ -35,6 +35,22 @@ const run = function (creep) {
                 buildingsToRepair.push(road);
             }
         });
+        
+        // Emergency road repair for critical unregistered roads (enhancement)
+        if(creep.room.controller.level >= 6) {
+            const allRoads = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_ROAD});
+            const criticalRoads = allRoads.filter(road => 
+                road.hits <= road.hitsMax * 0.3 && // 30% or less health
+                !creep.room.memory.keepTheseRoads.includes(road.id) // Not registered
+            );
+            
+            if(criticalRoads.length > 0) {
+                criticalRoads.sort((a,b) => a.hits - b.hits);
+                buildingsToRepair.unshift(criticalRoads[0]); // Add to front of repair queue
+                creep.say("Emergency Road");
+                console.log(`[Emergency Road] Maintainer found critical unregistered road in ${creep.room.name}`);
+            }
+        }
         let containers;
         if(creep.room.controller.level <= 6) {
             containers = creep.room.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_CONTAINER});

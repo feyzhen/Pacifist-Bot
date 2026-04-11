@@ -78,7 +78,6 @@ declare global {
         spawn: string;
         container: string;
         storage: string;
-        keepTheseRoads: any;
         rampartToMan: any;
         danger_timer: number;
         first_offence: number;
