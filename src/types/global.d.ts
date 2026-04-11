@@ -66,6 +66,8 @@ declare global {
     layoutRCL?: number;
     containerStats?: { [containerId: string]: { lastFull: number; totalTransferred: number } };
     linkStats?: { [linkId: string]: { lastTransfer: number; totalTransferred: number } };
+    keepTheseRoads?: string[];
+    roadConstructionSites?: string[];
   }
 
   interface CreepMemory {

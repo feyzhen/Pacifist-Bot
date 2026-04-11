@@ -281,13 +281,15 @@ function pathBuilder(neighbors, structure, room, usingPathfinder = true) {
       });
 
       _.forEach(keepTheseRoads, function (road) {
-        if (
-          Game.rooms[block.roomName] &&
-          Game.rooms[block.roomName].memory &&
-          Game.rooms[block.roomName].memory.keepTheseRoads &&
-          !_.includes(Game.rooms[block.roomName].memory.keepTheseRoads, road, 0)
-        ) {
-          Game.rooms[block.roomName].memory.keepTheseRoads.push(road);
+        const targetRoom = Game.rooms[block.roomName];
+        if (targetRoom && targetRoom.memory) {
+          if (!targetRoom.memory.keepTheseRoads) {
+            targetRoom.memory.keepTheseRoads = [];
+          }
+          if (!_.includes(targetRoom.memory.keepTheseRoads, road, 0)) {
+            targetRoom.memory.keepTheseRoads.push(road);
+            console.log(`[Cross-Road Sync] ${road} in ${block.roomName} has been registered`);
+          }
         }
       });
 
@@ -349,13 +351,15 @@ function pathBuilder(neighbors, structure, room, usingPathfinder = true) {
       });
 
       _.forEach(keepTheseRoads, function (road) {
-        if (
-          Game.rooms[block.roomName] &&
-          Game.rooms[block.roomName].memory &&
-          Game.rooms[block.roomName].memory.keepTheseRoads &&
-          !_.includes(Game.rooms[block.roomName].memory.keepTheseRoads, road, 0)
-        ) {
-          Game.rooms[block.roomName].memory.keepTheseRoads.push(road);
+        const targetRoom = Game.rooms[block.roomName];
+        if (targetRoom && targetRoom.memory) {
+          if (!targetRoom.memory.keepTheseRoads) {
+            targetRoom.memory.keepTheseRoads = [];
+          }
+          if (!_.includes(targetRoom.memory.keepTheseRoads, road, 0)) {
+            targetRoom.memory.keepTheseRoads.push(road);
+            console.log(`[Cross-Road Sync] ${road} in ${block.roomName} has been registered`);
+          }
         }
       });
 
@@ -617,6 +621,22 @@ function buildFromLayout(room: Room): void {
     return;
   }
 
+  // Periodically sync layout roads to keepTheseRoads (every 100 ticks)
+  if (Game.time % 100 === 0) {
+    syncLayoutRoadsToKeepTheseRoads(room);
+  }
+
+  // Intelligent road maintenance call (replaces aggressive clearing in rooms.ts)
+  if (Game.time % 3012 === 0) {
+    // Import and run intelligent cleanup
+    try {
+      const { comprehensiveRoadMaintenance } = require("./rooms.roadMaintenance");
+      comprehensiveRoadMaintenance();
+    } catch (error) {
+      console.log(`[Road Maintenance] Error: ${error}`);
+    }
+  }
+
   // 🔍 检查策略配置
   const strategy = Memory.buildingStrategy?.[room.name];
   const mode = strategy?.mode || "AUTO";
@@ -681,6 +701,32 @@ function buildFromLayout(room: Room): void {
           if (result === OK) {
             sitesPlaced++;
             console.log(`🔨 [${mode}] 建造 ${structureType} → ${room.name}(${pos.x},${pos.y})`);
+
+            // 替换第705-719行的逻辑
+            // 实时登记road到keepTheseRoads（方案1：新建造road实时登记）
+            if (structureType === STRUCTURE_ROAD) {
+              if (!room.memory.keepTheseRoads) {
+                room.memory.keepTheseRoads = [];
+              }
+              // 登记建筑工地位置用于后续监控
+              const posKey = `${room.name}_${pos.x}_${pos.y}`;
+              if (!room.memory.roadConstructionSites) {
+                room.memory.roadConstructionSites = [];
+              }
+              if (!room.memory.roadConstructionSites.includes(posKey)) {
+                room.memory.roadConstructionSites.push(posKey);
+                console.log(`[Road Sync] Road construction site registered: ${posKey} in ${room.name}`);
+              }
+
+              // 检查该位置是否已有建成的road（处理已存在但未登记的情况）
+              const existingStructures = roomPos.lookFor(LOOK_STRUCTURES);
+              for (const structure of existingStructures) {
+                if (structure.structureType === STRUCTURE_ROAD && !room.memory.keepTheseRoads.includes(structure.id)) {
+                  room.memory.keepTheseRoads.push(structure.id);
+                  console.log(`[Road Sync] Existing road registered: ${structure.id} in ${room.name}`);
+                }
+              }
+            }
           }
         }
       }
@@ -899,7 +945,36 @@ const RampartBorderCallbackFunction = (roomName: string): boolean | CostMatrix =
 };
 
 // 🔥 步骤3: 清理导出 - 移除 construction 的默认导出
-export { Build_Remote_Roads, Situational_Building, handleResourceDismantling, buildFromLayout };
+/**
+ * 定期同步布局road到keepTheseRoads（方案2：处理所有布局road）
+ */
+function syncLayoutRoadsToKeepTheseRoads(room: Room): void {
+  if (!Memory.roomPlanner?.[room.name]?.layout?.road) return;
+
+  if (!room.memory.keepTheseRoads) {
+    room.memory.keepTheseRoads = [];
+  }
+
+  let syncedCount = 0;
+  for (const roadPos of Memory.roomPlanner[room.name].layout.road) {
+    const roomPos = new RoomPosition(roadPos.x, roadPos.y, room.name);
+    const structures = roomPos.lookFor(LOOK_STRUCTURES);
+
+    for (const structure of structures) {
+      if (structure.structureType === STRUCTURE_ROAD &&
+          !room.memory.keepTheseRoads.includes(structure.id)) {
+        room.memory.keepTheseRoads.push(structure.id);
+        syncedCount++;
+      }
+    }
+  }
+
+  if (syncedCount > 0) {
+    console.log(`[Road Sync] ${room.name} 同步了 ${syncedCount} 个布局road到keepTheseRoads`);
+  }
+}
+
+export { Build_Remote_Roads, Situational_Building, handleResourceDismantling, buildFromLayout, syncLayoutRoadsToKeepTheseRoads };
 
 // 🔥 步骤3: 移除默认导出 - 新系统不需要导出 construction
 // export default construction;
