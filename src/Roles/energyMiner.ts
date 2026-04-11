@@ -13,7 +13,7 @@ const run = function (creep) {
         return;
     }
 
-    if(Game.cpu.bucket < 1000) return;
+    // if(Game.cpu.bucket < 1000) return;
 
     if(creep.memory.fleeing) {
         // find hostiles with attack or ranged attack
@@ -47,7 +47,18 @@ const run = function (creep) {
     //     creep.moveTo(25,25)
     // }
 
-    if(creep.room.controller && creep.room.controller.level < 6 || creep.memory.targetRoom != creep.memory.homeRoom || creep.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK}).length < 3) {
+    if(creep.room.controller && creep.room.controller.level < 5 ||
+        creep.memory.targetRoom != creep.memory.homeRoom ||
+        creep.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK}).length < 2 ||
+        creep.getActiveBodyparts(CARRY) === 0
+    ) {
+
+        // Unified CARRY part check for basic mode
+        // if(creep.getActiveBodyparts(CARRY) === 0) {
+        //     const result = creep.harvestEnergy();
+        //     return;
+        // }
+
         // if(creep.roadCheck()) {
         //     creep.moveAwayIfNeedTo();
         // }
@@ -242,8 +253,6 @@ const run = function (creep) {
             if(!creep.room.memory.sourceLinks) {
                 console.log("Initializing sourceLinks for room: " + creep.room.name);
                 creep.room.memory.sourceLinks = {};
-            } else {
-                console.log("SourceLinks already initialized for room: " + creep.room.memory.sourceLinks);
             }
 
             // Get cached sourceLink or find and cache a new one
@@ -251,7 +260,7 @@ const run = function (creep) {
             if(!closestLink || !creep.room.memory.sourceLinks[creep.memory.sourceId]) {
                 // Find the closest link to the source (within 5 tiles)
                 const nearbyLinks = creep.room.find(FIND_MY_STRUCTURES, {
-                    filter: (s: StructureLink) => s.structureType == STRUCTURE_LINK && source.pos.getRangeTo(s) < 5
+                    filter: (s: StructureLink) => s.structureType == STRUCTURE_LINK && source.pos.getRangeTo(s) < 3
                 }) as StructureLink[];
 
                 if(nearbyLinks.length > 0) {
@@ -275,6 +284,7 @@ const run = function (creep) {
                     return; // Let next tick handle the finding
                 }
             }
+
             if(closestLink && closestLink.store[RESOURCE_ENERGY] < 800) {
                 if(creep.pos.isNearTo(closestLink)) {
                     creep.transfer(closestLink, RESOURCE_ENERGY);
@@ -314,8 +324,6 @@ const run = function (creep) {
         if(creep.store.getFreeCapacity() >= creep.memory.potential) {
             const result = creep.harvestEnergy();
         }
-
-
 
         if(creep.store[RESOURCE_ENERGY] > 0 && creep.memory.homeRoom == creep.memory.targetRoom) {
 

@@ -1,6 +1,6 @@
 import { buildFromLayout } from "./rooms.construction2";
 function spawning(room: any) {
-    if(Game.cpu.bucket < 1000) return;
+    // if(Game.cpu.bucket < 1000) return;
     if(!room.memory.spawn_list) {
         room.memory.spawn_list = [];
     }
