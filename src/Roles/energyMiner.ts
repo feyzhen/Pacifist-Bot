@@ -50,7 +50,8 @@ const run = function (creep) {
     if(creep.room.controller && creep.room.controller.level < 5 ||
         creep.memory.targetRoom != creep.memory.homeRoom ||
         creep.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK}).length < 2 ||
-        creep.getActiveBodyparts(CARRY) === 0
+        creep.getActiveBodyparts(CARRY) === 0 ||
+        creep.memory.sourceLink === null
     ) {
 
         // Unified CARRY part check for basic mode
@@ -138,6 +139,29 @@ const run = function (creep) {
         }
 
 
+        // 1.  source energy cleanup logic
+        const source:any = Game.getObjectById(creep.memory.sourceId);
+        if(source && source.energy === 0 && creep.store.getFreeCapacity() > 0) {
+            // 1. collect dropped energy at current position only（收集地面掉落能量）
+            const droppedEnergy = creep.pos.lookFor(FIND_DROPPED_RESOURCES, {
+                filter: resource => resource.resourceType === RESOURCE_ENERGY
+            });
+            if(droppedEnergy.length > 0) {
+                creep.pickup(droppedEnergy[0]);
+                return;
+            }
+
+            // 2. handle container energy at current position only（处理container能量）
+            const containerAtPos = creep.pos.lookFor(LOOK_STRUCTURES, {
+                filter: s =>
+                    s.structureType === STRUCTURE_CONTAINER && (s as StructureContainer).store[RESOURCE_ENERGY] > 0
+            });
+            if(containerAtPos.length > 0) {
+                creep.withdraw(containerAtPos[0] as StructureContainer, RESOURCE_ENERGY);
+                return;
+            }
+        }
+
         if(creep.store.getFreeCapacity() < creep.memory.potential) {
             const source:any = Game.getObjectById(creep.memory.sourceId);
             if(creep.pos.isNearTo(source)) {
@@ -163,37 +187,42 @@ const run = function (creep) {
                 }
             }
 
-            if(creep.room.controller.level >= 7 && !creep.memory.myRampart && !creep.memory.checkedForRampartToRepair) {
-                const myRamparts = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART});
+            if (
+                creep.room.controller.level >= 7 &&
+                !creep.memory.myRampart &&
+                !creep.memory.checkedForRampartToRepair
+            ) {
+                const myRamparts = creep.room.find(FIND_MY_STRUCTURES, {
+                    filter: s => s.structureType == STRUCTURE_RAMPART
+                });
                 const rampartsInRangeOne = creep.pos.findInRange(myRamparts, 1);
 
-                if(rampartsInRangeOne.length > 0) {
-                    rampartsInRangeOne.sort((a,b) => a.hits - b.hits);
+                if (rampartsInRangeOne.length > 0) {
+                    rampartsInRangeOne.sort((a, b) => a.hits - b.hits);
                 }
 
                 let found = false;
-                for(const building of rampartsInRangeOne) {
-                    if(found) {
+                for (const building of rampartsInRangeOne) {
+                    if (found) {
                         break;
                     }
-                    if(building.structureType == STRUCTURE_RAMPART && building.hits < 50050000) {
+                    if (building.structureType == STRUCTURE_RAMPART && building.hits < 50050000) {
                         const buildingsHereLookFor = building.pos.lookFor(LOOK_STRUCTURES);
-                        for(const buildingHere of buildingsHereLookFor) {
-                            if(buildingHere.structureType == STRUCTURE_LINK) {
+                        for (const buildingHere of buildingsHereLookFor) {
+                            if (buildingHere.structureType == STRUCTURE_LINK) {
                                 creep.memory.myRampart = building.id;
                                 found = true;
                                 break;
                             }
                         }
                         const creepsHere = building.pos.lookFor(LOOK_CREEPS);
-                        for(const c of creepsHere) {
-                            if(c.my && c.memory.role == "EnergyMiner") {
+                        for (const c of creepsHere) {
+                            if (c.my && c.memory.role == "EnergyMiner") {
                                 creep.memory.myRampart = building.id;
                                 found = true;
                                 break;
                             }
                         }
-
                     }
                 }
                 creep.memory.checkedForRampartToRepair = true;

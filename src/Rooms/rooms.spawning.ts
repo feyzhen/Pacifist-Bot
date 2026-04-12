@@ -1024,8 +1024,9 @@ function add_creeps_to_spawn_list(room, spawn) {
             break;
 
         case 5:
-            const bin:any = Game.getObjectById(room.memory.Structures.bin);
-            if(EnergyManagers < 1 && storage && bin && bin.store.getFreeCapacity() == 0) {
+            // const bin:any = Game.getObjectById(room.memory.Structures.bin);
+            // if(EnergyManagers < 1 && storage && bin && bin.store.getFreeCapacity() == 0) {
+            if(EnergyManagers < 1 && storage) {
                 const name = 'EnergyManager-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
                 room.memory.spawn_list.unshift([CARRY,MOVE], name, {memory: {role: 'EnergyManager'}});
                 console.log('Adding Energy Manager to Spawn List: ' + name);
