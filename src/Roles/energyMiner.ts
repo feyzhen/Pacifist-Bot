@@ -50,7 +50,8 @@ const run = function (creep) {
     if(creep.room.controller && creep.room.controller.level < 5 ||
         creep.memory.targetRoom != creep.memory.homeRoom ||
         creep.room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_LINK}).length < 2 ||
-        creep.getActiveBodyparts(CARRY) === 0
+        creep.getActiveBodyparts(CARRY) === 0 ||
+        creep.memory.sourceLink === null
     ) {
 
         // Unified CARRY part check for basic mode

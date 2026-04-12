@@ -74,7 +74,7 @@
         const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
         const terminal = creep.room.terminal;
         let factory; if(creep.room.controller.level >= 7 && creep.room.memory.Structures.factory) {factory = Game.getObjectById(creep.room.memory.Structures.factory);}
-        const closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLinkToStorage();
+        const closestLink = Game.getObjectById(creep.room.memory.Structures.StorageLink) || creep.room.findStorageLink();
         const bin = Game.getObjectById(creep.room.memory.Structures.bin) || creep.room.findBin(storage);
 
         if(creep.store.getFreeCapacity() == 0) {
