@@ -301,7 +301,7 @@ function add_creeps_to_spawn_list(room, spawn) {
                 }
                 break;
 
-            case "buildcontainer":
+            case "remoteBuilder":
                 if(creep.memory.homeRoom == room.name) {
                     containerbuilders ++;
                 }
@@ -2153,7 +2153,7 @@ function add_creeps_to_spawn_list(room, spawn) {
                 Game.rooms[target_colonise].controller.my
             ) {
                 const newName = 'ContainerBuilder-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(getBody([WORK, CARRY, CARRY, CARRY, MOVE], room, 50), newName, {memory: {role: 'buildcontainer', targetRoom: target_colonise, homeRoom: room.name}});
+                room.memory.spawn_list.push(getBody([WORK, CARRY, CARRY, CARRY, MOVE], room, 50), newName, {memory: {role: 'remoteBuilder', targetRoom: target_colonise, homeRoom: room.name}});
                 console.log('Adding ContainerBuilder to Spawn List: ' + newName);
             }
 

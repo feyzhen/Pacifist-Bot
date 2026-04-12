@@ -389,7 +389,7 @@ const roomCallbackRoadPrioPower = (roomName: string): boolean | CostMatrix => {
                 costs.set(creep.pos.x, creep.pos.y, 3);
             }
         }
-        else if(creep.memory.role == "buildcontainer" && creep.store[RESOURCE_ENERGY] > 0) {
+        else if(creep.memory.role == "remoteBuilder" && creep.store[RESOURCE_ENERGY] > 0) {
             costs.set(creep.pos.x, creep.pos.y, 3);
         }
         else if(creep.memory.role == "ram") {

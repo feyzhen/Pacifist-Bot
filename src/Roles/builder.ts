@@ -3,7 +3,15 @@
  * @param {Creep} creep
  **/
 
- function findLocked(creep) {
+// 导入桥接函数
+import { findLockedFromLayout } from "../Rooms/rooms.construction2";
+
+ /**
+ * 原始 findLocked 函数备份（传统系统）
+ * @param creep creep对象
+ * @returns 目标ID或null
+ */
+function findLockedLegacy(creep) {
 	const buildingsToBuild = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
 
 	if(buildingsToBuild.length > 0) {
@@ -54,6 +62,34 @@
 		// if building is link or storage build first.
     }
 	creep.memory.suicide = true;
+}
+
+/**
+ * 混合 findLocked 函数（新布局系统 + 传统系统回退）
+ * @param creep creep对象
+ * @returns 目标ID或null
+ */
+function findLocked(creep) {
+    // 首先尝试新的布局系统
+    try {
+        const layoutTarget = findLockedFromLayout(creep);
+        if (layoutTarget) {
+            console.log(`[Builder] ${creep.name} 使用布局系统找到目标: ${layoutTarget}`);
+            return layoutTarget;
+        }
+        
+        console.log(`[Builder] ${creep.name} 布局系统无目标，回退到传统系统`);
+    } catch (error) {
+        console.log(`[Builder] ${creep.name} 布局系统错误: ${error}，回退到传统系统`);
+    }
+    
+    // 回退到传统系统
+    const legacyTarget = findLockedLegacy(creep);
+    if (legacyTarget) {
+        console.log(`[Builder] ${creep.name} 使用传统系统找到目标: ${legacyTarget}`);
+    }
+    
+    return legacyTarget;
 }
 
  const run = function (creep) {

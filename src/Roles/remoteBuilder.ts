@@ -85,8 +85,8 @@ const run = function (creep):CreepMoveReturnCode | -2 | -5 | -7 | void {
 
         const mySpawns = creep.room.find(FIND_MY_SPAWNS)
         if(Game.time % 25 == 0 && Memory.target_colonise && Memory.target_colonise.spawn_pos && creep.room.find(FIND_MY_CONSTRUCTION_SITES).length == 0 && mySpawns.length == 0 && creep.room.name === Memory.target_colonise.room) {
-            if(typeof Memory.target_colonise.spawn_pos.x === 'number' && typeof Memory.target_colonise.spawn_pos.y === 'number' && 
-               Memory.target_colonise.spawn_pos.x >= 0 && Memory.target_colonise.spawn_pos.x <= 49 && 
+            if(typeof Memory.target_colonise.spawn_pos.x === 'number' && typeof Memory.target_colonise.spawn_pos.y === 'number' &&
+               Memory.target_colonise.spawn_pos.x >= 0 && Memory.target_colonise.spawn_pos.x <= 49 &&
                Memory.target_colonise.spawn_pos.y >= 0 && Memory.target_colonise.spawn_pos.y <= 49) {
                 const location = new RoomPosition(Memory.target_colonise.spawn_pos.x, Memory.target_colonise.spawn_pos.y, creep.room.name);
                 location.createConstructionSite(STRUCTURE_SPAWN);
@@ -103,9 +103,9 @@ const run = function (creep):CreepMoveReturnCode | -2 | -5 | -7 | void {
                 }
             }
 
-            if(!Memory.target_colonise || !Memory.target_colonise.spawn_pos || 
+            if(!Memory.target_colonise || !Memory.target_colonise.spawn_pos ||
                typeof Memory.target_colonise.spawn_pos.x !== 'number' || typeof Memory.target_colonise.spawn_pos.y !== 'number' ||
-               Memory.target_colonise.spawn_pos.x < 0 || Memory.target_colonise.spawn_pos.x > 49 || 
+               Memory.target_colonise.spawn_pos.x < 0 || Memory.target_colonise.spawn_pos.x > 49 ||
                Memory.target_colonise.spawn_pos.y < 0 || Memory.target_colonise.spawn_pos.y > 49) {
                 return;
             }
@@ -204,10 +204,10 @@ const run = function (creep):CreepMoveReturnCode | -2 | -5 | -7 | void {
     }
 }
 
-const roleBuildContainer = {
+const roleRemoteBuilder = {
     run,
     //run: run,
     //function2,
     //function3
 };
-export default roleBuildContainer;
+export default roleRemoteBuilder;
