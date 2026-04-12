@@ -42,7 +42,7 @@ import roleAttacker from "./Roles/attacker";
 import roleRangedAttacker from "./Roles/RangedAttacker";
 import roleDrainTower from "./Roles/DrainTower";
 import roleHealer from "./Roles/healer";
-import roleBuildContainer from "./Roles/buildcontainer";
+import roleRemoteBuilder from "./Roles/remoteBuilder";
 import roleClaimer from "./Roles/claimer";
 import roleRemoteDismantler from "./Roles/remoteDismantler";
 import roleDismantleControllerWalls from "Roles/DismantleControllerWalls";
@@ -118,7 +118,7 @@ global.ROLES = {
   RangedAttacker: roleRangedAttacker,
   DrainTower: roleDrainTower,
   healer: roleHealer,
-  buildcontainer: roleBuildContainer,
+  remoteBuilder: roleRemoteBuilder,
   claimer: roleClaimer,
   RemoteDismantler: roleRemoteDismantler,
   DismantleControllerWalls: roleDismantleControllerWalls,

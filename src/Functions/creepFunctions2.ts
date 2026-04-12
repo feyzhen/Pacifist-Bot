@@ -92,7 +92,7 @@ function applyStationaryCreeps(costs: CostMatrix, room: Room, roleName: string |
       upgrader: 61, // set below per condition
       EnergyMiner: 21,
       builder: 26,
-      buildcontainer: 60,
+      remoteBuilder: 60,
       // EnergyManager: 50,
       repair: 60,
       Convoy: 41,
