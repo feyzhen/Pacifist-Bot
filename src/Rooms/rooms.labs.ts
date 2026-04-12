@@ -9,25 +9,11 @@
 //  4. Removed ~200 lines of commented-out dead code
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Lab layout offsets relative to storage pos ───────────────────────────────
-// Each entry: [memKey, [primary offset], [fallback offset], minLevel, minLabCount]
-type LabDef = [string, [number,number], [number,number], number, number];
-
-const LAB_DEFS: LabDef[] = [
-    // input labs (level 6, 3 labs)
-    ["inputLab1",  [-4, 1], [4, 4],  6, 3],
-    ["inputLab2",  [-4, 2], [4, 5],  6, 3],
-    // output labs level 6
-    ["outputLab1", [-3, 0], [3, 3],  6, 3],
-    // output labs level 7
-    ["outputLab2", [-3, 1], [3, 4],  7, 6],
-    ["outputLab3", [-3, 2], [3, 5],  7, 6],
-    ["outputLab4", [-3, 3], [3, 6],  7, 6],
-    // output labs level 8
-    ["outputLab5", [-5, 3], [5, 3],  8, 10],
-    ["outputLab6", [-5, 2], [5, 4],  8, 10],
-    ["outputLab7", [-5, 1], [5, 5],  8, 10],
-    ["outputLab8", [-5, 0], [5, 6],  8, 10],
+// ── Lab keys for dynamic discovery from auto-planner ───────────────────────────
+const LAB_KEYS = [
+    "inputLab1", "inputLab2",
+    "outputLab1", "outputLab2", "outputLab3", "outputLab4",
+    "outputLab5", "outputLab6", "outputLab7", "outputLab8"
 ];
 
 function findLabAtPos(room: Room, x: number, y: number): string | undefined {
@@ -38,26 +24,60 @@ function findLabAtPos(room: Room, x: number, y: number): string | undefined {
 }
 
 function discoverLabs(room: Room): void {
-    const storage: any = Game.getObjectById(room.memory.Structures.storage) || room.findStorage?.();
-    if (!storage || storage.pos.x < 4 || storage.pos.y > 48) return;
-
-    const labsInRoom = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_LAB } });
-    const { x, y } = storage.pos;
-
-    for (const [key, [dx1, dy1], [dx2, dy2], minLvl, minCount] of LAB_DEFS) {
-        if (room.controller.level < minLvl || labsInRoom.length < minCount) continue;
-        if (room.memory.labs[key] != null) continue;   // already cached
-
-        const primary  = findLabAtPos(room, x + dx1, y + dy1);
-        const fallback = findLabAtPos(room, x + dx2, y + dy2);
-        room.memory.labs[key] = primary ?? fallback ?? undefined;
+    // Check if auto-planner layout data exists
+    if (!Memory.roomPlanner?.[room.name]?.layout?.[STRUCTURE_LAB]) {
+        console.log(`[Labs] 房间 ${room.name} 没有自动建造布局数据，跳过 lab 发现`);
+        return;
     }
+
+    const labPositions = Memory.roomPlanner[room.name].layout[STRUCTURE_LAB];
+    const totalLabs = labPositions.length;
+
+    if (totalLabs < 2) {
+        console.log(`[Labs] 房间 ${room.name} 的自动布局 lab 数量不足 (需要至少2个，实际${totalLabs}个)`);
+        return;
+    }
+
+    // Find all actually built labs from the planned positions
+    const builtLabs: Array<{x: number, y: number, id: string}> = [];
+    for (const pos of labPositions) {
+        const labId = findLabAtPos(room, pos.x, pos.y);
+        if (labId) {
+            builtLabs.push({ x: pos.x, y: pos.y, id: labId });
+        }
+    }
+
+    if (builtLabs.length < 2) {
+        console.log(`[Labs] 房间 ${room.name} 实际建成的 labs 数量不足 (规划${totalLabs}个，实际建成${builtLabs.length}个)`);
+        return;
+    }
+
+    // Dynamic assignment: first 2 built labs as input labs, rest as output labs
+    const inputLab1 = builtLabs[0];
+    const inputLab2 = builtLabs[1];
+    const outputLabs = builtLabs.slice(2);
+
+    room.memory.labs.inputLab1 = inputLab1.id;
+    room.memory.labs.inputLab2 = inputLab2.id;
+
+    console.log(`[Labs] inputLab1 位置 (${inputLab1.x}, ${inputLab1.y}) → ${inputLab1.id}`);
+    console.log(`[Labs] inputLab2 位置 (${inputLab2.x}, ${inputLab2.y}) → ${inputLab2.id}`);
+
+    // Set output labs (max 8)
+    const outputLabKeys = ["outputLab1", "outputLab2", "outputLab3", "outputLab4",
+                           "outputLab5", "outputLab6", "outputLab7", "outputLab8"];
+    for (let i = 0; i < outputLabs.length && i < 8; i++) {
+        room.memory.labs[outputLabKeys[i]] = outputLabs[i].id;
+        console.log(`[Labs] ${outputLabKeys[i]} 位置 (${outputLabs[i].x}, ${outputLabs[i].y}) → ${outputLabs[i].id}`);
+    }
+
+    console.log(`[Labs] 房间 ${room.name} 动态分配 labs: 规划${totalLabs}个，实际建成${builtLabs.length}个 (2 input, ${outputLabs.length} output)`);
 }
 
 /** Resolve all cached lab IDs into live objects (undefined if destroyed). */
 function labObjects(mem: any): Record<string, any> {
     const result: Record<string, any> = {};
-    for (const [key] of LAB_DEFS) {
+    for (const key of LAB_KEYS) {
         if (mem[key]) result[key] = Game.getObjectById(mem[key]) ?? undefined;
     }
     return result;
