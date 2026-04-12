@@ -129,12 +129,14 @@ const run = function (creep) {
 
 
         if(creep.ticksToLive <= 2) {
-            const closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLink();
-            if(creep.pos.isNearTo(closestLink)) {
-                creep.transfer(closestLink, RESOURCE_ENERGY);
-            }
-            else {
-                creep.MoveCostMatrixRoadPrio(closestLink, 1);
+            const sourceLink = Game.getObjectById(creep.memory.sourceLink) as StructureLink;
+            if(sourceLink) {
+                if(creep.pos.isNearTo(sourceLink)) {
+                    creep.transfer(sourceLink, RESOURCE_ENERGY);
+                }
+                else {
+                    creep.MoveCostMatrixRoadPrio(sourceLink, 1);
+                }
             }
         }
 
@@ -356,10 +358,10 @@ const run = function (creep) {
 
         if(creep.store[RESOURCE_ENERGY] > 0 && creep.memory.homeRoom == creep.memory.targetRoom) {
 
-            const closestLink = Game.getObjectById(creep.memory.closestLink) || creep.findClosestLink();
+            const sourceLink = Game.getObjectById(creep.memory.sourceLink) as StructureLink;
 
-            if(closestLink && closestLink.pos.isNearTo(creep) && !creep.memory.checkedForRampart) {
-                const lookForBuildingsHere = closestLink.pos.lookFor(LOOK_STRUCTURES);
+            if(sourceLink && sourceLink.pos.isNearTo(creep) && !creep.memory.checkedForRampart) {
+                const lookForBuildingsHere = sourceLink.pos.lookFor(LOOK_STRUCTURES);
                 let found = false;
                 for(const building of lookForBuildingsHere) {
                     if(building.structureType == STRUCTURE_RAMPART) {
@@ -367,8 +369,8 @@ const run = function (creep) {
                     }
                 }
                 const storage:any = Game.getObjectById(creep.room.memory.Structures.storage);
-                if(!found && storage && closestLink.pos.getRangeTo(storage) > 7) {
-                    closestLink.pos.createConstructionSite(STRUCTURE_RAMPART);
+                if(!found && storage && sourceLink.pos.getRangeTo(storage) > 7) {
+                    sourceLink.pos.createConstructionSite(STRUCTURE_RAMPART);
                 }
                 creep.memory.checkedForRampart = true;
             }
@@ -388,7 +390,7 @@ const run = function (creep) {
             }
 
 
-            if(targetLink == null || closestLink == null) {
+            if(targetLink == null || sourceLink == null) {
                 if(!targetLink) {
                     creep.room.memory.Structures.StorageLink = undefined;
                     if(creep.room.storage) {
@@ -399,16 +401,16 @@ const run = function (creep) {
                 return;
             }
 
-            if(closestLink && closestLink.store[RESOURCE_ENERGY] >= 400 && closestLinkToController && closestLinkToController.store[RESOURCE_ENERGY] <= 400) {
-                closestLink.transferEnergy(closestLinkToController);
+            if(sourceLink && sourceLink.store[RESOURCE_ENERGY] >= 400 && closestLinkToController && closestLinkToController.store[RESOURCE_ENERGY] <= 400) {
+                sourceLink.transferEnergy(closestLinkToController);
             }
 
-            else if(closestLink && closestLink.store[RESOURCE_ENERGY] >= 200 && extraLink && extraLink.store[RESOURCE_ENERGY] <= 200) {
-                closestLink.transferEnergy(extraLink);
+            else if(sourceLink && sourceLink.store[RESOURCE_ENERGY] >= 200 && extraLink && extraLink.store[RESOURCE_ENERGY] <= 200) {
+                sourceLink.transferEnergy(extraLink);
             }
 
-            else if(closestLink && closestLink.store[RESOURCE_ENERGY] == 800 && targetLink && targetLink.store[RESOURCE_ENERGY] == 0) {
-                closestLink.transferEnergy(targetLink);
+            else if(sourceLink && sourceLink.store[RESOURCE_ENERGY] == 800 && targetLink && targetLink.store[RESOURCE_ENERGY] == 0) {
+                sourceLink.transferEnergy(targetLink);
             }
         }
     }
