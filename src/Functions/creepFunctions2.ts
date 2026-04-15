@@ -444,21 +444,49 @@ Creep.prototype.findFillerTarget = function findFillerTarget(): any {
     refreshControllerLink("ControllerLinkFiller");
 
     // Controller link / container fill
-    if ((this.memory.role === "ControllerLinkFiller" || this.memory.role === "filler") &&
-        this.room.controller && this.room.memory.Structures.controllerLink) {
+    if (
+        (this.memory.role === "ControllerLinkFiller" || this.memory.role === "filler") &&
+        this.room.controller &&
+        this.room.memory.Structures.controllerLink
+    ) {
         const cl: any = Game.getObjectById(this.room.memory.Structures.controllerLink);
         if (cl) {
             const isContainer = cl.structureType === STRUCTURE_CONTAINER;
-            const isLink      = cl.structureType === STRUCTURE_LINK;
-            const needFill    = isContainer
-                ? (this.memory.role === "ControllerLinkFiller" ? cl.store.getFreeCapacity() >= 200 : cl.store.getFreeCapacity() > 1800)
-                : (isLink && cl.store[RESOURCE_ENERGY] <= (this.memory.role === "ControllerLinkFiller" ? 600 : 400));
+            const isLink = cl.structureType === STRUCTURE_LINK;
+            const needFill = isContainer
+                ? this.memory.role === "ControllerLinkFiller"
+                    ? cl.store.getFreeCapacity() >= 200
+                    : cl.store.getFreeCapacity() > 1800
+                : isLink && cl.store[RESOURCE_ENERGY] <= (this.memory.role === "ControllerLinkFiller" ? 600 : 400);
             if (needFill) {
-                if (isContainer && this.room.controller.level >= 7) { this.room.memory.Structures.controllerLink = false; }
-                else { this.memory.t = cl.id; return cl; }
+                if (isContainer && this.room.controller.level >= 7) {
+                    this.room.memory.Structures.controllerLink = false;
+                } else {
+                    this.memory.t = cl.id;
+                    return cl;
+                }
             }
         } else {
             this.room.memory.Structures.controllerLink = false;
+        }
+    }
+
+    // Input labs energy fill
+    if (this.room.memory.labs && Object.keys(this.room.memory.labs).length >= 2) {
+        const inputLabKeys = ["inputLab1", "inputLab2"];
+        for (const key of inputLabKeys) {
+            if (!this.room.memory.labs[key]) continue;
+            const lab: any = Game.getObjectById(this.room.memory.labs[key]);
+            if (
+                lab &&
+                (lab.store[RESOURCE_ENERGY] <= 2000 - this.memory.MaxStorage * 2 ||
+                    lab.store[RESOURCE_ENERGY] < 1200) &&
+                !reserveFill.includes(lab.id)
+            ) {
+                if (!this.room.memory.reserveFill.includes(lab.id)) this.room.memory.reserveFill.push(lab.id);
+                this.memory.t = lab.id;
+                return lab;
+            }
         }
     }
 
