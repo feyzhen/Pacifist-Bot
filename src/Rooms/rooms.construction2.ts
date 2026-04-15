@@ -663,7 +663,7 @@ function buildFromLayout(room: Room, targetStructureType?: string, maxTargets?: 
 
   const constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
   const existingStructures = room.find(FIND_MY_STRUCTURES);
-  
+
   // 传统角色调用模式：返回目标数组而不是直接建造
   if (targetStructureType || maxTargets !== undefined) {
     return getLayoutTargets(room, layout, targetStructureType, maxTargets, existingStructures, constructionSites);
@@ -688,7 +688,7 @@ function buildFromLayout(room: Room, targetStructureType?: string, maxTargets?: 
     STRUCTURE_LINK,
     STRUCTURE_TOWER,
     STRUCTURE_CONTAINER,
-    STRUCTURE_ROAD,
+    STRUCTURE_ROAD, STRUCTURE_RAMPART,
     STRUCTURE_POWER_SPAWN,
     STRUCTURE_EXTRACTOR,
     STRUCTURE_LAB,
@@ -770,9 +770,9 @@ function buildFromLayout(room: Room, targetStructureType?: string, maxTargets?: 
  * 获取布局中的建造目标（用于传统角色兼容）
  */
 function getLayoutTargets(
-  room: Room, 
-  layout: any, 
-  targetStructureType?: string, 
+  room: Room,
+  layout: any,
+  targetStructureType?: string,
   maxTargets?: number,
   existingStructures?: Structure[],
   constructionSites?: ConstructionSite[]
@@ -791,10 +791,10 @@ function getLayoutTargets(
       const roomPos = new RoomPosition(pos.x, pos.y, room.name);
 
       // 检查是否已有建筑或工地
-      const hasStructure = existingStructures.some(s => 
+      const hasStructure = existingStructures.some(s =>
         s.pos.x === pos.x && s.pos.y === pos.y && s.structureType === structureType
       );
-      const hasConstruction = constructionSites.some(s => 
+      const hasConstruction = constructionSites.some(s =>
         s.pos.x === pos.x && s.pos.y === pos.y && s.structureType === structureType
       );
 
@@ -820,7 +820,7 @@ function getLayoutTargets(
 function findLockedFromLayout(creep: Creep): string | null {
   try {
     const room = creep.room;
-    
+
     // 检查房间是否启用布局系统
     if ((room.memory as any).layoutEnabled === false) {
       console.log(`[Layout] 房间 ${room.name} 禁用布局系统，回退到传统系统`);
@@ -835,7 +835,7 @@ function findLockedFromLayout(creep: Creep): string | null {
 
     // 获取布局目标
     const layoutTargets = buildFromLayout(room);
-    
+
     if (!layoutTargets || layoutTargets.length === 0) {
       console.log(`[Layout] 房间 ${room.name} 无可用布局目标，回退到传统系统`);
       return null; // 无布局目标，回退到传统系统
@@ -843,15 +843,15 @@ function findLockedFromLayout(creep: Creep): string | null {
 
     // 应用优先级逻辑（类似传统findLocked）
     const prioritizedTargets = prioritizeTargets(layoutTargets, creep);
-    
+
     if (prioritizedTargets.length > 0) {
       creep.memory.suicide = false;
       creep.say("布局", true);
-      
+
       // 创建工地并返回ID
       const target = prioritizedTargets[0];
       const result = target.pos.createConstructionSite(target.structureType);
-      
+
       if (result === OK) {
         // 获取创建的工地ID
         const newSite = target.pos.lookFor(LOOK_CONSTRUCTION_SITES)[0];
@@ -867,7 +867,7 @@ function findLockedFromLayout(creep: Creep): string | null {
     } else {
       console.log(`[Layout] 房间 ${room.name} 无优先级目标，回退到传统系统`);
     }
-    
+
     creep.memory.suicide = true;
     return null;
   } catch (error) {
@@ -884,7 +884,7 @@ function findLockedFromLayout(creep: Creep): string | null {
  */
 function prioritizeTargets(targets: any[], creep: Creep): any[] {
   const room = creep.room;
-  
+
   // 按结构类型分组
   const groupedTargets: { [key: string]: any[] } = {};
   for (const target of targets) {
@@ -895,7 +895,7 @@ function prioritizeTargets(targets: any[], creep: Creep): any[] {
   }
 
   const prioritized: any[] = [];
-  
+
   // RCL 2 特殊处理：优先建造spawn位置的重要建筑
   if (room.controller.level === 2) {
     const spawn = room.find(FIND_MY_SPAWNS)[0];
@@ -935,9 +935,9 @@ function prioritizeTargets(targets: any[], creep: Creep): any[] {
   // 其他所有建筑
   for (const [structureType, typeTargets] of Object.entries(groupedTargets)) {
     // 检查是否所有目标都已在优先级列表中
-    const unprioritizedTargets = typeTargets.filter(target => 
-      !prioritized.some(prioritized => 
-        prioritized.pos.x === target.pos.x && 
+    const unprioritizedTargets = typeTargets.filter(target =>
+      !prioritized.some(prioritized =>
+        prioritized.pos.x === target.pos.x &&
         prioritized.pos.y === target.pos.y &&
         prioritized.structureType === target.structureType
       )
@@ -1196,11 +1196,11 @@ function syncLayoutRoadsToKeepTheseRoads(room: Room): void {
   }
 }
 
-export { 
-  Build_Remote_Roads, 
-  Situational_Building, 
-  handleResourceDismantling, 
-  buildFromLayout, 
+export {
+  Build_Remote_Roads,
+  Situational_Building,
+  handleResourceDismantling,
+  buildFromLayout,
   syncLayoutRoadsToKeepTheseRoads,
   findLockedFromLayout,
   prioritizeTargets,

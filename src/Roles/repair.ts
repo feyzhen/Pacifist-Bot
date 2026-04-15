@@ -89,6 +89,16 @@ function findLocked(creep, storage) {
 
     }
 
+    //  Repair low health ramparts (special case for newly built ramparts)
+    const lowHealthRamparts = creep.room.find(FIND_MY_STRUCTURES, {
+        filter: s => s.structureType === STRUCTURE_RAMPART && s.hits < 50000
+    });
+    if(lowHealthRamparts.length > 0) {
+        lowHealthRamparts.sort((a,b) => a.hits - b.hits);
+        creep.say("rampart", true);
+        creep.memory.locked = lowHealthRamparts[0].id;
+        return lowHealthRamparts[0].id;
+    }
 
     if(buildingsToRepair300mil.length > 0) {
         if(creep.room.controller && creep.room.controller.level <= 3) {
@@ -225,6 +235,31 @@ function findLocked(creep, storage) {
         }
         else if(repairTarget && repairTarget.hits == repairTarget.hitsMax) {
             creep.memory.locked = findLocked(creep, storage);
+        }
+        // 定期检查是否有更紧急的rampart需要修复
+        else if(Game.time % 10 === 0) { // 每10tick检查一次
+            const urgentRamparts = creep.room.find(FIND_MY_STRUCTURES, {
+                filter: s => s.structureType === STRUCTURE_RAMPART && s.hits < 5000
+            });
+            if(urgentRamparts.length > 0) {
+                // 综合排序：血量优先，距离作为次要因素
+                urgentRamparts.sort((a,b) => {
+                    // 首先按血量排序（血量低的优先）
+                    if(a.hits !== b.hits) {
+                        return a.hits - b.hits;
+                    }
+                    // 血量相同时按距离排序（距离近的优先）
+                    const rangeA = creep.pos.getRangeTo(a.pos);
+                    const rangeB = creep.pos.getRangeTo(b.pos);
+                    return rangeA - rangeB;
+                });
+                
+                const currentTarget = urgentRamparts.find(r => r.id === repairTarget.id);
+                if(!currentTarget || urgentRamparts[0].hits < currentTarget.hits) {
+                    creep.say("紧急rampart", true);
+                    creep.memory.locked = urgentRamparts[0].id;
+                }
+            }
         }
 
         if(!creep.memory.locked) {
