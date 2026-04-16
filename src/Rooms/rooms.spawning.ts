@@ -1558,10 +1558,16 @@ function add_creeps_to_spawn_list(room, spawn) {
 
 
 
-    if(RampartErectors < 1 && storage && room.controller.level >= 6 && storage.store[RESOURCE_ENERGY] > 12000 && room.memory.construction && room.memory.construction.rampartLocations && room.memory.construction.rampartLocations.length > 0) {
+    // Check for rampart positions in new roomPlanner system
+    const hasRampartLayout = Memory.roomPlanner && Memory.roomPlanner[room.name] &&
+                            Memory.roomPlanner[room.name].layout &&
+                            Memory.roomPlanner[room.name].layout.rampart &&
+                            Memory.roomPlanner[room.name].layout.rampart.length > 0;
+
+    if(RampartErectors < 1 && storage && room.controller.level >= 6 && storage.store[RESOURCE_ENERGY] > 12000 && hasRampartLayout) {
         const newName = 'RampartErector-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-        room.memory.spawn_list.push(getBody([WORK,CARRY,MOVE], room, 50), newName, {memory: {role: 'RampartErector', rampartLocations:room.memory.construction.rampartLocations}});
-        console.log('Adding RampartErector to Spawn List: ' + newName);
+        room.memory.spawn_list.push(getBody([WORK,CARRY,MOVE], room, 50), newName, {memory: {role: 'RampartErector'}});
+        console.log('[New System] Adding RampartErector to Spawn List: ' + newName);
     }
 
 
