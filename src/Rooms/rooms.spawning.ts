@@ -2265,11 +2265,40 @@ function add_creeps_to_spawn_list(room, spawn) {
 
 
     // next to add
-    const droppedPLUStombs = (room.find(FIND_DROPPED_RESOURCES).length + room.find(FIND_TOMBSTONES, {filter: tombstone => tombstone.store[RESOURCE_ENERGY] > 0}).length + 1);
-    if(room.controller.level >= 4 && storage && !room.memory.danger && room.memory.danger_timer == 0 && sweepers < Math.floor(droppedPLUStombs/3)) {
+    const droppedResources = room.find(FIND_DROPPED_RESOURCES);
+    const tombstones = room.find(FIND_TOMBSTONES);
+    
+    // 计算含有能量的墓碑数量
+    const energyTombs = tombstones.filter(tombstone => tombstone.store[RESOURCE_ENERGY] > 0).length;
+    
+    // 计算含有化合物（非能量、非基础矿物）的墓碑数量
+    const compoundTombs = tombstones.filter(tombstone => {
+        for (const resourceType in tombstone.store) {
+            if (resourceType !== RESOURCE_ENERGY && 
+                resourceType !== RESOURCE_HYDROGEN && 
+                resourceType !== RESOURCE_OXYGEN && 
+                resourceType !== RESOURCE_UTRIUM && 
+                resourceType !== RESOURCE_LEMERGIUM && 
+                resourceType !== RESOURCE_KEANIUM && 
+                resourceType !== RESOURCE_ZYNTHIUM && 
+                resourceType !== RESOURCE_CATALYST &&
+                tombstone.store[resourceType] > 0) {
+                return true;
+            }
+        }
+        return false;
+    }).length;
+    
+    // 基础清理目标：掉落资源 + 含能量的墓碑
+    const basicCleanupTargets = droppedResources.length + energyTombs + 1;
+    
+    // 含化合物墓碑的优先级更高，每个化合物墓碑算作3个清理目标
+    const weightedCleanupTargets = basicCleanupTargets + (compoundTombs * 2);
+    
+    if(room.controller.level >= 4 && storage && !room.memory.danger && room.memory.danger_timer == 0 && sweepers < Math.floor(weightedCleanupTargets/3)) {
         const newName = 'Sweeper-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
         room.memory.spawn_list.push([CARRY,CARRY,CARRY,CARRY,MOVE,MOVE], newName, {memory: {role: 'sweeper'}});
-        console.log('Adding Sweeper to Spawn List: ' + newName);
+        console.log('Adding Sweeper to Spawn List: ' + newName + ' (Targets: ' + weightedCleanupTargets + ', Compound tombs: ' + compoundTombs + ')');
     }
 
     if(room.controller.level >= 4 && room.energyAvailable >= 1050 && (!room.memory.danger || room.controller.safeMode && room.controller.safeMode > 0) && room.controller.safeModeAvailable <= 1 && SafeModers < 1 && storage && storage.store[RESOURCE_GHODIUM] >= 1000) {
