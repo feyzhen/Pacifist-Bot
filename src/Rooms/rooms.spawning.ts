@@ -1559,14 +1559,29 @@ function add_creeps_to_spawn_list(room, spawn) {
 
 
     // Check for rampart positions in new roomPlanner system
+    // Optimized rampart work check using memory flags (low CPU)
     const hasRampartLayout = Memory.roomPlanner && Memory.roomPlanner[room.name] &&
                             Memory.roomPlanner[room.name].layout &&
                             Memory.roomPlanner[room.name].layout.rampart &&
                             Memory.roomPlanner[room.name].layout.rampart.length > 0;
 
-    if(RampartErectors < 1 && storage && room.controller.level >= 6 && storage.store[RESOURCE_ENERGY] > 12000 && hasRampartLayout) {
+    // Reset completion flag if ramparts are damaged (low frequency check)
+    if (room.memory.rampartsCompleted && Game.time % 100 === 0) {
+        const damagedRamparts = room.find(FIND_MY_STRUCTURES, {
+            filter: s => s.structureType === STRUCTURE_RAMPART && s.hits < s.hitsMax * 0.8
+        });
+        if (damagedRamparts.length > 0) {
+            room.memory.rampartsCompleted = false;
+            console.log(`[Rampart System] Detected ${damagedRamparts.length} damaged ramparts, re-enabling RampartErector`);
+        }
+    }
+
+    const needsRampart = hasRampartLayout && !room.memory.rampartsCompleted;
+
+    if(RampartErectors < 1 && storage && room.controller.level >= 6 && storage.store[RESOURCE_ENERGY] > 12000 && needsRampart && !room.memory.danger && room.memory.danger_timer == 0) {
         const newName = 'RampartErector-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-        room.memory.spawn_list.push(getBody([WORK,CARRY,MOVE], room, 50), newName, {memory: {role: 'RampartErector'}});
+        // room.memory.spawn_list.push(getBody([WORK,CARRY,MOVE], room, 50), newName, {memory: {role: 'RampartErector'}});
+        room.memory.spawn_list.push([WORK,CARRY,MOVE], newName, {memory: {role: 'RampartErector'}});
         console.log('[New System] Adding RampartErector to Spawn List: ' + newName);
     }
 

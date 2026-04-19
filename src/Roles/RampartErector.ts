@@ -105,7 +105,15 @@
                 }
             }
             else {
-                console.log(`[RampartErector] All rampart positions processed, executing suicide`);
+                console.log(`[RampartErector] All rampart positions processed, marking completion and executing suicide`);
+                // Only mark as completed if room is safe
+                if (!creep.room.memory.danger && creep.room.memory.danger_timer == 0) {
+                    creep.room.memory.rampartsCompleted = true;
+                    creep.room.memory.rampartCompletionTime = Game.time;
+                    console.log(`[RampartErector] Ramparts marked as completed in safe room ${creep.room.name}`);
+                } else {
+                    console.log(`[RampartErector] Room ${creep.room.name} is in danger, not marking ramparts as completed`);
+                }
                 creep.memory.suicide = true;
             }
         }
