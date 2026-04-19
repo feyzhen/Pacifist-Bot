@@ -48,20 +48,46 @@
                 creep.memory.rampartPositions = getRampartPositionsFromLayout(creep.room);
                 console.log(`[RampartErector] ${creep.name} initialized with ${creep.memory.rampartPositions.length} rampart positions`);
             }
-            
+
             if(creep.memory.rampartPositions.length > 0) {
                 const nextTarget = creep.memory.rampartPositions.shift();
                 if(nextTarget && nextTarget.x >= 0 && nextTarget.x <= 49 && nextTarget.y >= 0 && nextTarget.y <= 49) {
                     const position = new RoomPosition(nextTarget.x, nextTarget.y, creep.room.name);
-                    
+
                     // Check if position is suitable for rampart construction
                     const look = position.look();
-                    const hasStructure = look.some(obj => obj.type === LOOK_STRUCTURES && (obj as any).structure.structureType !== STRUCTURE_RAMPART);
                     const hasConstruction = look.some(obj => obj.type === LOOK_CONSTRUCTION_SITES);
+                    const existingStructures = look.filter(obj => obj.type === LOOK_STRUCTURES);
                     const terrain = look.find(obj => obj.type === LOOK_TERRAIN);
-                    
-                    // Only build on plain or swamp, and avoid other structures/constructions
-                    if(!hasStructure && !hasConstruction && terrain && ((terrain as any).terrain === 'plain' || (terrain as any).terrain === 'swamp')) {
+
+                    // Check for rampart construction sites
+                    const rampartConstructionSites = look.filter(obj => 
+                        obj.type === LOOK_CONSTRUCTION_SITES && 
+                        (obj as any).constructionSite.structureType === STRUCTURE_RAMPART
+                    );
+
+                    // Check for existing ramparts
+                    const existingRamparts = existingStructures.filter(obj => 
+                        (obj as any).structureType === STRUCTURE_RAMPART
+                    );
+
+                    if (rampartConstructionSites.length > 0) {
+                        // Found rampart construction site, build it
+                        creep.memory.locked = position;
+                        console.log(`[RampartErector] Found existing rampart construction site at ${position.x},${position.y}, building it`);
+                        return;
+                    } else if (existingRamparts.length > 0) {
+                        // Found existing rampart, check if it needs repair
+                        const rampart = existingRamparts[0].structure;
+                        if (rampart.hits < 500000) {
+                            creep.memory.locked_repair = rampart.id;
+                            console.log(`[RampartErector] Found rampart needing repair at ${position.x},${position.y}, repairing it`);
+                            return;
+                        } else {
+                            console.log(`[RampartErector] Rampart at ${position.x},${position.y} is fully repaired`);
+                        }
+                    } else if (!hasConstruction && terrain && ((terrain as any).terrain === 'plain' || (terrain as any).terrain === 'swamp')) {
+                        // No construction sites or structures, create new rampart construction site
                         const result = position.createConstructionSite(STRUCTURE_RAMPART);
                         if(result === OK) {
                             creep.memory.locked = position;
@@ -83,7 +109,7 @@
                 creep.memory.suicide = true;
             }
         }
-        
+
         if(creep.memory.locked) {
             const position = creep.memory.locked;
             if(position && position.x <= 47 && position.y <= 47 && position.x >= 2 && position.y >= 2) {
@@ -134,7 +160,7 @@ function getRampartPositionsFromLayout(room: Room): any[] {
             return [...layoutRamparts]; // Return copy to avoid modifying original data
         }
     }
-    
+
     console.log(`[RampartErector] No rampart positions found in roomPlanner for room ${room.name}`);
     return [];
 }
