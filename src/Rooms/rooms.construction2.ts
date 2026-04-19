@@ -712,10 +712,20 @@ function buildFromLayout(room: Room, targetStructureType?: string, maxTargets?: 
 
         // 检查位置是否可以建造
         const look = roomPos.look();
-        const hasStructure = look.some(obj => obj.type === LOOK_STRUCTURES);
         const hasConstruction = look.some(obj => obj.type === LOOK_CONSTRUCTION_SITES);
+        const existingStructures = look.filter(obj => obj.type === LOOK_STRUCTURES);
 
-        if (!hasStructure && !hasConstruction) {
+        let canBuild = false;
+        if (structureType === STRUCTURE_RAMPART) {
+          // Rampart可以建造在除地形墙外的任何建筑上
+          // 只需要检查是否已有工地，不需要检查现有建筑
+          canBuild = !hasConstruction;
+        } else {
+          // 其他建筑只能在空地建造
+          canBuild = existingStructures.length === 0 && !hasConstruction;
+        }
+
+        if (canBuild) {
           const result = room.createConstructionSite(pos.x, pos.y, structureType);
           if (result === OK) {
             sitesPlaced++;
