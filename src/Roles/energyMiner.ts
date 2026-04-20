@@ -143,7 +143,7 @@ const run = function (creep) {
 
         // 1.  source energy cleanup logic
         const source:any = Game.getObjectById(creep.memory.sourceId);
-        if(source && source.energy === 0 && creep.store.getFreeCapacity() > 0) {
+        if(source && source.energy === 0 && creep.store.getFreeCapacity() > 0 && creep.pos.getRangeTo(source) <= 2) {
             // 1. collect dropped energy at current position only（收集地面掉落能量）
             const droppedEnergy = creep.pos.lookFor(FIND_DROPPED_RESOURCES, {
                 filter: resource => resource.resourceType === RESOURCE_ENERGY
