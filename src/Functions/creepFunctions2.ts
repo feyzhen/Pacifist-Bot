@@ -111,9 +111,12 @@ function applyStationaryCreeps(costs: CostMatrix, room: Room, roleName: string |
         if (creep.memory.role === "upgrader" && creep.memory.upgrading && creep.room.controller && creep.pos.getRangeTo(creep.room.controller) <= 3) {
             costs.set(creep.pos.x, creep.pos.y, 61); return;
         }
-        if (creep.memory.role === "EnergyMiner" && roleName !== "EnergyMiner" && creep.memory.source) {
-            const src: any = Game.getObjectById(creep.memory.source);
-            if (src && creep.pos.isNearTo(src)) { costs.set(creep.pos.x, creep.pos.y, 21); return; }
+        if (creep.memory.role === "EnergyMiner" && roleName !== "EnergyMiner" && creep.memory.sourceId) {
+            const src: any = Game.getObjectById(creep.memory.sourceId);
+            if (src && creep.pos.isNearTo(src)) {
+                costs.set(creep.pos.x, creep.pos.y, 21);
+                return;
+            }
         }
         if (creep.memory.role === "builder" && creep.memory.building && creep.memory.locked) {
             const locked: any = Game.getObjectById(creep.memory.locked);
@@ -809,9 +812,9 @@ Creep.prototype.harvestEnergy = function harvestEnergy(): any {
     if (this.memory.targetRoom && this.memory.targetRoom !== this.room.name)
         return this.moveToRoomAvoidEnemyRooms(this.memory.targetRoom);
 
-    let source: any = Game.getObjectById(this.memory.source);
+    let source: any = Game.getObjectById(this.memory.sourceId);
     if (!source || (!source.pos.getOpenPositions().length && !this.pos.isNearTo(source) && !this.memory.sourceId)) {
-        delete this.memory.source; source = this.findSource();
+        delete this.memory.sourceId; source = this.findSource();
     }
     if (!source) return;
 
