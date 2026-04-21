@@ -102,317 +102,53 @@ function spawning(room: any) {
 
 
 function add_creeps_to_spawn_list(room, spawn) {
-    let EnergyMiners = 0;
-    let EnergyMinersInRoom = 0;
-
-    let carriers = 0;
-    let carriersInRoom = 0;
-
-    let RampartErectors = 0;
-
-    let reservers = 0;
-
-    let EnergyManagers = 0;
-
-    let MineralMiners = 0;
-
-    let builders = 0;
-    let upgraders = 0;
-    let fillers = 0;
-
-    let repairers = 0;
-    let maintainers = 0;
-
-    let defenders = 0;
-
-    let RemoteRepairers = 0;
-
-    let Dismantlers = 0;
-    let scouts = 0;
-
-    let claimers = 0;
-    let RemoteDismantlers = 0;
-
-    let attackers = 0;
-    let RangedAttackers = 0;
-
-    let containerbuilders = 0;
-
-    let DrainTowers = 0;
-    let healers = 0;
-
-    let sweepers = 0;
-
-    let annoyers = 0;
-
-    let clearers = 0;
-
-    let billtongs = 0;
-
-    let rams = 0;
-    let signifers = 0;
-
-    let RampartDefenders = 0;
-    let RangedRampartDefenders = 0;
-
-    let goblins = 0;
-
-    let Signers = 0;
-    let Priests = 0;
-
-    let SpecialRepairers = 0;
-    let SpecialCarriers = 0;
-
-    let CreepA = 0;
-    let CreepB = 0;
-    let CreepY = 0;
-    let CreepZ = 0;
-
-    let SneakyControllerUpgraders = 0;
-
-    let SafeModers = 0;
-
-    _.forEach(Game.creeps, function(creep) {
-        // console.log(creep.memory.role)
-        switch(creep.memory.role) {
-
-            case "EnergyMiner":
-                if(isInRoom(creep, room)) {
-                    EnergyMinersInRoom ++;
-                    EnergyMiners ++;
-                    break;
-                }
-
-            case "EnergyMiner":
-                EnergyMiners ++;
-                break;
-
-            case "carry":
-                if(isInRoom(creep, room)) {
-                    carriersInRoom ++;
-                    carriers ++;
-                    break;
-                }
-
-            case "carry":
-                carriers ++;
-                break;
-
-            case "reserve":
-                reservers ++;
-                break;
-
-            case "RemoteRepair":
-                RemoteRepairers ++;
-                break;
-
-            case "EnergyManager":
-                if(isInRoom(creep, room)) {
-                    EnergyManagers ++;
-                    break;
-                }
-
-            case "MineralMiner":
-                if(isInRoom(creep, room)) {
-                    MineralMiners ++;
-                    break;
-                }
-
-            case "builder":
-                if(isInRoom(creep, room)) {
-                    builders ++;
-                    break;
-                }
-
-            case "upgrader":
-                if(isInRoom(creep, room)) {
-                    upgraders ++;
-                    break;
-                }
-
-            case "filler":
-                if(isInRoom(creep, room)) {
-                    fillers ++;
-                    break;
-                }
-
-            case "repair":
-                if(isInRoom(creep, room)) {
-                    repairers ++;
-                    break;
-                }
-
-            case "maintainer":
-                if(isInRoom(creep, room)) {
-                    maintainers ++;
-                    break;
-                }
-
-            case "defender":
-                if(isInRoom(creep, room)) {
-                    defenders ++;
-                    break;
-                }
-
-            case "RampartDefender":
-                if(isInRoom(creep, room)) {
-                    RampartDefenders ++;
-                    break;
-                }
-
-            case "RRD":
-                if(isInRoom(creep, room)) {
-                    RangedRampartDefenders ++;
-                    break;
-                }
-
-
-            case "Dismantler":
-                if(isInRoom(creep, room)) {
-                    Dismantlers ++;
-                    break;
-                }
-
-            case "scout":
-                if(creep.memory.homeRoom == room.name) {
-                    scouts ++;
-                }
-                break;
-
-            case "claimer":
-                claimers ++;
-                break;
-
-            case "attacker":
-                if(creep.memory.homeRoom == room.name) {
-                    attackers ++;
-                }
-                break;
-
-            case "billtong":
-                if(creep.memory.homeRoom == room.name) {
-                    billtongs ++;
-                }
-                break;
-
-            case "RangedAttacker":
-                if(creep.memory.homeRoom == room.name) {
-                    RangedAttackers ++;
-                }
-                break;
-
-            case "remoteBuilder":
-                if(creep.memory.homeRoom == room.name) {
-                    containerbuilders ++;
-                }
-                break;
-
-            case "RampartErector":
-                if(isInRoom(creep, room)) {
-                    RampartErectors ++;
-                }
-
-            case "SneakyControllerUpgrader":
-                SneakyControllerUpgraders ++;
-                break;
-
-            case "DrainTower":
-                DrainTowers ++;
-                break;
-
-            case "healer":
-                healers ++;
-                break;
-
-            case "RemoteDismantler":
-                RemoteDismantlers ++;
-                break;
-
-            case "annoy":
-                annoyers ++;
-                break;
-
-            case "clearer":
-                clearers ++;
-                break;
-
-            case "ram":
-                if(creep.memory.homeRoom == room.name) {
-                    rams ++;
-                }
-                break;
-
-            case "signifer":
-                if(creep.memory.homeRoom == room.name) {
-                    signifers ++;
-                }
-                break;
-
-            case "sweeper":
-                if(isInRoom(creep, room)) {
-                    sweepers ++;
-                    break;
-                }
-
-            case "goblin":
-                if(creep.memory.homeRoom == room.name) {
-                    goblins ++;
-                }
-                break;
-
-            case "Sign":
-                if(creep.memory.homeRoom == room.name) {
-                    Signers ++;
-                }
-                break;
-
-            case "Priest":
-                if(creep.memory.homeRoom == room.name) {
-                    Priests ++;
-                }
-                break;
-
-
-            case "SpecialRepair":
-                if(isInRoom(creep, room)) {
-                    SpecialRepairers ++;
-                    break;
-                }
-
-            case "SpecialCarry":
-                if(isInRoom(creep, room)) {
-                    SpecialCarriers ++;
-                    break;
-                }
-            case "SquadCreepA":
-                if(isInRoom(creep, room)) {
-                    CreepA ++;
-                    break;
-                }
-            case "SquadCreepB":
-                if(isInRoom(creep, room)) {
-                    CreepB ++;
-                    break;
-                }
-                break;
-            case "SquadCreepY":
-                if(isInRoom(creep, room)) {
-                    CreepY ++;
-                    break;
-                }
-            case "SquadCreepZ":
-                if(isInRoom(creep, room)) {
-                    CreepZ ++;
-                    break;
-                }
-            case "SafeModer":
-                if(isInRoom(creep, room)) {
-                    SafeModers ++;
-                    break;
-                }
-        }
-
-    });
+    // Role counting using data-driven approach
+    const roleCount = countRolesEfficiently(room);
+    
+    // Extract role counts for backward compatibility
+    let EnergyMiners = roleCount.EnergyMiner.total;
+    let EnergyMinersInRoom = roleCount.EnergyMiner.inRoom;
+    let carriers = roleCount.carry.total;
+    let carriersInRoom = roleCount.carry.inRoom;
+    let RampartErectors = roleCount.RampartErector.inRoom;
+    let reservers = roleCount.reserve.total;
+    let EnergyManagers = roleCount.EnergyManager.inRoom;
+    let MineralMiners = roleCount.MineralMiner.inRoom;
+    let builders = roleCount.builder.inRoom;
+    let upgraders = roleCount.upgrader.inRoom;
+    let fillers = roleCount.filler.inRoom;
+    let repairers = roleCount.repair.inRoom;
+    let maintainers = roleCount.maintainer.inRoom;
+    let defenders = roleCount.defender.inRoom;
+    let RemoteRepairers = roleCount.RemoteRepair.total;
+    let Dismantlers = roleCount.Dismantler.inRoom;
+    let scouts = roleCount.scout.total;
+    let claimers = roleCount.claimer.total;
+    let attackers = roleCount.attacker.total;
+    let RangedAttackers = roleCount.RangedAttacker.total;
+    let containerbuilders = roleCount.remoteBuilder.total;
+    let DrainTowers = roleCount.DrainTower.total;
+    let healers = roleCount.healer.total;
+    let RemoteDismantlers = roleCount.RemoteDismantler.total;
+    let annoyers = roleCount.annoy.total;
+    let clearers = roleCount.clearer.total;
+    let billtongs = roleCount.billtong.total;
+    let rams = roleCount.ram.total;
+    let signifers = roleCount.signifer.total;
+    let RampartDefenders = roleCount.RampartDefender.inRoom;
+    let RangedRampartDefenders = roleCount.RRD.inRoom;
+    let goblins = roleCount.goblin.total;
+    let Signers = roleCount.Sign.total;
+    let Priests = roleCount.Priest.total;
+    let SpecialRepairers = roleCount.SpecialRepair.inRoom;
+    let SpecialCarriers = roleCount.SpecialCarry.inRoom;
+    let CreepA = roleCount.SquadCreepA.inRoom;
+    let CreepB = roleCount.SquadCreepB.inRoom;
+    let CreepY = roleCount.SquadCreepY.inRoom;
+    let CreepZ = roleCount.SquadCreepZ.inRoom;
+    let SneakyControllerUpgraders = roleCount.SneakyControllerUpgrader.total;
+    let SafeModers = roleCount.SafeModer.inRoom;
+    let sweepers = roleCount.sweeper.inRoom;
 
 
     console.log("Room-" + room.name + " has " + builders + " Builders " + upgraders +
@@ -432,344 +168,8 @@ function add_creeps_to_spawn_list(room, spawn) {
 
 
 
-    const spawnrules = {
-
-        1: {
-
-            upgrade_creep: {
-
-                amount: 6,
-                body:   getBody([WORK,CARRY,CARRY,MOVE], room),
-
-            },
-
-            build_creep: {
-
-                amount: 6,
-                body:   [WORK,CARRY,CARRY,CARRY,MOVE],
-
-            },
-
-            filler_creep: {
-
-                amount: 1,
-                body:   [CARRY,MOVE],
-
-            },
-
-        },
-
-        2: {
-
-            upgrade_creep: {
-
-                amount: 4,
-                body:   getBody([WORK,WORK,CARRY,MOVE], room),
-
-            },
-
-            build_creep: {
-
-                amount: 4,
-                body:   getBody([WORK,CARRY,CARRY,CARRY,MOVE], room, 50),
-
-            },
-
-            repair_creep: {
-
-                amount: 1,
-                body:   [WORK,CARRY,MOVE],
-
-            },
-
-            filler_creep: {
-
-                amount: 1,
-                body:   [CARRY,MOVE],
-
-            },
-
-
-
-        },
-
-        3: {
-            build_creep: {
-
-                amount: 6,
-                body:   getBody([WORK,CARRY,CARRY,CARRY,MOVE], room, 50),
-
-            },
-            upgrade_creep: {
-
-                amount: 2,
-                body:   getBody([WORK,WORK,WORK,WORK,CARRY,MOVE], room, 50),
-
-            },
-
-            filler_creep: {
-
-                amount: 1,
-                body:   [CARRY,MOVE],
-
-            },
-            repair_creep: {
-
-                amount: 1,
-                body:   getBody([WORK,CARRY,MOVE], room, 50),
-
-            },
-            maintain_creep: {
-
-                amount: 1,
-                body:[WORK,WORK,WORK,WORK,
-                    MOVE,MOVE,
-                    CARRY,CARRY,CARRY,CARRY],
-
-            },
-
-        },
-
-        4: {
-            build_creep: {
-
-                amount: 3,
-                body:   getBody([WORK,CARRY,CARRY,CARRY,MOVE], room, 50),
-
-            },
-            upgrade_creep: {
-
-                amount: 5,
-                body:   getBody([WORK,WORK,WORK,WORK,CARRY,MOVE], room, 50),
-
-            },
-
-            filler_creep: {
-
-                amount: 2,
-                body:   [CARRY,CARRY,CARRY,CARRY,MOVE,MOVE],
-
-            },
-            repair_creep: {
-
-                amount: 1,
-                body:   getBody([WORK,CARRY,MOVE], room, 50),
-
-            },
-            maintain_creep: {
-
-                amount: 1,
-                body:[WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,MOVE,MOVE,MOVE,CARRY,CARRY,CARRY,CARRY],
-
-            },
-        },
-
-        5: {
-            build_creep: {
-
-                amount: 4,
-                body:   getBody([WORK,CARRY,CARRY,CARRY,MOVE], room, 50),
-
-            },
-            upgrade_creep: {
-
-                amount: 5,
-                body:   getBody([WORK,WORK,WORK,WORK,CARRY,MOVE], room, 50),
-
-            },
-            filler_creep: {
-
-                amount: 1,
-                body:   [CARRY,CARRY,CARRY,CARRY,MOVE,MOVE],
-
-            },
-            repair_creep: {
-
-                amount: 1,
-                body:   getBody([WORK,CARRY,MOVE], room, 50),
-
-            },
-            maintain_creep: {
-
-                amount: 1,
-                // body:[WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
-                //     MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,
-                //     CARRY,CARRY,CARRY,CARRY],
-                body:[WORK,WORK,
-                    MOVE,MOVE,
-                    CARRY,CARRY],
-
-            },
-
-        },
-
-        6: {
-            build_creep: {
-
-                amount: 1,
-                body:   getBody([WORK,WORK,CARRY,CARRY,MOVE], room, 50),
-
-            },
-            upgrade_creep: {
-
-                amount: 1,
-                body:   getBody([WORK,WORK,WORK,WORK,CARRY,MOVE], room, 50),
-
-            },
-
-            filler_creep: {
-
-                amount: 2,
-                body:   [CARRY,CARRY,CARRY,CARRY,MOVE,MOVE],
-
-            },
-
-            energy_manager_creep: {
-
-                amount: 1,
-                body:   [CARRY,CARRY,CARRY,CARRY,MOVE,MOVE],
-
-            },
-
-            repair_creep: {
-
-                amount: 3,
-                body:   [WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
-                        CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,
-                        MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE],
-
-            },
-
-            maintain_creep: {
-
-                amount: 1,
-                body:   getBody([WORK,WORK,CARRY,MOVE], room, 50),
-
-            },
-        },
-
-        7: {
-            build_creep: {
-
-                amount: 2,
-                body:   getBody([WORK,WORK,CARRY,CARRY,MOVE], room, 50),
-
-            },
-            upgrade_creep: {
-
-                amount: 1,
-                body:   [WORK,WORK,WORK,WORK,CARRY,CARRY,MOVE],
-
-            },
-
-            upgrade_creep_spend: {
-
-                amount: 3,
-                body:   [WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,CARRY,CARRY,MOVE,MOVE,MOVE],
-
-            },
-
-            filler_creep: {
-
-                amount: 1,
-                body:   [CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE],
-
-            },
-
-
-            energy_manager_creep: {
-
-                amount: 1,
-                body:   [CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE],
-
-            },
-
-            repair_creep: {
-
-                amount: 1,
-                body:   [WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
-                         MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY],
-
-            },
-
-            maintain_creep: {
-
-                amount: 1,
-                body:   [WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,
-                         MOVE,MOVE,MOVE,MOVE,MOVE,
-                         MOVE,MOVE,MOVE,MOVE,MOVE,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,
-                         CARRY,CARRY,CARRY,CARRY,CARRY],
-
-            },
-        },
-
-        8: {
-            build_creep: {
-
-                amount: 2,
-                body:   getBody([WORK,WORK,CARRY,CARRY,MOVE], room, 50),
-
-            },
-
-            upgrade_creep: {
-
-                amount: 1,
-                body:   [WORK,CARRY,CARRY,CARRY,MOVE],
-
-            },
-
-            filler_creep: {
-
-                amount: 1,
-                body:   [CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE],
-
-            },
-
-            energy_manager_creep: {
-
-                amount: 1,
-                body:   [CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE],
-
-            },
-
-            repair_creep: {
-
-                amount: 2,
-                body:   [WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,
-                         MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY],
-
-            },
-
-            maintain_creep: {
-
-                amount: 1,
-                body:   [WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,
-                         WORK,WORK,WORK,WORK,WORK,
-                         MOVE,MOVE,MOVE,MOVE,MOVE,
-                         MOVE,MOVE,MOVE,MOVE,MOVE,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,
-                         CARRY,CARRY,CARRY,CARRY,CARRY,
-                         CARRY,CARRY,CARRY,CARRY,CARRY],
-
-            },
-        }
-
-    };
+    // Get spawn rules configuration
+    const spawnrules = getSpawnRules(room);
 
     if(room.controller.level < 3 && room.controller.safeMode && attackers < 1) {
         const enemyCreepsInRoom = room.find(FIND_HOSTILE_CREEPS);
@@ -3087,5 +2487,300 @@ function spawn_reserver(resourceData, room, storage, activeRemotes, reservers) {
         }
     });
 }
+// Role counting utility function
+function countRolesEfficiently(room: Room) {
+    const roles = [
+        'EnergyMiner', 'carry', 'builder', 'upgrader', 'repair', 'filler',
+        'maintainer', 'defender', 'RampartDefender', 'RRD', 'Dismantler',
+        'scout', 'claimer', 'attacker', 'billtong', 'RangedAttacker',
+        'remoteBuilder', 'RampartErector', 'SneakyControllerUpgrader',
+        'DrainTower', 'healer', 'RemoteDismantler', 'annoy', 'clearer',
+        'ram', 'signifer', 'sweeper', 'goblin', 'Sign', 'Priest',
+        'SpecialRepair', 'SpecialCarry', 'SquadCreepA', 'SquadCreepB',
+        'SquadCreepY', 'SquadCreepZ', 'SafeModer', 'reserve', 'RemoteRepair',
+        'EnergyManager', 'MineralMiner'
+    ];
+    
+    const count: any = {};
+    roles.forEach(role => {
+        count[role] = { total: 0, inRoom: 0 };
+    });
+    
+    Object.values(Game.creeps).forEach(creep => {
+        const role = creep.memory.role;
+        if (count[role]) {
+            count[role].total++;
+            if (creep.room.name === room.name) {
+                count[role].inRoom++;
+            }
+        }
+    });
+    
+    return count;
+}
+
+// Spawn rules configuration
+const SPAWN_RULES_CONFIG = {
+    1: {
+        upgrade_creep: {
+            amount: 6,
+            bodyPattern: [WORK, CARRY, CARRY, MOVE]
+        },
+        build_creep: {
+            amount: 6,
+            bodyPattern: [WORK, CARRY, CARRY, CARRY, MOVE]
+        },
+        filler_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, MOVE]
+        }
+    },
+    2: {
+        upgrade_creep: {
+            amount: 4,
+            bodyPattern: [WORK, WORK, CARRY, MOVE]
+        },
+        build_creep: {
+            amount: 4,
+            bodyPattern: [WORK, CARRY, CARRY, CARRY, MOVE]
+        },
+        repair_creep: {
+            amount: 1,
+            bodyPattern: [WORK, CARRY, MOVE]
+        },
+        filler_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, MOVE]
+        }
+    },
+    3: {
+        build_creep: {
+            amount: 6,
+            bodyPattern: [WORK, CARRY, CARRY, CARRY, MOVE]
+        },
+        upgrade_creep: {
+            amount: 2,
+            bodyPattern: [WORK, WORK, WORK, WORK, CARRY, MOVE]
+        },
+        filler_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, MOVE]
+        },
+        repair_creep: {
+            amount: 1,
+            bodyPattern: [WORK, CARRY, MOVE]
+        },
+        maintain_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, WORK, WORK, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY]
+        }
+    },
+    4: {
+        build_creep: {
+            amount: 3,
+            bodyPattern: [WORK, CARRY, CARRY, CARRY, MOVE]
+        },
+        upgrade_creep: {
+            amount: 5,
+            bodyPattern: [WORK, WORK, WORK, WORK, CARRY, MOVE]
+        },
+        filler_creep: {
+            amount: 2,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+        },
+        repair_creep: {
+            amount: 1,
+            bodyPattern: [WORK, CARRY, MOVE]
+        },
+        maintain_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY]
+        }
+    },
+    5: {
+        build_creep: {
+            amount: 4,
+            bodyPattern: [WORK, CARRY, CARRY, CARRY, MOVE]
+        },
+        upgrade_creep: {
+            amount: 5,
+            bodyPattern: [WORK, WORK, WORK, WORK, CARRY, MOVE]
+        },
+        filler_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+        },
+        repair_creep: {
+            amount: 1,
+            bodyPattern: [WORK, CARRY, MOVE]
+        },
+        maintain_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, MOVE, MOVE, CARRY, CARRY]
+        }
+    },
+    6: {
+        build_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, CARRY, CARRY, MOVE]
+        },
+        upgrade_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, WORK, WORK, CARRY, MOVE]
+        },
+        filler_creep: {
+            amount: 2,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+        },
+        energy_manager_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+        },
+        repair_creep: {
+            amount: 3,
+            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
+        },
+        maintain_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, CARRY, MOVE]
+        }
+    },
+    7: {
+        build_creep: {
+            amount: 2,
+            bodyPattern: [WORK, WORK, CARRY, CARRY, MOVE]
+        },
+        upgrade_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE]
+        },
+        upgrade_creep_spend: {
+            amount: 3,
+            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE]
+        },
+        filler_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
+        },
+        energy_manager_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
+        },
+        repair_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY]
+        },
+        maintain_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY]
+        }
+    },
+    8: {
+        build_creep: {
+            amount: 2,
+            bodyPattern: [WORK, WORK, CARRY, CARRY, MOVE]
+        },
+        upgrade_creep: {
+            amount: 1,
+            bodyPattern: [WORK, CARRY, CARRY, CARRY, MOVE]
+        },
+        filler_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
+        },
+        energy_manager_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
+        },
+        repair_creep: {
+            amount: 2,
+            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY]
+        },
+        maintain_creep: {
+            amount: 1,
+            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY]
+        }
+    }
+};
+
+// Function to get spawn rules with dynamic body generation
+function getSpawnRules(room: Room) {
+    const rules: any = {};
+    
+    for (const rcl in SPAWN_RULES_CONFIG) {
+        rules[rcl] = {};
+        
+        for (const creepType in SPAWN_RULES_CONFIG[rcl]) {
+            const config = SPAWN_RULES_CONFIG[rcl][creepType];
+            rules[rcl][creepType] = {
+                amount: config.amount,
+                body: creepType.includes('upgrade') || creepType.includes('build') || creepType.includes('repair') || creepType.includes('maintain')
+                    ? getBody(config.bodyPattern, room, 50)
+                    : config.bodyPattern
+            };
+        }
+    }
+    
+    return rules;
+}
+
+// Room condition checker utility functions
+class RoomConditions {
+    static hasStorageEnergy(room: Room, amount: number): boolean {
+        const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+        return storage ? (storage as any).store[RESOURCE_ENERGY] >= amount : false;
+    }
+    
+    static canSpawnHighCost(room: Room): boolean {
+        return room.controller.level >= 7 && 
+               this.hasStorageEnergy(room, 50000) && 
+               !room.memory.danger;
+    }
+    
+    static canSpawnMediumCost(room: Room): boolean {
+        return room.controller.level >= 5 && 
+               this.hasStorageEnergy(room, 15000) && 
+               !room.memory.danger;
+    }
+    
+    static isUnderAttack(room: Room): boolean {
+        return room.memory.danger && room.memory.danger_timer > 30;
+    }
+    
+    static needsEmergencyResponse(room: Room): boolean {
+        return room.energyAvailable < room.energyCapacityAvailable * 0.3 &&
+               this.isUnderAttack(room);
+    }
+    
+    static canUpgradeController(room: Room): boolean {
+        return !room.memory.danger && 
+               (room.controller.ticksToDowngrade < 15000 || 
+                this.hasStorageEnergy(room, 10000));
+    }
+    
+    static hasConstructionSites(room: Room): boolean {
+        return room.find(FIND_MY_CONSTRUCTION_SITES).length > 0;
+    }
+    
+    static hasEnergyForBuilding(room: Room): boolean {
+        return this.hasStorageEnergy(room, 15000) || room.energyAvailable >= 1000;
+    }
+    
+    static canSpawnMilitary(room: Room): boolean {
+        return room.controller.level >= 4 && 
+               this.hasStorageEnergy(room, 10000) && 
+               this.isUnderAttack(room);
+    }
+    
+    static hasMineralResources(room: Room): boolean {
+        const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+        return storage ? (storage as any).store.getUsedCapacity() < 975000 : false;
+    }
+    
+    static isSafeModeAvailable(room: Room): boolean {
+        return room.controller.safeModeAvailable > 1 && !room.memory.danger;
+    }
+}
+
 export {getBody};
 export default spawning;
