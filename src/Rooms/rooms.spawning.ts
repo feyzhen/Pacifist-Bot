@@ -1,58 +1,67 @@
 import { buildFromLayout } from "./rooms.construction2";
 function spawning(room: any) {
     // if(Game.cpu.bucket < 1000) return;
-    if(!room.memory.spawn_list) {
+    if (!room.memory.spawn_list) {
         room.memory.spawn_list = [];
     }
 
-    if(!room.memory.lastTimeSpawnUsed || room.memory.lastTimeSpawnUsed == 0) {
+    if (!room.memory.lastTimeSpawnUsed || room.memory.lastTimeSpawnUsed == 0) {
         room.memory.lastTimeSpawnUsed = Game.time;
     }
 
-    if(Game.time % 100 == 0 && Game.time - room.memory.lastTimeSpawnUsed > 1200) {
+    if (Game.time % 100 == 0 && Game.time - room.memory.lastTimeSpawnUsed > 1200) {
         room.memory.spawn_list = [];
     }
 
-    let spawn: any = Game.getObjectById(room.memory.Structures.spawn)
-    if(spawn && spawn.spawning && spawn.spawning.remainingTime == 1 && room.memory.spawn_list.length == 0) {
+    let spawn: any = Game.getObjectById(room.memory.Structures.spawn);
+    if (spawn && spawn.spawning && spawn.spawning.remainingTime == 1 && room.memory.spawn_list.length == 0) {
         room.memory.lastTimeSpawnUsed = Game.time;
     }
-
 
     spawn = Game.getObjectById(room.memory.Structures.spawn) || room.findSpawn();
 
-    if(spawn == undefined) {
+    if (spawn == undefined) {
         delete room.memory.Structures.spawn;
         return;
     }
 
-    if(room.controller.level >= 7 && spawn && spawn.effects && spawn.effects.length > 0 && room.danger && room.danger_timer > 30) {
-        if(!room.memory.ram_coming) {
-            for(const effect of spawn.effects) {
-                if(effect.effect === PWR_DISRUPT_SPAWN) {
+    if (
+        room.controller.level >= 7 &&
+        spawn &&
+        spawn.effects &&
+        spawn.effects.length > 0 &&
+        room.danger &&
+        room.danger_timer > 30
+    ) {
+        if (!room.memory.ram_coming) {
+            for (const effect of spawn.effects) {
+                if (effect.effect === PWR_DISRUPT_SPAWN) {
                     const spawns = room.find(FIND_MY_SPAWNS);
                     let allSpawnsDisrupted = true;
-                    for(const spawn of spawns) {
+                    for (const spawn of spawns) {
                         allSpawnsDisrupted = false;
-                        if(spawn.effects && spawn.effects.length > 0) {
-                            for(const effect of spawn.effects) {
-                                if(effect.effect === PWR_DISRUPT_SPAWN) {
+                        if (spawn.effects && spawn.effects.length > 0) {
+                            for (const effect of spawn.effects) {
+                                if (effect.effect === PWR_DISRUPT_SPAWN) {
                                     allSpawnsDisrupted = true;
                                 }
                             }
                         }
-                        if(!allSpawnsDisrupted) {
+                        if (!allSpawnsDisrupted) {
                             break;
                         }
                     }
-                    if(allSpawnsDisrupted) {
-                        const myRooms = _.filter(Game.rooms, (r) => r.controller && r.controller.my && r.controller.level === 8);
+                    if (allSpawnsDisrupted) {
+                        const myRooms = _.filter(
+                            Game.rooms,
+                            r => r.controller && r.controller.my && r.controller.level === 8
+                        );
                         // find closest room
                         let closestRoom = myRooms[0];
                         let closestRoomDistance = Game.map.getRoomLinearDistance(room.name, closestRoom.name);
-                        for(const myRoom of myRooms) {
+                        for (const myRoom of myRooms) {
                             const distance = Game.map.getRoomLinearDistance(room.name, myRoom.name);
-                            if(distance < closestRoomDistance) {
+                            if (distance < closestRoomDistance) {
                                 closestRoom = myRoom;
                                 closestRoomDistance = distance;
                             }
@@ -64,47 +73,268 @@ function spawning(room: any) {
                 }
             }
         }
-
-    }
-    else {
-        if(room.memory.ram_coming) {
+    } else {
+        if (room.memory.ram_coming) {
             delete room.memory.ram_coming;
         }
     }
 
-
-    if(spawn.spawning) {
+    if (spawn.spawning) {
         spawn = room.findSpawn();
-        if(spawn == undefined) {
+        if (spawn == undefined) {
             return;
-        }
-        else {
+        } else {
             room.memory.lastTimeSpawnUsed = Game.time;
         }
     }
 
-    const status = spawnFirstInLine(room, spawn);
-    if(status == "spawning") {
+    // const status = spawnFirstInLine(room, spawn);
+    const status = spawnFirstInLine_optimized(room, spawn);
+    if (status == "spawning") {
         return;
     }
 
-    if(room.memory.spawn_list.length == 0 && Game.time - room.memory.lastTimeSpawnUsed == 2 ||
-        !room.memory.danger && room.memory.spawn_list.length == 0 && (Game.time - room.memory.lastTimeSpawnUsed) % 10 == 0 && room.controller.level >= 6 ||
-        !room.memory.danger && room.memory.spawn_list.length == 0 && (Game.time - room.memory.lastTimeSpawnUsed) % 20 == 0 && room.controller.level <= 5 ||
-        !room.memory.danger && room.memory.spawn_list.length >= 1 && (Game.time - room.memory.lastTimeSpawnUsed) % 500 == 0 ||
-        room.memory.danger && (Game.time - room.memory.lastTimeSpawnUsed) % 7 == 0 && room.memory.spawn_list.length == 0) {
-
-            add_creeps_to_spawn_list(room, spawn);
+    if (
+        (room.memory.spawn_list.length == 0 && Game.time - room.memory.lastTimeSpawnUsed == 2) ||
+        (!room.memory.danger &&
+            room.memory.spawn_list.length == 0 &&
+            (Game.time - room.memory.lastTimeSpawnUsed) % 10 == 0 &&
+            room.controller.level >= 6) ||
+        (!room.memory.danger &&
+            room.memory.spawn_list.length == 0 &&
+            (Game.time - room.memory.lastTimeSpawnUsed) % 20 == 0 &&
+            room.controller.level <= 5) ||
+        (!room.memory.danger &&
+            room.memory.spawn_list.length >= 1 &&
+            (Game.time - room.memory.lastTimeSpawnUsed) % 500 == 0) ||
+        (room.memory.danger &&
+            (Game.time - room.memory.lastTimeSpawnUsed) % 7 == 0 &&
+            room.memory.spawn_list.length == 0)
+    ) {
+        // add_creeps_to_spawn_list(room, spawn);
+        add_creeps_to_spawn_list_refactored(room, spawn);
     }
-
-
 }
 
 
+// Refactored version using new generator classes
+function add_creeps_to_spawn_list_refactored(room: Room, spawn: StructureSpawn) {
+    // 1. 统计角色
+    const roleCount = countRolesEfficiently(room);
+
+    // 2. 获取房间状态和配置
+    const sites = room.find(FIND_MY_CONSTRUCTION_SITES);
+    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+    const resourceData = _.get(room.memory, ['resources']);
+    const spawnrules = getSpawnRules(room);
+
+    // 3. 计算活跃远程房间
+    const roomsToRemote = Object.keys(room.memory.resources || {});
+    const activeRemotes = roomsToRemote.filter(remoteRoom =>
+        remoteRoom === room.name || room.memory.resources[remoteRoom].active
+    );
+
+    // 4. 计算ramparts状态
+    let rampartsInRoom: any[] = [];
+    let spawnMaintainer = false;
+    if (room.controller.level >= 3 && storage) {
+        rampartsInRoom = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_RAMPART});
+        for (const rampart of rampartsInRoom) {
+            if (rampart.hits <= 10000) {
+                spawnMaintainer = true;
+                break;
+            }
+        }
+        // 检查需要维护的Container
+        const containersNeedRepair = room.find(FIND_STRUCTURES, {
+            filter: s => s.structureType === STRUCTURE_CONTAINER && s.hits <= s.hitsMax * 0.8
+        });
+        if (containersNeedRepair.length > 0) {
+            spawnMaintainer = true;
+        }
+    }
+
+    // 5. 提取角色计数
+    const EnergyMiners = roleCount.EnergyMiner.total;
+    const EnergyMinersInRoom = roleCount.EnergyMiner.inRoom;
+    const carriers = roleCount.carry.total;
+    const builders = roleCount.builder.inRoom;
+    const repairers = roleCount.repair.inRoom;
+    const maintainers = roleCount.maintainer.inRoom;
+    const EnergyManagers = roleCount.EnergyManager.inRoom;
+    const MineralMiners = roleCount.MineralMiner.inRoom;
+    const scouts = roleCount.scout.total;
+    const claimers = roleCount.claimer.total;
+    const attackers = roleCount.attacker.total;
+    const RampartDefenders = roleCount.RampartDefender.inRoom;
+    const RangedRampartDefenders = roleCount.RRD.inRoom;
+    const reservers = roleCount.reserve.total;
+
+    // 6. 使用新的生成器类生成角色
+    // 能量相关角色
+    EnergyRoleGenerator.generateAll(resourceData, room, spawn, storage, activeRemotes, EnergyManagers, spawnrules);
+
+    // 建造相关角色
+    ConstructionRoleGenerator.generateAll(room, builders, repairers, maintainers, EnergyMinersInRoom, carriers, sites, storage, spawnMaintainer, spawnrules, rampartsInRoom);
+
+    // 军事相关角色
+    MilitaryRoleGenerator.generateAll(room, attackers, RampartDefenders, RangedRampartDefenders, storage);
+
+    // 特殊角色
+    SpecialRoleGenerator.generateAll(resourceData, room, MineralMiners, scouts, EnergyMinersInRoom, claimers, reservers, storage, activeRemotes);
+
+    // 7. 保留原有的upgrader和filler逻辑（这些角色尚未在生成器中实现）
+    const upgraders = roleCount.upgrader.inRoom;
+    const fillers = roleCount.filler.inRoom;
+    const constructionSitesAmount = sites.length;
+
+    switch (room.controller.level) {
+        case 1:
+            if (EnergyMiners < 1) break;
+            if (upgraders < spawnrules[1].upgrade_creep.amount && !room.memory.danger) {
+                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(spawnrules[1].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+                console.log('Adding Upgrader to Spawn List: ' + name);
+            }
+            if ((fillers < spawnrules[1].filler_creep.amount || fillers < spawnrules[1].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[1].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
+                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift(spawnrules[1].filler_creep.body, name, {memory: {role: 'filler'}});
+                console.log('Adding filler to Spawn List: ' + name);
+            }
+            break;
+        case 2:
+            if (upgraders < spawnrules[2].upgrade_creep.amount && !room.memory.danger && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
+                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(spawnrules[2].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+                console.log('Adding Upgrader to Spawn List: ' + name);
+            }
+            if ((fillers < spawnrules[2].filler_creep.amount || fillers < spawnrules[2].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[2].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
+                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift(spawnrules[2].filler_creep.body, name, {memory: {role: 'filler'}});
+                console.log('Adding filler to Spawn List: ' + name);
+            }
+            break;
+        case 3:
+            if (upgraders < spawnrules[3].upgrade_creep.amount && !room.memory.danger && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
+                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(spawnrules[3].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+                console.log('Adding Upgrader to Spawn List: ' + name);
+            }
+            if ((fillers < spawnrules[3].filler_creep.amount || fillers < spawnrules[3].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[3].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
+                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift(spawnrules[3].filler_creep.body, name, {memory: {role: 'filler'}});
+                console.log('Adding filler to Spawn List: ' + name);
+            }
+            break;
+        case 4:
+            if (upgraders < spawnrules[4].upgrade_creep.amount && (!storage || (storage as any).store[RESOURCE_ENERGY] > 100000 || (storage as any).store[RESOURCE_ENERGY] > 20000 && !rampartsInRoom.filter(function(s) {return s.hits < 900000}).length || upgraders < 1 && room.controller.ticksToDowngrade < 21000) && !room.memory.danger && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 21000)) {
+                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(spawnrules[4].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+                console.log('Adding Upgrader to Spawn List: ' + name);
+            }
+            if ((fillers < spawnrules[4].filler_creep.amount || fillers < spawnrules[4].filler_creep.amount + 1 && (activeRemotes.length > 1 || room.memory.danger && room.energyAvailable < room.energyCapacityAvailable/1.5) || fillers < spawnrules[4].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
+                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift(spawnrules[4].filler_creep.body, name, {memory: {role: 'filler'}});
+                console.log('Adding filler to Spawn List: ' + name);
+            }
+            break;
+        case 5:
+            if (upgraders < spawnrules[5].upgrade_creep.amount && !room.memory.danger && RoomConditions.canUpgradeController(room) && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
+                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(spawnrules[5].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+                console.log('Adding Upgrader to Spawn List: ' + name);
+            }
+            if ((fillers < spawnrules[5].filler_creep.amount || fillers < spawnrules[5].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[5].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
+                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift(spawnrules[5].filler_creep.body, name, {memory: {role: 'filler'}});
+                console.log('Adding filler to Spawn List: ' + name);
+            }
+            break;
+        case 6:
+            if (upgraders < spawnrules[6].upgrade_creep.amount && !room.memory.danger && RoomConditions.canUpgradeController(room) && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
+                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(spawnrules[6].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+                console.log('Adding Upgrader to Spawn List: ' + name);
+            }
+            if ((fillers < spawnrules[6].filler_creep.amount || fillers < spawnrules[6].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[6].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
+                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift(spawnrules[6].filler_creep.body, name, {memory: {role: 'filler'}});
+                console.log('Adding filler to Spawn List: ' + name);
+            }
+            break;
+        case 7:
+            if (upgraders < spawnrules[7].upgrade_creep.amount && !room.memory.danger && RoomConditions.canUpgradeController(room) && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
+                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(spawnrules[7].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+                console.log('Adding Upgrader to Spawn List: ' + name);
+            }
+            if ((fillers < spawnrules[7].filler_creep.amount || fillers < spawnrules[7].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[7].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
+                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift(spawnrules[7].filler_creep.body, name, {memory: {role: 'filler'}});
+                console.log('Adding filler to Spawn List: ' + name);
+            }
+            break;
+        case 8:
+            if (upgraders < spawnrules[8].upgrade_creep.amount && !room.memory.danger && RoomConditions.canUpgradeController(room) && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
+                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(spawnrules[8].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+                console.log('Adding Upgrader to Spawn List: ' + name);
+            }
+            if ((fillers < spawnrules[8].filler_creep.amount || fillers < spawnrules[8].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[8].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
+                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift(spawnrules[8].filler_creep.body, name, {memory: {role: 'filler'}});
+                console.log('Adding filler to Spawn List: ' + name);
+            }
+            break;
+    }
+
+    // 8. 处理核弹威胁逻辑
+    if (room.memory.defence.nuke) {
+        const nukes = room.find(FIND_NUKES);
+        if (nukes.length > 0) {
+            nukes.sort((a, b) => a.timeToLand - b.timeToLand);
+            if (nukes[0].timeToLand <= 200) {
+                room.memory.defence.evacuate = true;
+            } else {
+                room.memory.defence.evacuate = false;
+            }
+            if (nukes[0].timeToLand <= 400) {
+                return;
+            }
+        } else if (room.memory.defence.nuke && nukes.length == 0) {
+            room.memory.defence.nuke = false;
+            buildFromLayout(room);
+        } else {
+            room.memory.defence.nuke = false;
+            room.memory.defence.evacuate = false;
+        }
+    }
+
+    // 9. 处理无storage时的builder生成
+    if (room.controller.level >= 5 && !storage && builders < 5) {
+        const name = 'Builder-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+        room.memory.spawn_list.push(getBody([WORK, CARRY, MOVE], room, 50), name, {memory: {role: 'builder'}});
+        console.log('Adding Builder to Spawn List: ' + name);
+    }
+
+    // 10. 处理ControllerLinkFiller
+    if (room.memory.Structures.controllerLink && room.controller.level !== 8 && room.controller.level >= 3) {
+        const controllerLink: any = Game.getObjectById(room.memory.Structures.controllerLink);
+        if (Game.time % 70 < 12 && controllerLink && controllerLink.store[RESOURCE_ENERGY] <= 100 && storage && (storage as any).store[RESOURCE_ENERGY] > 1000) {
+            const name = "ControllerLinkFiller-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            room.memory.spawn_list.unshift(getBody([CARRY, CARRY, CARRY, CARRY, MOVE], room, 20), name, {
+                memory: { role: "ControllerLinkFiller" }
+            });
+            console.log("Adding ControllerLinkFiller to Spawn List: " + name);
+        }
+    }
+}
+
+// Original function (to be replaced gradually)
 function add_creeps_to_spawn_list(room, spawn) {
     // Role counting using data-driven approach
     const roleCount = countRolesEfficiently(room);
-    
+
     // Extract role counts for backward compatibility
     let EnergyMiners = roleCount.EnergyMiner.total;
     let EnergyMinersInRoom = roleCount.EnergyMiner.inRoom;
@@ -1824,6 +2054,165 @@ function add_creeps_to_spawn_list(room, spawn) {
 
 
 
+// Optimized version of spawnFirstInLine
+function spawnFirstInLine_optimized(room: Room, spawn: StructureSpawn): string {
+    // Emergency energy manager check
+    const storage = Game.getObjectById(room.memory.Structures.storage);
+    const energyManagers = _.filter(Game.creeps, (creep) => creep.memory.role == 'EnergyManager' && creep.room.name == room.name).length;
+
+    if (room.controller.level >= 4 && storage && energyManagers === 0) {
+        const result = handleEmergencyEnergyManager(room, spawn, storage);
+        if (result === "spawning") return result;
+    }
+
+    // Normal spawn queue processing
+    if (room.memory.spawn_list.length >= 1) {
+        return processSpawnQueue(room, spawn);
+    }
+
+    return "list empty";
+}
+
+// Helper function to handle emergency energy manager spawning
+function handleEmergencyEnergyManager(room: Room, spawn: StructureSpawn, storage: any): string {
+    console.log(`Room ${room.name} energy: ${room.energyAvailable}/${room.energyCapacityAvailable}, checking for emergency spawn`);
+
+    const links = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_LINK});
+    const sourceLinks = links.filter(link => {
+        const sources = room.find(FIND_SOURCES);
+        return sources.some(source => source.pos.getRangeTo(link) < 5);
+    });
+    const targetLinks = links.filter(link => {
+        const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+        return storage && link.pos.getRangeTo(storage as any) < 5;
+    });
+
+    if (sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
+        if (room.energyAvailable < room.energyCapacityAvailable * 0.5) {
+            if (room.memory.spawn_list.length > 0) {
+                console.log(`Clearing spawn queue in ${room.name} for emergency EnergyManager`);
+                room.memory.spawn_list = [];
+            }
+
+            const name = 'EmergencyEnergyManager-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            const body = room.energyAvailable < 200 ? [CARRY, CARRY, MOVE] : [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE];
+
+            const spawnAttempt = spawn.spawnCreep(body, name, {memory: {role: 'EnergyManager'} as any});
+
+            if (spawnAttempt === 0) {
+                (room.memory as any).data.c_spawned++;
+                return "spawning";
+            }
+        }
+    }
+
+    return "not spawning";
+}
+
+// Helper function to process spawn queue
+function processSpawnQueue(room: Room, spawn: StructureSpawn): string {
+    const spawnAttempt = spawn.spawnCreep(room.memory.spawn_list[0] as BodyPartConstant[], room.memory.spawn_list[1] as string, room.memory.spawn_list[2] as any);
+
+    if (spawnAttempt === 0) {
+        console.log("spawning", room.memory.spawn_list[1], "creep", room.name);
+        room.memory.spawn_list.shift();
+        room.memory.spawn_list.shift();
+        room.memory.spawn_list.shift();
+        (room.memory as any).data.c_spawned++;
+        return "spawning";
+    }
+
+    console.log("spawning", room.memory.spawn_list[1], "creep error", spawnAttempt, room.name);
+
+    // Handle specific errors
+    if (spawnAttempt === ERR_NOT_ENOUGH_ENERGY) {
+        handleNotEnoughEnergyError(room, spawn);
+    } else if (spawnAttempt === ERR_NAME_EXISTS || spawnAttempt === ERR_BUSY || spawnAttempt === ERR_INVALID_ARGS) {
+        room.memory.spawn_list.shift();
+        room.memory.spawn_list.shift();
+        room.memory.spawn_list.shift();
+    }
+
+    return "not spawning";
+}
+
+// Helper function to handle ERR_NOT_ENOUGH_ENERGY
+function handleNotEnoughEnergyError(room: Room, spawn: StructureSpawn) {
+    const storage = Game.getObjectById(room.memory.Structures.storage);
+
+    // Emergency filler spawning
+    if (room.controller.level >= 4 && storage && room.energyAvailable >= 100 && room.energyAvailable <= 1000 && room.energyCapacityAvailable > 400 && room.find(FIND_MY_CREEPS, {filter: c => c.memory.role == "filler"}).length == 0) {
+        const body = [MOVE, CARRY];
+        if (room.controller.level === 7) body.push(CARRY, CARRY);
+        if (room.controller.level === 8) body.push(CARRY, CARRY, CARRY);
+
+        const newName = 'emergencyFILLER-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+        spawn.spawnCreep(body, newName, {memory: {role: 'filler'} as any});
+        return;
+    }
+
+    const segment = room.memory.spawn_list[0] as BodyPartConstant[];
+    const creepName = room.memory.spawn_list[1] as string;
+    const bodyCost = _.sum(segment, s => BODYPART_COST[s]);
+
+    // Check if should clear from queue or reduce body
+    const shouldClear = shouldClearFromQueue(creepName, segment, bodyCost, room);
+
+    if (shouldClear) {
+        clearSpawnQueueItem(room, creepName);
+    } else {
+        reduceBodySize(room);
+    }
+}
+
+// Helper function to determine if item should be cleared from queue
+function shouldClearFromQueue(creepName: string, segment: any[], bodyCost: number, room: Room): boolean {
+    const excludedPrefixes = [
+        "Carrier", "EnergyMiner", "WallClearer", "SquadCreepA", "SquadCreepB",
+        "SquadCreepY", "SquadCreepZ", "Ram", "Signifer", "PowerHeal", "Goblin",
+        "SpecialRepair", "SpecialCarry", "RRD", "Solomon", "FreedomFighter",
+        "ContinuousControllerKiller", "RoomLocker", "Escort", "PowerMelee"
+    ];
+
+    const hasExcludedPrefix = excludedPrefixes.some(prefix => creepName.startsWith(prefix));
+    const isDefenderOrWallClearer = creepName.startsWith("Defender") || creepName.startsWith("WallClearer");
+    const isTooExpensive = bodyCost > room.energyCapacityAvailable;
+    const isLargeBody = segment.length >= 4;
+
+    return (isLargeBody && !hasExcludedPrefix) || isTooExpensive || isDefenderOrWallClearer;
+}
+
+// Helper function to clear item from spawn queue
+function clearSpawnQueueItem(room: Room, creepName: string) {
+    if (creepName.startsWith("SpecialRe") && room.memory.labs && room.memory.labs.status && room.memory.labs.status.boost && room.memory.labs.status.boost.lab1 && room.memory.labs.status.boost.lab1.amount && room.memory.labs.status.boost.lab1.use > 0) {
+        room.memory.labs.status.boost.lab1.use = 0;
+        room.memory.labs.status.boost.lab1.amount = 0;
+    }
+
+    room.memory.spawn_list.shift();
+    room.memory.spawn_list.shift();
+    room.memory.spawn_list.shift();
+    console.log("clearing spawn queue because too high energy cost or is defender/wallclearer");
+}
+
+// Helper function to reduce body size
+function reduceBodySize(room: Room) {
+    const creepName = room.memory.spawn_list[1] as string;
+    const segment = room.memory.spawn_list[0] as BodyPartConstant[];
+    const lastTimeSpawnUsed = (room.memory as any).lastTimeSpawnUsed;
+    const energyAvailable = room.energyAvailable;
+
+    const shouldReduce =
+        (lastTimeSpawnUsed > 305 && creepName.startsWith("Carrier") && energyAvailable < segment.length * 50 && segment.length > 3) ||
+        (lastTimeSpawnUsed > 305 && creepName.startsWith("EnergyMiner") && energyAvailable < segment.length * 100 && segment.length > 3) ||
+        (lastTimeSpawnUsed > 205 && creepName.startsWith("Reserver") && segment.length > 1);
+
+    if (shouldReduce) {
+        (room.memory.spawn_list[0] as BodyPartConstant[]).shift();
+    }
+}
+
+// Original function (to be replaced)
 function spawnFirstInLine(room, spawn) {
     // Emergency energy manager check - run this BEFORE checking spawn list
     const storage = Game.getObjectById(room.memory.Structures.storage);
@@ -2500,12 +2889,12 @@ function countRolesEfficiently(room: Room) {
         'SquadCreepY', 'SquadCreepZ', 'SafeModer', 'reserve', 'RemoteRepair',
         'EnergyManager', 'MineralMiner'
     ];
-    
+
     const count: any = {};
     roles.forEach(role => {
         count[role] = { total: 0, inRoom: 0 };
     });
-    
+
     Object.values(Game.creeps).forEach(creep => {
         const role = creep.memory.role;
         if (count[role]) {
@@ -2515,7 +2904,7 @@ function countRolesEfficiently(room: Room) {
             }
         }
     });
-    
+
     return count;
 }
 
@@ -2706,10 +3095,10 @@ const SPAWN_RULES_CONFIG = {
 // Function to get spawn rules with dynamic body generation
 function getSpawnRules(room: Room) {
     const rules: any = {};
-    
+
     for (const rcl in SPAWN_RULES_CONFIG) {
         rules[rcl] = {};
-        
+
         for (const creepType in SPAWN_RULES_CONFIG[rcl]) {
             const config = SPAWN_RULES_CONFIG[rcl][creepType];
             rules[rcl][creepType] = {
@@ -2720,7 +3109,7 @@ function getSpawnRules(room: Room) {
             };
         }
     }
-    
+
     return rules;
 }
 
@@ -2730,55 +3119,779 @@ class RoomConditions {
         const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
         return storage ? (storage as any).store[RESOURCE_ENERGY] >= amount : false;
     }
-    
+
     static canSpawnHighCost(room: Room): boolean {
-        return room.controller.level >= 7 && 
-               this.hasStorageEnergy(room, 50000) && 
+        return room.controller.level >= 7 &&
+               this.hasStorageEnergy(room, 50000) &&
                !room.memory.danger;
     }
-    
+
     static canSpawnMediumCost(room: Room): boolean {
-        return room.controller.level >= 5 && 
-               this.hasStorageEnergy(room, 15000) && 
+        return room.controller.level >= 5 &&
+               this.hasStorageEnergy(room, 15000) &&
                !room.memory.danger;
     }
-    
+
     static isUnderAttack(room: Room): boolean {
         return room.memory.danger && room.memory.danger_timer > 30;
     }
-    
+
     static needsEmergencyResponse(room: Room): boolean {
         return room.energyAvailable < room.energyCapacityAvailable * 0.3 &&
                this.isUnderAttack(room);
     }
-    
+
     static canUpgradeController(room: Room): boolean {
-        return !room.memory.danger && 
-               (room.controller.ticksToDowngrade < 15000 || 
+        return !room.memory.danger &&
+               (room.controller.ticksToDowngrade < 15000 ||
                 this.hasStorageEnergy(room, 10000));
     }
-    
+
     static hasConstructionSites(room: Room): boolean {
         return room.find(FIND_MY_CONSTRUCTION_SITES).length > 0;
     }
-    
+
     static hasEnergyForBuilding(room: Room): boolean {
         return this.hasStorageEnergy(room, 15000) || room.energyAvailable >= 1000;
     }
-    
+
     static canSpawnMilitary(room: Room): boolean {
-        return room.controller.level >= 4 && 
-               this.hasStorageEnergy(room, 10000) && 
+        return room.controller.level >= 4 &&
+               this.hasStorageEnergy(room, 10000) &&
                this.isUnderAttack(room);
     }
-    
+
     static hasMineralResources(room: Room): boolean {
         const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
         return storage ? (storage as any).store.getUsedCapacity() < 975000 : false;
     }
-    
+
     static isSafeModeAvailable(room: Room): boolean {
         return room.controller.safeModeAvailable > 1 && !room.memory.danger;
+    }
+}
+
+// Energy role generator - encapsulates EnergyMiner, Carrier, EnergyManager generation logic
+class EnergyRoleGenerator {
+    static generateEnergyMiners(resourceData: any, room: Room, activeRemotes: string[]) {
+        const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+
+        _.forEach(resourceData, function(data, targetRoomName) {
+            if (activeRemotes.includes(targetRoomName)) {
+                let index = 0;
+
+                let containerBuilders = [];
+                if (room.controller.level <= 5) {
+                    containerBuilders = _.filter(Game.creeps, (creep) => creep.memory.role == 'containerBuilder' && creep.memory.targetRoom == room.name);
+                }
+
+                _.forEach(data.energy, function(values, sourceId: any) {
+                    if (room.controller.level <= 4 && containerBuilders.length) {
+                        return;
+                    }
+
+                    if (index == 1 && room.controller.progress == 0 && room.controller.level == 1 && (room.memory as any).data.DOB <= 60) {
+                        const newName = 'Sweeper-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                        room.memory.spawn_list.push([CARRY, MOVE], newName, {memory: {role: 'sweeper'}});
+                        console.log('Adding Sweeper to Spawn List: ' + newName);
+                    }
+
+                    if (Game.time - (values.lastSpawn || 0) > CREEP_LIFE_TIME) {
+                        const newName = 'EnergyMiner-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+
+                        if (targetRoomName == room.name) {
+                            let danger = false;
+                            if (values.pathLength && room.memory.danger && values.pathLength >= 13) {
+                                danger = true;
+                                const mySource: any = Game.getObjectById(sourceId);
+                                if (mySource) {
+                                    const HostileCreeps = room.find(FIND_HOSTILE_CREEPS);
+                                    if (HostileCreeps.length > 0) {
+                                        const closestHostileToSource = mySource.pos.findClosestByRange(HostileCreeps);
+                                        if (mySource.pos.getRangeTo(closestHostileToSource) <= 4 && closestHostileToSource.getActiveBodyparts(RANGED_ATTACK) > 0) {
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (room.energyCapacityAvailable >= 750) {
+                                if (room.controller.level >= 6) {
+                                    if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
+                                        room.memory.labs.status.boost = {};
+                                    }
+                                    if (Memory.CPU.reduce && storage && (storage as any).store[RESOURCE_UTRIUM_OXIDE] >= 720 && room.memory.labs && room.memory.labs.outputLab8) {
+                                        room.memory.labs.lab8reserved = true;
+                                        if (room.memory.labs.status.boost) {
+                                            if (room.memory.labs.status.boost.lab8) {
+                                                room.memory.labs.status.boost.lab8.amount = room.memory.labs.status.boost.lab8.amount + 360;
+                                                room.memory.labs.status.boost.lab8.use += 1;
+                                            } else {
+                                                room.memory.labs.status.boost.lab8 = {};
+                                                room.memory.labs.status.boost.lab8.amount = 360;
+                                                room.memory.labs.status.boost.lab8.use = 1;
+                                            }
+                                        }
+                                        let body;
+                                        if (danger) {
+                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE];
+                                        } else {
+                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE];
+                                        }
+                                        room.memory.spawn_list.unshift(body, newName,
+                                            {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name, danger: danger, boostlabs: [room.memory.labs.outputLab8]}});
+                                    } else {
+                                        if (room.memory.labs && room.memory.labs.status && room.memory.labs.status.boost && room.memory.labs.status.boost.lab8) room.memory.labs.status.boost.lab8 = undefined;
+                                        let body;
+                                        if (danger) {
+                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, CARRY, MOVE];
+                                        } else if (room.energyAvailable > 3000 && Game.cpu.bucket < 9000) {
+                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, WORK, WORK, CARRY, MOVE];
+                                        } else {
+                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, WORK, WORK, CARRY, MOVE];
+                                        }
+                                        room.memory.spawn_list.unshift(body, newName,
+                                            {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name, danger: danger}});
+                                    }
+                                } else {
+                                    room.memory.spawn_list.unshift([MOVE, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE], newName,
+                                        {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                }
+                                console.log('Adding Energy Miner to Spawn List: ' + newName);
+                                values.lastSpawn = Game.time;
+                            } else if (room.energyCapacityAvailable >= 550) {
+                                if (room.controller.level >= 5) {
+                                    room.memory.spawn_list.unshift([WORK, WORK, WORK, WORK, CARRY, MOVE], newName,
+                                        {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                } else {
+                                    room.memory.spawn_list.unshift([WORK, WORK, WORK, WORK, WORK, MOVE], newName,
+                                        {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                }
+                                console.log('Adding Energy Miner to Spawn List: ' + newName);
+                                values.lastSpawn = Game.time;
+                            } else if (room.energyCapacityAvailable > 300) {
+                                room.memory.spawn_list.unshift(getBody([WORK, WORK, MOVE], room, 6), newName, {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding Energy Miner to Spawn List: ' + newName);
+                                values.lastSpawn = Game.time + Math.floor(Math.random() * (20 - -20) - 20) + -450;
+                                return;
+                            } else {
+                                let body;
+                                if (room.controller.level >= 5) {
+                                    body = [WORK, WORK, CARRY, MOVE];
+                                } else {
+                                    body = [WORK, WORK, MOVE];
+                                }
+                                room.memory.spawn_list.unshift(body, newName, {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding Energy Miner to Spawn List: ' + newName);
+                                const sourceObj: any = Game.getObjectById(sourceId);
+                                if (sourceObj && sourceObj.pos.getOpenPositions().length > 0) {
+                                    values.lastSpawn = Game.time + Math.floor(Math.random() * (20 - -20) - 20) + -450;
+                                } else {
+                                    values.lastSpawn = Game.time - 20;
+                                }
+                                return;
+                            }
+                        } else {
+                            if (targetRoomName != room.name && room.memory.danger) {
+                                return;
+                            }
+                            if (!Game.rooms[targetRoomName] || Game.rooms[targetRoomName] == undefined || Game.rooms[targetRoomName].memory.roomData && Game.rooms[targetRoomName].memory.roomData.has_hostile_creeps == true) {
+                                room.memory.spawn_list.unshift([WORK, WORK, MOVE], newName,
+                                    {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding Energy Miner to Spawn List: ' + newName);
+                                values.lastSpawn = Game.time - 120;
+                            } else if (room.controller.level >= 5 && storage && (storage as any).store[RESOURCE_ENERGY] > 25000) {
+                                room.memory.spawn_list.unshift([WORK, WORK, MOVE, WORK, WORK, MOVE, WORK, WORK, MOVE, WORK, WORK, MOVE], newName,
+                                    {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding Energy Miner to Spawn List: ' + newName);
+                                values.lastSpawn = Game.time - 20;
+                            } else if (room.energyCapacityAvailable >= 500) {
+                                room.memory.spawn_list.unshift([WORK, WORK, MOVE, WORK, WORK, MOVE], newName,
+                                    {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding Energy Miner to Spawn List: ' + newName);
+                                values.lastSpawn = Game.time - 20;
+                            } else {
+                                room.memory.spawn_list.unshift([WORK, WORK, MOVE], newName,
+                                    {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding Energy Miner to Spawn List: ' + newName);
+                                values.lastSpawn = Game.time - 650;
+                            }
+                        }
+                    }
+
+                    if (Game.time - (values.lastSpawn || 0) > CREEP_LIFE_TIME * 3) {
+                        const newName = 'EnergyMiner-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                        room.memory.spawn_list.unshift([WORK, WORK, MOVE], newName,
+                            {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                        console.log('Adding Energy Miner to Spawn List: ' + newName);
+                        values.lastSpawn = Game.time;
+                    }
+
+                    if (!values.lastSpawn && Game.time < CREEP_LIFE_TIME) {
+                        const newName = 'EnergyMiner-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                        room.memory.spawn_list.unshift([WORK, WORK, MOVE], newName,
+                            {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name}});
+                        console.log('Adding Energy Miner to Spawn List: ' + newName);
+                        values.lastSpawn = Game.time;
+                    }
+                    index++;
+                });
+            }
+        });
+    }
+
+    static generateCarriers(resourceData: any, room: Room, spawn: any, storage: any, activeRemotes: string[]) {
+        _.forEach(resourceData, function(data, targetRoomName) {
+            if (activeRemotes.includes(targetRoomName)) {
+                _.forEach(data.energy, function(values, sourceId) {
+                    if (!Game.rooms[targetRoomName] || room.name != targetRoomName && room.memory.danger || Game.rooms[targetRoomName] && Game.rooms[targetRoomName].memory.roomData && Game.rooms[targetRoomName].memory.roomData.has_hostile_creeps) {
+                        return;
+                    }
+                    if (Game.time - (values.lastSpawnCarrier || 0) > CREEP_LIFE_TIME) {
+                        const newName = 'Carrier-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                        const bodyForCarrier = getCarrierBody(sourceId, values, storage, spawn, room);
+                        room.memory.spawn_list.push(bodyForCarrier, newName,
+                            {memory: {role: 'carry', sourceId, targetRoom: targetRoomName, homeRoom: room.name, pathLength: values.pathLength}});
+                        console.log('Adding Carrier to Spawn List: ' + newName);
+                        if (Game.rooms[targetRoomName] && Game.rooms[targetRoomName].controller != undefined && Game.rooms[targetRoomName].controller.level >= 6 && targetRoomName == room.name) {
+                            values.lastSpawnCarrier = 5000000000;
+                        } else if (bodyForCarrier && bodyForCarrier.length > 0) {
+                            if (bodyForCarrier.length <= 5) {
+                                values.lastSpawnCarrier = Game.time - 750;
+                            } else {
+                                values.lastSpawnCarrier = Game.time;
+                            }
+                        }
+                    }
+
+                    if (Game.time - (values.lastSpawnCarrier || 0) > CREEP_LIFE_TIME * 2) {
+                        const newName = 'Carrier-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                        room.memory.spawn_list.push([MOVE, CARRY, CARRY], newName,
+                            {memory: {role: 'carry', sourceId, targetRoom: targetRoomName, homeRoom: room.name, pathLength: values.pathLength}});
+                        console.log('Adding Carrier to Spawn List: ' + newName);
+                        values.lastSpawnCarrier = Game.time - 700;
+                    }
+
+                    if (!values.lastSpawnCarrier && Game.time < CREEP_LIFE_TIME) {
+                        const newName = 'Carrier-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                        room.memory.spawn_list.push([MOVE, CARRY, CARRY], newName,
+                            {memory: {role: 'carry', sourceId, targetRoom: targetRoomName, homeRoom: room.name, pathLength: values.pathLength}});
+                        console.log('Adding Carrier to Spawn List: ' + newName);
+                        values.lastSpawnCarrier = Game.time - 600;
+                    }
+                    if (room.controller.level <= 5 && room.memory.Structures && room.memory.Structures.container) {
+                        const container: any = Game.getObjectById(room.memory.Structures.container);
+                        if (container && container.store.getFreeCapacity() == 0) {
+                            values.lastSpawnCarrier -= 200;
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    static generateEnergyManagers(room: Room, spawn: any, storage: any, energyManagers: number, spawnrules: any) {
+        const rcl = room.controller.level;
+
+        if (rcl >= 6 && energyManagers < spawnrules[rcl].energy_manager_creep.amount && storage) {
+            const links = room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType === STRUCTURE_LINK});
+            const sourceLinks = links.filter(link => {
+                const sources = room.find(FIND_SOURCES);
+                return sources.some(source => source.pos.getRangeTo(link) < 5);
+            });
+            const targetLinks = links.filter(link => {
+                const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+                return storage && link.pos.getRangeTo(storage as any) < 5;
+            });
+
+            if (sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
+                const name = 'EnergyManager-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+
+                if (rcl === 8 && room.energyAvailable < room.energyCapacityAvailable * 0.5 && room.energyAvailable <= 300) {
+                    room.memory.spawn_list.unshift([CARRY, CARRY, CARRY, CARRY, MOVE, MOVE], name, {memory: {role: 'EnergyManager'}});
+                } else {
+                    room.memory.spawn_list.unshift(spawnrules[rcl].energy_manager_creep.body, name, {memory: {role: 'EnergyManager'}});
+                }
+            }
+        }
+    }
+
+    static generateAll(resourceData: any, room: Room, spawn: any, storage: any, activeRemotes: string[], energyManagers: number, spawnrules: any) {
+        this.generateEnergyMiners(resourceData, room, activeRemotes);
+        this.generateCarriers(resourceData, room, spawn, storage, activeRemotes);
+        this.generateEnergyManagers(room, spawn, storage, energyManagers, spawnrules);
+    }
+}
+
+// Construction role generator - encapsulates Builder, Repairer, Maintainer, RampartErector generation logic
+class ConstructionRoleGenerator {
+    static generateBuilders(room: Room, builders: number, EnergyMinersInRoom: number, sites: any[], storage: any, spawnrules: any) {
+        const rcl = room.controller.level;
+        const rule = spawnrules[rcl];
+
+        if (!rule || !rule.build_creep) return;
+
+        let shouldSpawn = false;
+
+        switch (rcl) {
+            case 1:
+                shouldSpawn = builders < rule.build_creep.amount && sites.length > 0 && EnergyMinersInRoom > 1;
+                break;
+            case 2:
+                shouldSpawn = builders < rule.build_creep.amount && sites.length > 0 && EnergyMinersInRoom > 1;
+                break;
+            case 3:
+                shouldSpawn = builders < rule.build_creep.amount && sites.length > 0 && EnergyMinersInRoom > 1;
+                break;
+            case 4:
+                shouldSpawn = builders < rule.build_creep.amount && sites.length > 0 && EnergyMinersInRoom > 0 &&
+                              (!storage || storage && storage.store[RESOURCE_ENERGY] > 15000);
+                break;
+            case 5:
+                shouldSpawn = builders < rule.build_creep.amount && sites.length > 0 && EnergyMinersInRoom > 0 &&
+                              (storage && storage.store[RESOURCE_ENERGY] > 15000 || !storage);
+                break;
+            case 6:
+                shouldSpawn = builders < rule.build_creep.amount && sites.length > 0 && EnergyMinersInRoom > 1 &&
+                              (storage && storage.store[RESOURCE_ENERGY] > 120000 || !storage);
+                break;
+            case 7:
+                shouldSpawn = builders < rule.build_creep.amount && !room.memory.danger && room.memory.danger_timer == 0 &&
+                              sites.length > 0 && EnergyMinersInRoom > 1 &&
+                              (storage && storage.store[RESOURCE_ENERGY] > 100000 || !storage);
+                break;
+            case 8:
+                shouldSpawn = builders < rule.build_creep.amount && sites.length > 0 &&
+                              (EnergyMinersInRoom > 1 || room.memory.danger) &&
+                              (storage && storage.store[RESOURCE_ENERGY] > 50000 || !storage);
+                break;
+        }
+
+        if (shouldSpawn) {
+            let allowSpawn = true;
+            let spawnSmall = false;
+
+            // Handle rampart construction logic for RCL 6-8
+            if (rcl >= 6) {
+                for (const site of sites) {
+                    if (site.structureType == STRUCTURE_RAMPART) {
+                        allowSpawn = false;
+                        spawnSmall = true;
+                    } else {
+                        allowSpawn = true;
+                        spawnSmall = false;
+                        break;
+                    }
+                }
+            }
+
+            const name = 'Builder-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+
+            if (allowSpawn) {
+                room.memory.spawn_list.push(rule.build_creep.body, name, {memory: {role: 'builder'}});
+                console.log('Adding Builder to Spawn List: ' + name);
+            } else if (!allowSpawn && spawnSmall && builders < 1) {
+                room.memory.spawn_list.push([WORK, CARRY, MOVE], name, {memory: {role: 'builder'}});
+                console.log('Adding Builder to Spawn List: ' + name);
+            }
+        }
+    }
+
+    static generateRepairers(room: Room, repairers: number, carriers: number, EnergyMinersInRoom: number, storage: any, spawnrules: any, rampartsInRoom: any[]) {
+        const rcl = room.controller.level;
+        const rule = spawnrules[rcl];
+
+        if (!rule || !rule.repair_creep) return;
+
+        let shouldSpawn = false;
+
+        switch (rcl) {
+            case 2:
+                shouldSpawn = repairers < rule.repair_creep.amount && carriers > 1 && EnergyMinersInRoom > 1 &&
+                              !room.memory.danger && room.controller.progress > 4500;
+                break;
+            case 3:
+                shouldSpawn = repairers < rule.repair_creep.amount && carriers > 1 && EnergyMinersInRoom > 1 &&
+                              !room.memory.danger;
+                break;
+            case 4:
+                shouldSpawn = !!((repairers < rule.repair_creep.amount + 6 && room.energyAvailable > room.energyCapacityAvailable / 1.3 ||
+                              room.memory.danger && repairers < rule.repair_creep.amount + 10) && storage &&
+                              ((storage as any).store[RESOURCE_ENERGY] > 50000 && repairers < rule.repair_creep.amount + 1 ||
+                              Game.time % 2000 < 400 && (storage as any).store[RESOURCE_ENERGY] > 20000 && repairers < rule.repair_creep.amount ||
+                              ((storage as any).store[RESOURCE_ENERGY] > 15000 || room.memory.danger && (storage as any).store[RESOURCE_ENERGY] > 5000) &&
+                              (rampartsInRoom.filter(function(s) {return s.hits < 60000}).length || room.memory.danger_timer > 50)));
+                break;
+            case 5:
+                shouldSpawn = !!(repairers < rule.repair_creep.amount + 2 && storage &&
+                              ((storage as any).store[RESOURCE_ENERGY] > 50000 && repairers < rule.repair_creep.amount + 1 ||
+                              Game.time % 2000 < 400 && (storage as any).store[RESOURCE_ENERGY] > 50000 && repairers < rule.repair_creep.amount ||
+                              (storage as any).store[RESOURCE_ENERGY] > 10000 &&
+                              (rampartsInRoom.filter(function(s) {return s.hits < 75000}).length || room.memory.danger_timer > 50)));
+                break;
+            case 6:
+                const rampartsInRoomBelow3Mil = rampartsInRoom?.filter(function(s) {return s.hits < 3050000;});
+                shouldSpawn = repairers < rule.repair_creep.amount && storage &&
+                              ((storage as any).store[RESOURCE_ENERGY] > 150000 && rampartsInRoomBelow3Mil.length > 0 ||
+                              Game.time % 3000 < 100 && (storage as any).store[RESOURCE_ENERGY] > 50000 ||
+                              room.memory.danger && (storage as any).store[RESOURCE_ENERGY] > 50000);
+                break;
+            case 7:
+                const rampartsInRoomBelow5Mil = rampartsInRoom?.filter(function(s) {return s.hits < 4050000;});
+                shouldSpawn = repairers < rule.repair_creep.amount && storage &&
+                              ((storage as any).store[RESOURCE_ENERGY] > 500000 ||
+                              Game.time % 3000 < 100 && (storage as any).store[RESOURCE_ENERGY] > 50000 ||
+                              room.memory.danger && (storage as any).store[RESOURCE_ENERGY] > 50000) &&
+                              rampartsInRoomBelow5Mil.length > 0;
+                break;
+            case 8:
+                shouldSpawn = repairers < rule.repair_creep.amount + 2 && storage &&
+                              ((storage as any).store[RESOURCE_ENERGY] > 500000 ||
+                              Game.time % 3000 < 100 && (storage as any).store[RESOURCE_ENERGY] > 50000 ||
+                              room.memory.danger && (storage as any).store[RESOURCE_ENERGY] > 50000);
+                break;
+        }
+
+        if (shouldSpawn) {
+            const name = 'Repair-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            room.memory.spawn_list.push(rule.repair_creep.body, name, {memory: {role: 'repair', homeRoom: room.name}});
+            console.log('Adding Repair to Spawn List: ' + name);
+        }
+    }
+
+    static generateMaintainers(room: Room, maintainers: number, spawnMaintainer: boolean, storage: any, spawnrules: any) {
+        const rcl = room.controller.level;
+        const rule = spawnrules[rcl];
+
+        if (!rule || !rule.maintain_creep) return;
+
+        // Check for energy source
+        let hasEnergySource = false;
+        const storageObj = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+        if (storageObj) {
+            hasEnergySource = true;
+        } else {
+            const containers = room.find(FIND_STRUCTURES, {
+                filter: s => s.structureType === STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > 200
+            });
+            if (containers.length > 0) {
+                hasEnergySource = true;
+            }
+        }
+
+        let shouldSpawn = false;
+        let dangerCheck = rcl >= 4 ? !room.memory.danger : !room.memory.danger;
+
+        switch (rcl) {
+            case 3:
+                shouldSpawn = maintainers < rule.maintain_creep.amount && dangerCheck && hasEnergySource &&
+                              (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer);
+                break;
+            case 4:
+                shouldSpawn = maintainers < rule.maintain_creep.amount && dangerCheck && hasEnergySource &&
+                              (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer);
+                break;
+            case 5:
+                shouldSpawn = maintainers < rule.maintain_creep.amount && hasEnergySource &&
+                              (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer);
+                break;
+            case 6:
+                shouldSpawn = maintainers < rule.maintain_creep.amount && hasEnergySource &&
+                              (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer);
+                break;
+            case 7:
+                shouldSpawn = maintainers < rule.maintain_creep.amount && hasEnergySource &&
+                              (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer);
+                break;
+        }
+
+        if (shouldSpawn) {
+            if (spawnMaintainer) {
+                const name = 'Maintainer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(rule.maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});
+                console.log('Adding Maintainer to Spawn List: ' + name);
+            } else if (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0) {
+                for (const roadID of room.memory.keepTheseRoads) {
+                    const road: any = Game.getObjectById(roadID);
+                    if (road && road.hits <= 2000) {
+                        let canSpawn = true;
+                        if (rcl >= 4 && room.memory.danger) {
+                            canSpawn = storage && storage.pos.roomName == road.pos.roomName && storage.pos.getRangeTo(road) <= 10;
+                        }
+                        if (canSpawn) {
+                            const name = 'Maintainer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                            room.memory.spawn_list.push(rule.maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});
+                            console.log('Adding Maintainer to Spawn List: ' + name);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    static generateAll(room: Room, builders: number, repairers: number, maintainers: number, EnergyMinersInRoom: number, carriers: number, sites: any[], storage: any, spawnMaintainer: boolean, spawnrules: any, rampartsInRoom: any[]) {
+        this.generateBuilders(room, builders, EnergyMinersInRoom, sites, storage, spawnrules);
+        this.generateRepairers(room, repairers, carriers, EnergyMinersInRoom, storage, spawnrules, rampartsInRoom);
+        this.generateMaintainers(room, maintainers, spawnMaintainer, storage, spawnrules);
+    }
+}
+
+// Military role generator - encapsulates Defender, Attacker, RangedAttacker, RampartDefender generation logic
+class MilitaryRoleGenerator {
+    static generateEmergencyAttackers(room: Room, attackers: number) {
+        if (room.controller.level < 3 && room.controller.safeMode && attackers < 1) {
+            const enemyCreepsInRoom = room.find(FIND_HOSTILE_CREEPS);
+            if (enemyCreepsInRoom.length > 0) {
+                const name = 'DirtClearer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.unshift([ATTACK, MOVE], name, {memory: {role: 'attacker', targetRoom: room.name, homeRoom: room.name}});
+                console.log('Adding DirtClearer to Spawn List: ' + name);
+            }
+        }
+    }
+
+    static generateRampartDefenders(room: Room, RampartDefenders: number, storage: any) {
+        const HostileCreeps = room.find(FIND_HOSTILE_CREEPS);
+
+        if (HostileCreeps.length === 0) return;
+
+        let inRangeFourteen = false;
+        let addtolist = true;
+
+        for (const hostile of HostileCreeps) {
+            const distance = hostile.pos.getRangeTo(room.controller.pos);
+            if (distance <= 14) {
+                inRangeFourteen = true;
+                break;
+            }
+        }
+
+        if (inRangeFourteen && RampartDefenders < 1) {
+            let found = false;
+            for (const enemyCreep of HostileCreeps) {
+                for (const part of enemyCreep.body) {
+                    if (part.type == ATTACK || part.type == WORK) {
+                        found = true;
+                    }
+                }
+            }
+            if (found == false && RampartDefenders == 1) {
+                addtolist = false;
+            }
+            if (addtolist) {
+                const newName = 'RampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+
+                if (room.controller.level >= 7) {
+                    let body;
+                    if (found == false) {
+                        if (room.controller.level === 7) {
+                            body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+                        } else {
+                            body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+                        }
+                    }
+                    if (found == true) {
+                        if (room.controller.level === 7) {
+                            body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+                        } else {
+                            body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+                        }
+                    }
+
+                    // Boost logic
+                    if (storage && storage.store[RESOURCE_CATALYZED_UTRIUM_ACID] >= 990 && room.controller.level >= 7 && room.memory.labs && room.memory.labs.outputLab3 && (HostileCreeps.length > 1 || HostileCreeps.length == 1 && room.controller.level == 7 && HostileCreeps[0].getActiveBodyparts(HEAL) >= 16)) {
+                        if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
+                            room.memory.labs.status.boost = {};
+                        }
+                        if (room.memory.labs.status.boost) {
+                            if (room.memory.labs.status.boost.lab3) {
+                                room.memory.labs.status.boost.lab3.amount += HostileCreeps.length > 2 ? 990 : 630;
+                                room.memory.labs.status.boost.lab3.use += 1;
+                            } else {
+                                room.memory.labs.status.boost.lab3 = {};
+                                room.memory.labs.status.boost.lab3.amount = HostileCreeps.length > 2 ? 990 : 630;
+                                room.memory.labs.status.boost.lab3.use = 1;
+                            }
+                        }
+                        room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3]}});
+                    } else {
+                        room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name}});
+                    }
+                } else {
+                    const body = getBody([ATTACK, ATTACK, ATTACK, ATTACK, MOVE], room, 50);
+                    room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name}});
+                }
+                console.log('Adding RampartDefender to Spawn List: ' + newName);
+            }
+        }
+    }
+
+    static generateRangedRampartDefenders(room: Room, RangedRampartDefenders: number, storage: any) {
+        const HostileCreeps = room.find(FIND_HOSTILE_CREEPS);
+
+        if (HostileCreeps.length > 4 && storage && storage.store[RESOURCE_CATALYZED_KEANIUM_ALKALIDE] >= 45000) {
+            const required = room.controller.level == 7 ? 3 : 2;
+            if (RangedRampartDefenders < required) {
+                const newName = 'RangedRampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                const body = [RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+
+                if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
+                    room.memory.labs.status.boost = {};
+                }
+                if (room.memory.labs.status.boost) {
+                    if (room.memory.labs.status.boost.lab4) {
+                        room.memory.labs.status.boost.lab4.amount += 45000;
+                        room.memory.labs.status.boost.lab4.use += 1;
+                    } else {
+                        room.memory.labs.status.boost.lab4 = {};
+                        room.memory.labs.status.boost.lab4.amount = 45000;
+                        room.memory.labs.status.boost.lab4.use = 1;
+                    }
+                }
+
+                room.memory.spawn_list.push(body, newName, {memory: {role: 'RRD', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab4]}});
+                console.log('Adding RangedRampartDefender to Spawn List: ' + newName);
+            }
+        }
+    }
+
+    static generateAll(room: Room, attackers: number, RampartDefenders: number, RangedRampartDefenders: number, storage: any) {
+        this.generateEmergencyAttackers(room, attackers);
+        this.generateRampartDefenders(room, RampartDefenders, storage);
+        this.generateRangedRampartDefenders(room, RangedRampartDefenders, storage);
+    }
+}
+
+// Special role generator - encapsulates Scout, Claimer, MineralMiner, Reserver, RemoteRepairer generation logic
+class SpecialRoleGenerator {
+    static generateMineralMiners(room: Room, MineralMiners: number, storage: any) {
+        if (MineralMiners < 1 && room.controller.level >= 6 && room.memory.Structures && room.memory.Structures.extractor && Game.getObjectById(room.memory.Structures.extractor) && !room.memory.danger && room.memory.danger_timer == 0 && storage && (storage as any).store[RESOURCE_ENERGY] > 50000 && storage.store.getUsedCapacity() < 975000) {
+            const mineral = Game.getObjectById((room.memory as any).mineral) || room.findMineral();
+            if (mineral && (mineral as any).mineralAmount > 0 && (storage as any).store[(mineral as any).mineralType] < 100000) {
+                const newName = 'MineralMiner-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(getBody([WORK, WORK, CARRY, CARRY, MOVE], room, 50), newName, {memory: {role: 'MineralMiner'}});
+                console.log('Adding MineralMiner to Spawn List: ' + newName);
+            }
+        }
+    }
+
+    static generateScouts(room: Room, scouts: number, EnergyMinersInRoom: number, resourceData: any, activeRemotes: string[]) {
+        const roomsToRemote = Object.keys(resourceData);
+        for (const remoteRoom of roomsToRemote) {
+            if (activeRemotes.includes(remoteRoom) && remoteRoom !== room.name) {
+                if (scouts < 1 && EnergyMinersInRoom > 1) {
+                    const newName = 'Scout-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.push([MOVE], newName, {memory: {role: 'scout', homeRoom: room.name, targetRoom: remoteRoom}});
+                    console.log('Adding Scout to Spawn List: ' + newName);
+                    break;
+                }
+            }
+        }
+    }
+
+    static generateClaimers(room: Room, claimers: number, storage: any) {
+        const target_colonise = (room.memory as any).target_colonise;
+        if (target_colonise && Memory.CanClaimRemote >= 1 && claimers < 1 && room.controller.level >= 3 && Game.time % 800 <= 100 && storage && (storage as any).store[RESOURCE_ENERGY] > 10000) {
+            const distance_to_target_room = Game.map.getRoomLinearDistance(room.name, target_colonise);
+            if (distance_to_target_room <= 7 && ((Game.rooms[target_colonise] && !Game.rooms[target_colonise].controller.my) || Game.rooms[target_colonise] == undefined)) {
+                const newName = 'Claimer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push([MOVE, CLAIM], newName, {memory: {role: 'claimer', targetRoom: target_colonise, homeRoom: room.name}});
+                console.log('Adding Claimer to Spawn List: ' + newName);
+                Memory.CanClaimRemote -= 1;
+            }
+        }
+    }
+
+    static generateReservers(resourceData: any, room: Room, storage: any, activeRemotes: string[], reservers: number) {
+        if (reservers > 0) return;
+
+        _.forEach(resourceData, function(data, targetRoomName) {
+            if (activeRemotes.includes(targetRoomName)) {
+                _.forEach(data.energy, function(values, sourceId) {
+                    const newName = 'Reserver-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+
+                    if (Memory.CanClaimRemote >= 3 && Game.rooms[targetRoomName] && Game.rooms[targetRoomName].controller && !Game.rooms[targetRoomName].controller.my && (Game.rooms[targetRoomName].controller.reservation && Game.rooms[targetRoomName].controller.reservation.ticksToEnd <= 750 || !Game.rooms[targetRoomName].controller.reservation)) {
+                        if (room.memory.danger) return;
+                        room.memory.spawn_list.push([CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name, claim: true}});
+                        console.log('Adding Reserver to Spawn List: ' + newName);
+                        values.lastSpawnReserver = Game.time;
+                        Memory.CanClaimRemote -= 1;
+                        return;
+                    }
+
+                    if (targetRoomName != room.name && Game.rooms[targetRoomName] != undefined && Game.rooms[targetRoomName].memory.roomData && !Game.rooms[targetRoomName].memory.roomData.has_hostile_creeps && !Game.rooms[targetRoomName].controller.my) {
+                        if (Game.rooms[targetRoomName] != undefined && Game.rooms[targetRoomName].controller.reservation && Game.rooms[targetRoomName].controller.reservation.ticksToEnd <= 1000 && Game.time - (values.lastSpawnReserver || 0) > CREEP_LIFE_TIME / 2 || Game.rooms[targetRoomName] != undefined && !Game.rooms[targetRoomName].controller.reservation && Game.time - (values.lastSpawnReserver || 0) > CREEP_LIFE_TIME / 4) {
+                            if (room.memory.danger || (storage && storage.store[RESOURCE_ENERGY] < 25000)) return;
+
+                            if (room.controller.level == 5) {
+                                room.memory.spawn_list.push([CLAIM, MOVE, CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name}});
+                            } else if (room.controller.level == 6) {
+                                room.memory.spawn_list.push([CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name}});
+                            } else if (room.controller.level == 7) {
+                                room.memory.spawn_list.push([CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name}});
+                            } else if (room.controller.level == 8) {
+                                room.memory.spawn_list.push([CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name}});
+                            }
+                            console.log('Adding Reserver to Spawn List: ' + newName);
+                            values.lastSpawnReserver = Game.time;
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    static generateRemoteRepairers(resourceData: any, room: Room, activeRemotes: string[]) {
+        _.forEach(resourceData, function(data, targetRoomName) {
+            if (activeRemotes.includes(targetRoomName)) {
+                _.forEach(data.energy, function(values, sourceId) {
+                    if (Game.time - (values.lastSpawnRemoteRepairer || 0) > CREEP_LIFE_TIME * 1.5) {
+                        const newName = 'RemoteRepairer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                        if (targetRoomName != room.name && Game.rooms[targetRoomName] && Game.rooms[targetRoomName].memory.roomData && !Game.rooms[targetRoomName].memory.roomData.has_hostile_creeps) {
+                            if (room.memory.danger) return;
+
+                            if (room.controller.level >= 6) {
+                                room.memory.spawn_list.push(getBody([WORK, CARRY, MOVE], room, 23), newName, {memory: {role: 'RemoteRepair', targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding RemoteRepairer to Spawn List: ' + newName);
+                                if (Game.rooms[targetRoomName].find(FIND_MY_CONSTRUCTION_SITES).length > 0) {
+                                    values.lastSpawnRemoteRepairer = Game.time - 100;
+                                } else {
+                                    values.lastSpawnRemoteRepairer = Game.time + 50;
+                                }
+                            } else if (room.energyCapacityAvailable >= 600) {
+                                room.memory.spawn_list.push([WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE], newName, {memory: {role: 'RemoteRepair', targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding RemoteRepairer to Spawn List: ' + newName);
+                                if (Game.rooms[targetRoomName].find(FIND_MY_CONSTRUCTION_SITES).length > 0) {
+                                    values.lastSpawnRemoteRepairer = Game.time - 300;
+                                } else {
+                                    values.lastSpawnRemoteRepairer = Game.time + 200;
+                                }
+                            } else if (room.energyCapacityAvailable >= 400) {
+                                room.memory.spawn_list.push([WORK, CARRY, MOVE, WORK, CARRY, MOVE], newName, {memory: {role: 'RemoteRepair', targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding RemoteRepairer to Spawn List: ' + newName);
+                                if (Game.rooms[targetRoomName].find(FIND_MY_CONSTRUCTION_SITES).length > 0) {
+                                    values.lastSpawnRemoteRepairer = Game.time - 400;
+                                } else {
+                                    values.lastSpawnRemoteRepairer = Game.time + 100;
+                                }
+                            } else {
+                                room.memory.spawn_list.push([WORK, CARRY, MOVE], newName, {memory: {role: 'RemoteRepair', targetRoom: targetRoomName, homeRoom: room.name}});
+                                console.log('Adding RemoteRepairer to Spawn List: ' + newName);
+                                values.lastSpawnRemoteRepairer = Game.time - 600;
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    static generateAll(resourceData: any, room: Room, MineralMiners: number, scouts: number, EnergyMinersInRoom: number, claimers: number, reservers: number, storage: any, activeRemotes: string[]) {
+        this.generateMineralMiners(room, MineralMiners, storage);
+        this.generateScouts(room, scouts, EnergyMinersInRoom, resourceData, activeRemotes);
+        this.generateClaimers(room, claimers, storage);
+        this.generateReservers(resourceData, room, storage, activeRemotes, reservers);
+        this.generateRemoteRepairers(resourceData, room, activeRemotes);
     }
 }
 
