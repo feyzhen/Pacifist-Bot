@@ -169,7 +169,7 @@ function add_creeps_to_spawn_list_refactored(room: Room, spawn: StructureSpawn) 
 
     // 6. 使用新的生成器类生成角色
     // 能量相关角色
-    EnergyRoleGenerator.generateAll(resourceData, room, spawn, storage, activeRemotes, EnergyManagers, spawnrules, roomState);
+    EnergyRoleGenerator.generateAll(resourceData, room, spawn, storage, activeRemotes, EnergyManagers, upgraders, fillers, EnergyMinersInRoom, sites.length, spawnrules, rampartsInRoom, roomState);
 
     // 建造相关角色
     ConstructionRoleGenerator.generateAll(room, builders, repairers, maintainers, EnergyMinersInRoom, carriers, sites, storage, spawnMaintainer, spawnrules, rampartsInRoom, roomState);
@@ -190,108 +190,6 @@ function add_creeps_to_spawn_list_refactored(room: Room, spawn: StructureSpawn) 
     // 远程防御角色
     RemoteDefenseGenerator.generateAll(room, SneakyControllerUpgraders, containerbuilders, RangedAttackers, DrainTowers, RemoteDismantlers, Dismantlers, annoyers, storage, resourceData, activeRemotes, attackers);
 
-    // 7. 保留原有的upgrader和filler逻辑（这些角色尚未在生成器中实现）
-    const constructionSitesAmount = sites.length;
-
-    switch (room.controller.level) {
-        case 1:
-            if (EnergyMiners < 1) break;
-            if (upgraders < spawnrules[1].upgrade_creep.amount && !room.memory.danger) {
-                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(spawnrules[1].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
-                console.log('Adding Upgrader to Spawn List: ' + name);
-            }
-            if ((fillers < spawnrules[1].filler_creep.amount || fillers < spawnrules[1].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[1].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
-                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[1].filler_creep.body, name, {memory: {role: 'filler'}});
-                console.log('Adding filler to Spawn List: ' + name);
-            }
-            break;
-        case 2:
-            if (upgraders < spawnrules[2].upgrade_creep.amount && !room.memory.danger && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
-                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(spawnrules[2].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
-                console.log('Adding Upgrader to Spawn List: ' + name);
-            }
-            if ((fillers < spawnrules[2].filler_creep.amount || fillers < spawnrules[2].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[2].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
-                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[2].filler_creep.body, name, {memory: {role: 'filler'}});
-                console.log('Adding filler to Spawn List: ' + name);
-            }
-            break;
-        case 3:
-            if (upgraders < spawnrules[3].upgrade_creep.amount && !room.memory.danger && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
-                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(spawnrules[3].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
-                console.log('Adding Upgrader to Spawn List: ' + name);
-            }
-            if ((fillers < spawnrules[3].filler_creep.amount || fillers < spawnrules[3].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[3].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
-                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[3].filler_creep.body, name, {memory: {role: 'filler'}});
-                console.log('Adding filler to Spawn List: ' + name);
-            }
-            break;
-        case 4:
-            if (upgraders < spawnrules[4].upgrade_creep.amount && (!storage || (storage as any).store[RESOURCE_ENERGY] > 100000 || (storage as any).store[RESOURCE_ENERGY] > 20000 && !rampartsInRoom.filter(function(s) {return s.hits < 900000}).length || upgraders < 1 && room.controller.ticksToDowngrade < 21000) && !room.memory.danger && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 21000)) {
-                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(spawnrules[4].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
-                console.log('Adding Upgrader to Spawn List: ' + name);
-            }
-            if ((fillers < spawnrules[4].filler_creep.amount || fillers < spawnrules[4].filler_creep.amount + 1 && (activeRemotes.length > 1 || room.memory.danger && room.energyAvailable < room.energyCapacityAvailable/1.5) || fillers < spawnrules[4].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
-                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[4].filler_creep.body, name, {memory: {role: 'filler'}});
-                console.log('Adding filler to Spawn List: ' + name);
-            }
-            break;
-        case 5:
-            if (upgraders < spawnrules[5].upgrade_creep.amount && !room.memory.danger && RoomConditions.canUpgradeController(room) && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
-                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(spawnrules[5].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
-                console.log('Adding Upgrader to Spawn List: ' + name);
-            }
-            if ((fillers < spawnrules[5].filler_creep.amount || fillers < spawnrules[5].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[5].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
-                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[5].filler_creep.body, name, {memory: {role: 'filler'}});
-                console.log('Adding filler to Spawn List: ' + name);
-            }
-            break;
-        case 6:
-            if (upgraders < spawnrules[6].upgrade_creep.amount && !room.memory.danger && RoomConditions.canUpgradeController(room) && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
-                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(spawnrules[6].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
-                console.log('Adding Upgrader to Spawn List: ' + name);
-            }
-            if ((fillers < spawnrules[6].filler_creep.amount || fillers < spawnrules[6].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[6].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
-                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[6].filler_creep.body, name, {memory: {role: 'filler'}});
-                console.log('Adding filler to Spawn List: ' + name);
-            }
-            break;
-        case 7:
-            if (upgraders < spawnrules[7].upgrade_creep.amount && !room.memory.danger && RoomConditions.canUpgradeController(room) && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
-                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(spawnrules[7].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
-                console.log('Adding Upgrader to Spawn List: ' + name);
-            }
-            if ((fillers < spawnrules[7].filler_creep.amount || fillers < spawnrules[7].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[7].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
-                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[7].filler_creep.body, name, {memory: {role: 'filler'}});
-                console.log('Adding filler to Spawn List: ' + name);
-            }
-            break;
-        case 8:
-            if (upgraders < spawnrules[8].upgrade_creep.amount && !room.memory.danger && RoomConditions.canUpgradeController(room) && (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500)) {
-                const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(spawnrules[8].upgrade_creep.body, name, {memory: {role: 'upgrader'}});
-                console.log('Adding Upgrader to Spawn List: ' + name);
-            }
-            if ((fillers < spawnrules[8].filler_creep.amount || fillers < spawnrules[8].filler_creep.amount + 1 && activeRemotes.length > 1 || fillers < spawnrules[8].filler_creep.amount + 2 && activeRemotes.length > 2) && storage) {
-                const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.unshift(spawnrules[8].filler_creep.body, name, {memory: {role: 'filler'}});
-                console.log('Adding filler to Spawn List: ' + name);
-            }
-            break;
-    }
 
     // 8. 处理核弹威胁逻辑
     if (room.memory.defence.nuke) {
@@ -1270,10 +1168,90 @@ class EnergyRoleGenerator {
         }
     }
 
-    static generateAll(resourceData: any, room: Room, spawn: any, storage: any, activeRemotes: string[], energyManagers: number, spawnrules: any, roomState: any) {
+    static generateUpgraders(room: Room, upgraders: number, energyMinersInRoom: number, constructionSitesAmount: number, spawnrules: any, rampartsInRoom: any[]) {
+        const rcl = room.controller.level;
+        const rule = spawnrules[rcl];
+        const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+
+        if (!rule || !rule.upgrade_creep) return;
+
+        let shouldSpawn = false;
+        let spawnCondition = true;
+
+        switch (rcl) {
+            case 1:
+                if (energyMinersInRoom < 1) return;
+                shouldSpawn = upgraders < rule.upgrade_creep.amount && !room.memory.danger;
+                break;
+            case 2:
+            case 3:
+                shouldSpawn = upgraders < rule.upgrade_creep.amount && !room.memory.danger &&
+                              (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500);
+                break;
+            case 4:
+                shouldSpawn = upgraders < rule.upgrade_creep.amount &&
+                              (!storage || (storage as any).store[RESOURCE_ENERGY] > 100000 ||
+                               (storage as any).store[RESOURCE_ENERGY] > 20000 && !rampartsInRoom.filter(function(s) {return s.hits < 900000}).length ||
+                               upgraders < 1 && room.controller.ticksToDowngrade < 21000) &&
+                              !room.memory.danger &&
+                              (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 21000);
+                break;
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+                shouldSpawn = upgraders < rule.upgrade_creep.amount && !room.memory.danger &&
+                              RoomConditions.canUpgradeController(room) &&
+                              (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500);
+                break;
+        }
+
+        if (shouldSpawn) {
+            const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            room.memory.spawn_list.push(rule.upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+            console.log('Adding Upgrader to Spawn List: ' + name);
+        }
+    }
+
+    static generateFillers(room: Room, fillers: number, activeRemotes: string[], storage: any, spawnrules: any) {
+        const rcl = room.controller.level;
+        const rule = spawnrules[rcl];
+
+        if (!rule || !rule.filler_creep || !storage) return;
+
+        let shouldSpawn = false;
+        let requiredAmount = rule.filler_creep.amount;
+
+        // 根据远程房间数量调整所需filler数量
+        if (activeRemotes.length > 1) {
+            requiredAmount += 1;
+        }
+        if (activeRemotes.length > 2) {
+            requiredAmount += 1;
+        }
+
+        // RCL 4 特殊条件：危险状态下需要更多filler
+        if (rcl === 4) {
+            shouldSpawn = (fillers < rule.filler_creep.amount ||
+                          fillers < rule.filler_creep.amount + 1 && (activeRemotes.length > 1 || room.memory.danger && room.energyAvailable < room.energyCapacityAvailable/1.5) ||
+                          fillers < rule.filler_creep.amount + 2 && activeRemotes.length > 2) && storage;
+        } else {
+            shouldSpawn = fillers < requiredAmount && storage;
+        }
+
+        if (shouldSpawn) {
+            const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            room.memory.spawn_list.unshift(rule.filler_creep.body, name, {memory: {role: 'filler'}});
+            console.log('Adding filler to Spawn List: ' + name);
+        }
+    }
+
+    static generateAll(resourceData: any, room: Room, spawn: any, storage: any, activeRemotes: string[], energyManagers: number, upgraders: number, fillers: number, energyMinersInRoom: number, constructionSitesAmount: number, spawnrules: any, rampartsInRoom: any[], roomState: any) {
         this.generateEnergyMiners(resourceData, room, activeRemotes, roomState);
         this.generateCarriers(resourceData, room, spawn, storage, activeRemotes);
         this.generateEnergyManagers(room, spawn, storage, energyManagers, spawnrules, roomState);
+        this.generateUpgraders(room, upgraders, energyMinersInRoom, constructionSitesAmount, spawnrules, rampartsInRoom);
+        this.generateFillers(room, fillers, activeRemotes, storage, spawnrules);
     }
 }
 
