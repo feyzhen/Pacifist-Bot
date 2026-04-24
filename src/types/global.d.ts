@@ -68,6 +68,12 @@ declare global {
     linkStats?: { [linkId: string]: { lastTransfer: number; totalTransferred: number } };
     keepTheseRoads?: string[];
     roadConstructionSites?: string[];
+    data?: {
+      DOB: number;
+      c_spawned: number;
+      [key: string]: any;
+    };
+    rampartsCompleted?: boolean;
   }
 
   interface CreepMemory {
