@@ -337,7 +337,8 @@ function rooms() {
   // }
 
   if (Game.time % 500 == 1) {
-    if (Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit - 10 && Game.cpu.bucket > 9000) {
+    // if (Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit - 10 && Game.cpu.bucket > 9000) {
+    if (Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit - 10) {
       const room = Game.rooms[myRooms[Math.floor(Math.random() * myRooms.length)]];
 
       if (room.controller.level >= 2) {
