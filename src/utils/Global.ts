@@ -17,10 +17,8 @@ declare global {
       allies: string[];
       pixelManager: {
         enabled?: boolean;
-        bucketThreshold?: number;
-        sellPixels?: boolean;
-        sellPrice?: number;
-        sellMinAmount?: number;
+        keepAmount?: number;
+        tradingEnabled?: boolean;
       };
       AvoidRooms: any;
       AvoidRoomsTemp: { [key: string]: number };
@@ -167,10 +165,9 @@ declare global {
           pixelManager: {
             enable: () => string;
             disable: () => string;
-            enableSell: () => string;
-            disableSell: () => string;
-            setSellPrice: (price: number) => string;
-            setBucketThreshold: (threshold: number) => string;
+            enableTrading: () => string;
+            disableTrading: () => string;
+            setKeepAmount: (amount: number) => string;
             status: () => string;
           };
         }
