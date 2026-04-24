@@ -223,7 +223,7 @@ function rooms() {
       roomDefence(room);
       // console.log('Room Defence Ran in', Game.cpu.getUsed() - defenceTime, 'ms')
 
-      if (room.controller.level == 8 && (!Memory.CPU.reduce || Game.cpu.bucket >= 8000)) {
+      if (room.controller.level == 8 && (!Memory.CPU.reduce || Game.cpu.bucket >= 8000 || Memory.pixelManager?.enabled)) {
         observe(room);
       }
       data(room);
@@ -251,7 +251,7 @@ function rooms() {
         // console.log('Identify Sources Ran in', Game.cpu.getUsed() - start, 'ms')
       }
 
-      if (Game.time % 3012 == 0 && Game.cpu.bucket > 3500 && !room.memory.danger) {
+      if (Game.time % 3012 == 0 && (Game.cpu.bucket > 3500 || Memory.pixelManager?.enabled) && !room.memory.danger) {
         _.forEach(Game.rooms, function (everyRoom) {
           if (
             everyRoom &&
@@ -265,7 +265,7 @@ function rooms() {
       }
       const bucket = Game.cpu.bucket;
       if (
-        (Game.time % 1000 == 0 && bucket > 3500) ||
+        (Game.time % 1000 == 0 && (bucket > 3500 || Memory.pixelManager?.enabled)) ||
         room.memory.data.DOB == 2 ||
         room.memory.data.DOGug == 2
       ) {
@@ -337,8 +337,7 @@ function rooms() {
   // }
 
   if (Game.time % 500 == 1) {
-    // if (Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit - 10 && Game.cpu.bucket > 9000) {
-    if (Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit - 10) {
+    if (Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit - 10 && (Game.cpu.bucket > 9000 || Memory.pixelManager?.enabled)) {
       const room = Game.rooms[myRooms[Math.floor(Math.random() * myRooms.length)]];
 
       if (room.controller.level >= 2) {

@@ -15,7 +15,7 @@ function ExecuteCommandsInNTicks() {
         }
 
         else if(command.delay == 0) {
-            if(command.bucketNeeded && command.bucketNeeded <= Game.cpu.bucket) {
+            if(command.bucketNeeded && (command.bucketNeeded <= Game.cpu.bucket || Memory.pixelManager?.enabled)) {
                 if(command.formation == "Singleton") {
                     global.SS(command.homeRoom,command.targetRoom);
                 }

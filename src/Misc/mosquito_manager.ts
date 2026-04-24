@@ -1,5 +1,5 @@
 function mosquito_manager() {
-  if (Game.cpu.bucket < 1500) return;
+  if (Game.cpu.bucket < 1500 && !Memory.pixelManager?.enabled) return;
   if(!Memory.e) Memory.e = {mosquito: []};
 
   for (const u of Memory.e.mosquito) {

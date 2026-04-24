@@ -27,7 +27,7 @@ if(room.controller.level == 8) {
     if(room.memory.Structures.powerSpawn) {
         const powerSpawn:any = Game.getObjectById(room.memory.Structures.powerSpawn);
         if(powerSpawn) {
-            if(Game.cpu.bucket > 6000 && powerSpawn.store[RESOURCE_POWER] >= 1 && powerSpawn.store[RESOURCE_ENERGY] >= 50) {
+            if((Game.cpu.bucket > 6000 || Memory.pixelManager?.enabled) && powerSpawn.store[RESOURCE_POWER] >= 1 && powerSpawn.store[RESOURCE_ENERGY] >= 50) {
                 powerSpawn.processPower();
             }
 

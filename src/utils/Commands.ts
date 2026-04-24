@@ -1,6 +1,6 @@
 import urgent_buy from "Random_Stuff/urgent_buy";
 global.spawn_mosquito = function (homeRoom: string, roomName: string): boolean {
-  if (Game.cpu.bucket < 1500) return false;
+  if (Game.cpu.bucket < 1500 && !Memory.pixelManager?.enabled) return false;
   if (homeRoom) {
     const room = Game.rooms[homeRoom];
     const spawns = room.find(FIND_MY_SPAWNS);
@@ -2023,7 +2023,7 @@ global.SPK = function (homeRoom, targetRoomName) {
 
 global.SDM = function (homeRoom, targetRoomName) {
     const room = Game.rooms[homeRoom];
-    if (room && !room.memory.danger && Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit + 2 && Game.cpu.bucket > 9500) {
+    if (room && !room.memory.danger && Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit + 2 && (Game.cpu.bucket > 9500 || Memory.pixelManager?.enabled)) {
 
         let billtongs = 0;
         _.forEach(Game.creeps, function (creep) {

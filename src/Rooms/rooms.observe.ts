@@ -2,7 +2,7 @@ function observe(room) {
     const interval = 64;
     const twoTimesInterval = interval*2
     const observer:any = Game.getObjectById(room.memory.Structures.observer) || room.findObserver();
-    if(observer && (Game.time % interval == 0 || Game.time % interval == 1) && Game.cpu.bucket > 8000) {
+    if(observer && (Game.time % interval == 0 || Game.time % interval == 1) && (Game.cpu.bucket > 8000 || Memory.pixelManager?.enabled)) {
         if(!room.memory.observe) {
             room.memory.observe = {};
         }
@@ -798,7 +798,7 @@ function observe(room) {
                       filter: s => s.structureType == STRUCTURE_TOWER && s.store[RESOURCE_ENERGY] > 9
                     });
                     if (hostileSpawns.length > 0 && hostileTowers.length > 0) {
-                      if (Game.cpu.bucket >= 8000) {
+                      if (Game.cpu.bucket >= 8000 || Memory.pixelManager?.enabled) {
                         // At high CPU, randomly choose between all formations
                         const rand = Math.random();
                         if (rand < 0.25) {
@@ -810,7 +810,7 @@ function observe(room) {
                         } else {
                             global.SQM(room.name, adj, true);
                         }
-                      } else if (Game.cpu.bucket >= 5000) {
+                      } else if (Game.cpu.bucket >= 5000 || Memory.pixelManager?.enabled) {
                         // At lower CPU, randomly choose between lighter formations
                         if (Math.random() < 0.5) {
                             global.SDB(room.name, adj, true);
@@ -920,7 +920,7 @@ function observe(room) {
     }
 
     // find power banks
-    if(observer && (Game.time % twoTimesInterval == 2 || Game.time % twoTimesInterval == 3) && Game.cpu.bucket > 7000) {
+    if(observer && (Game.time % twoTimesInterval == 2 || Game.time % twoTimesInterval == 3) && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
 
         if(!room.memory.observe)
             room.memory.observe = {};
@@ -1074,7 +1074,7 @@ function observe(room) {
 
                             // }
 
-                            if(deposits.length > 0 && storage.store[RESOURCE_ENERGY] > 225000 && Game.cpu.bucket >= 9750) {
+                            if(deposits.length > 0 && storage.store[RESOURCE_ENERGY] > 225000 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
 
                                 // let hostiles = seenRoom.find(FIND_HOSTILE_CREEPS)
                                 // if(hostiles.length > 0) {

@@ -1,6 +1,6 @@
 import { buildFromLayout } from "./rooms.construction2";
 function spawning(room: any) {
-    // if(Game.cpu.bucket < 1000) return;
+    if(Game.cpu.bucket < 1000 && !Memory.pixelManager?.enabled) return;
     if (!room.memory.spawn_list) {
         room.memory.spawn_list = [];
     }
@@ -996,7 +996,7 @@ class EnergyRoleGenerator {
                                         let body;
                                         if (danger) {
                                             body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, CARRY, MOVE];
-                                        } else if (room.energyAvailable > 3000 && Game.cpu.bucket < 9000) {
+                                        } else if (room.energyAvailable > 3000 && Game.cpu.bucket < 9000 && !Memory.pixelManager?.enabled) {
                                             body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, WORK, WORK, CARRY, MOVE];
                                         } else {
                                             body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, WORK, WORK, CARRY, MOVE];
@@ -1813,7 +1813,7 @@ class SpecialDefenseGenerator {
     }
 
     static generateNukeRepair(room: Room, repairers: number, storage: any) {
-        if ((room.memory.NukeRepair && repairers < 4 && !room.memory.danger || room.memory.defence && room.memory.defence.nuke && repairers < 1) && Game.cpu.bucket > 150 && storage && (storage as any).store[RESOURCE_ENERGY] > 75000) {
+        if ((room.memory.NukeRepair && repairers < 4 && !room.memory.danger || room.memory.defence && room.memory.defence.nuke && repairers < 1) && (Game.cpu.bucket > 150 || Memory.pixelManager?.enabled) && storage && (storage as any).store[RESOURCE_ENERGY] > 75000) {
             const name = 'Repair-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
             if (room.controller.level >= 7 && room.find(FIND_NUKES).length > 2 && storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 1980 && room.memory.labs && room.memory.labs.outputLab1) {
                 this.handleBoostAllocation(room, storage, 'lab1', 660);
@@ -1866,7 +1866,7 @@ class SpecialUtilityGenerator {
     }
 
     static generatePriest(room: Room, Priests: number) {
-        if (Priests < 1 && room.controller.level >= 6 && !room.memory.danger && room.memory.danger_timer == 0 && room.memory.data.DOB % 125000 < 400 && Game.cpu.bucket > 7000) {
+        if (Priests < 1 && room.controller.level >= 6 && !room.memory.danger && room.memory.danger_timer == 0 && room.memory.data.DOB % 125000 < 400 && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
             const newName = 'Priest' + "-" + room.name;
             room.memory.spawn_list.push([MOVE], newName, {memory: {role: 'Priest', homeRoom: room.name, roomsVisited: []}});
             console.log('Adding Priest to Spawn List: ' + newName);
@@ -1959,7 +1959,7 @@ class SpecialUtilityGenerator {
 // Remote defense role generator - handles SneakyControllerUpgrader, ContainerBuilder, RangedAttacker, DrainTower, RemoteDismantler, Dismantler, Annoyer
 class RemoteDefenseGenerator {
     static generateSneakyControllerUpgrader(room: Room, SneakyControllerUpgraders: number, storage: any) {
-        if (SneakyControllerUpgraders < 1 && room.controller.level >= 5 && !room.memory.danger && storage && (storage as any).store[RESOURCE_ENERGY] > 180000 && Game.cpu.bucket > 7000) {
+        if (SneakyControllerUpgraders < 1 && room.controller.level >= 5 && !room.memory.danger && storage && (storage as any).store[RESOURCE_ENERGY] > 180000 && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
             for (const roomName of Memory.keepAfloat) {
                 if (Game.map.getRoomLinearDistance(room.name, roomName) <= 4 && Game.rooms[roomName] && Game.rooms[roomName].controller && Game.rooms[roomName].controller.my) {
                     if (Game.rooms[roomName].controller.level == 2 && Game.rooms[roomName].controller.ticksToDowngrade < 4000 ||

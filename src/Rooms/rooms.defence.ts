@@ -88,7 +88,7 @@ function roomDefence(room: Room): void {
     // ── Tower repair when spawn is disrupted ────────────────────────────────
     const spawn = Game.getObjectById<StructureSpawn>(room.memory.Structures.spawn);
     if (
-        Game.cpu.bucket > 300 &&
+        (Game.cpu.bucket > 300 || Memory.pixelManager?.enabled) &&
         spawn && room.memory.danger && room.memory.danger_timer > 500 &&
         spawn.effects?.length &&
         spawn.effects[0].effect === PWR_DISRUPT_SPAWN &&
@@ -170,7 +170,7 @@ function roomDefence(room: Room): void {
             if (
                 isDanger && tower.store[RESOURCE_ENERGY] > 200 &&
                 canWeShoot === room.memory.Structures.towers.length &&
-                Game.cpu.bucket > 250
+                (Game.cpu.bucket > 250 || Memory.pixelManager?.enabled)
             ) {
                 const hostileCreeps = room.find(FIND_HOSTILE_CREEPS);
                 const rampartDefenders = room.find(FIND_MY_CREEPS, { filter: (c: Creep) => c.memory.role === "RampartDefender" });

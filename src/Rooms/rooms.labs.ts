@@ -207,7 +207,7 @@ function pickRecipe(room: Room, currentOutput: string | false): [any, any, any] 
 
 // ── Run output labs (8 individual blocks → single loop) ───────────────────────
 function runOutputLabs(room: Room, labs: Record<string, any>, inputLab1: any, inputLab2: any, lab1Input: any, lab2Input: any): void {
-    // if (Game.cpu.bucket <= 4500) return;
+    if (Game.cpu.bucket <= 4500 && !Memory.pixelManager?.enabled) return;
     if (!inputLab1 || !inputLab2 || !lab1Input || !lab2Input) return;
 
     const inputsReady = inputLab1.store[lab1Input] >= 5 && inputLab2.store[lab2Input] >= 5;

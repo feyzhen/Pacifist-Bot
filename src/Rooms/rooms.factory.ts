@@ -1,5 +1,5 @@
 function factory(room) {
-    if(room.controller && room.controller.my && room.controller.level >= 7 && Game.time % 10 == 0 && Game.cpu.bucket > 3500) {
+    if(room.controller && room.controller.my && room.controller.level >= 7 && Game.time % 10 == 0 && (Game.cpu.bucket > 3500 || Memory.pixelManager?.enabled)) {
         if(!room.memory.Structures.factory) {
             const factories = room.find(FIND_MY_STRUCTURES, {filter: building => building.structureType == STRUCTURE_FACTORY});
             if(factories.length > 0) {

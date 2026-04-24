@@ -13,7 +13,7 @@ const run = function (creep) {
         return;
     }
 
-    // if(Game.cpu.bucket < 1000) return;
+    if(Game.cpu.bucket < 1000 && !Memory.pixelManager?.enabled) return;
 
     if(creep.memory.fleeing) {
         // find hostiles with attack or ranged attack

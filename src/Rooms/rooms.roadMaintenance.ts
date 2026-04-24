@@ -10,7 +10,7 @@
  * This replaces the aggressive clearing logic in rooms.ts line 254-264
  */
 function intelligentRoadCleanup(): void {
-    if (Game.time % 3012 !== 0 || Game.cpu.bucket <= 3500) return;
+    if (Game.time % 3012 !== 0 || (Game.cpu.bucket <= 3500 && !Memory.pixelManager?.enabled)) return;
     
     let totalCleaned = 0;
     let totalRooms = 0;

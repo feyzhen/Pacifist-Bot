@@ -767,31 +767,90 @@ function market(room):any {
         // }
 
 
-        if(Game.resources.pixel > 0 && room.terminal && Game.time % 100 == 0) {
-            const OrderPrice = 50000;
+        // Pixel trading logic
+        if(!Memory.pixelManager) {
+            Memory.pixelManager = {};
+        }
+        const pixelCfg = Memory.pixelManager;
+        const keepAmount = pixelCfg.keepAmount ?? 500;
+        const tradingEnabled = pixelCfg.tradingEnabled ?? true;
 
-            let orders = Game.market.getAllOrders({type: ORDER_BUY, resourceType: PIXEL});
-            orders = _.filter(orders, (order) => order.amount >= 1 && order.price >= OrderPrice);
-            if(orders.length > 0) {
-                orders.sort((a,b) => b.price - a.price);
-                const orderID = orders[0].id;
-                const result = Game.market.deal(orderID, 1, room.name);
-                if(result == 0) {
-                    console.log(1, PIXEL, "Sold at Price:", orders[0].price, "=", 1 * orders[0].price);
-                    return;
+        if(tradingEnabled && Game.resources[PIXEL] > 0 && room.terminal && Game.time % 100 == 0) {
+            const ownedPixels = Game.resources[PIXEL];
+            const sellableAmount = ownedPixels - keepAmount;
+
+            if(sellableAmount > 0) {
+                // Try to sell to existing buy orders first
+                const buyOrders = Game.market.getAllOrders({type: ORDER_BUY, resourceType: PIXEL});
+                const filteredOrders = _.filter(buyOrders, (order) =>
+                    order.amount >= 1 &&
+                    Game.market.calcTransactionCost(1, room.name, order.roomName) <= 1000
+                );
+
+                if(filteredOrders.length > 0) {
+                    filteredOrders.sort((a,b) => b.price - a.price);
+                    const bestOrder = filteredOrders[0];
+                    const sellAmount = Math.min(1, bestOrder.amount, sellableAmount);
+                    const result = Game.market.deal(bestOrder.id, sellAmount, room.name);
+                    if(result == 0) {
+                        console.log(`[PixelTrading] Sold ${sellAmount} pixel at ${bestOrder.price} credits`);
+                        return;
+                    }
                 }
-                else {
-                    console.log(result);
+
+                // If no good buy orders, create/update sell order
+                if(Game.time % 500 == 0) {
+                    const existingOrder = Object.values(Game.market.orders).find(
+                        (o) => o.type === ORDER_SELL && o.resourceType === PIXEL && o.roomName === room.name
+                    );
+
+                    const recPrice = calcPixelPrice();
+
+                    if(existingOrder) {
+                        // Update price if it deviates significantly
+                        if(Math.abs(existingOrder.price - recPrice) > recPrice * 0.1) {
+                            Game.market.changeOrderPrice(existingOrder.id, recPrice);
+                            console.log(`[PixelTrading] Updated sell order price to ${recPrice}`);
+                        }
+                        // Extend order if needed
+                        if(existingOrder.remainingAmount < sellableAmount) {
+                            Game.market.extendOrder(existingOrder.id, sellableAmount - existingOrder.remainingAmount);
+                        }
+                    } else {
+                        // Create new sell order
+                        const result = Game.market.createOrder({
+                            type: ORDER_SELL,
+                            resourceType: PIXEL,
+                            price: recPrice,
+                            totalAmount: sellableAmount,
+                            roomName: room.name
+                        });
+                        if(result == 0) {
+                            console.log(`[PixelTrading] Created sell order: ${sellableAmount} pixels @ ${recPrice} credits`);
+                        }
+                    }
                 }
             }
-            else {
-                console.log("no order found below price of", OrderPrice, "for", PIXEL);
-            }
 
+            function calcPixelPrice(): number {
+                const history = Game.market.getHistory(PIXEL);
+                if(history && history.length > 0) {
+                    let weightedSum = 0;
+                    let weight = 1;
+                    for(const day of history) {
+                        weightedSum += day.avgPrice * weight;
+                        weight++;
+                    }
+                    const avgPrice = weightedSum / ((history.length * (history.length + 1)) / 2);
+                    // Slightly below average to sell faster
+                    return Math.floor(avgPrice * 0.95);
+                }
+                return 8000; // Default fallback price
+            }
         }
     }
     const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
-    if(storage && storage.store[RESOURCE_ENERGY] > 300000 && Game.time % 110 == 0 && Game.cpu.bucket > 9000 && room.terminal.cooldown == 0 && room.terminal.store.getFreeCapacity() > 50000) {
+    if(storage && storage.store[RESOURCE_ENERGY] > 300000 && Game.time % 110 == 0 && (Game.cpu.bucket > 9000 || Memory.pixelManager?.enabled) && room.terminal.cooldown == 0 && room.terminal.store.getFreeCapacity() > 50000) {
         const crawler_list = [
             RESOURCE_ENERGY,RESOURCE_POWER,RESOURCE_HYDROGEN,RESOURCE_LEMERGIUM,RESOURCE_GHODIUM,
             RESOURCE_SILICON,RESOURCE_METAL,RESOURCE_BIOMASS,RESOURCE_MIST,RESOURCE_HYDROXIDE,RESOURCE_ZYNTHIUM_KEANITE,RESOURCE_UTRIUM_LEMERGITE,RESOURCE_UTRIUM_HYDRIDE,
