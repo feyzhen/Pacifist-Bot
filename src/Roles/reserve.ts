@@ -28,7 +28,17 @@
             if(creep.room.controller.level == 0) {
                 const claimOutcome = creep.claimController(creep.room.controller);
                 if(claimOutcome === 0) {
-                    // creep.signController(creep.room.controller, "we come in peace")
+                    // 触发自动布局规划
+                    const plannerWrapper = (global as any).PlannerWrapper;
+                    if(plannerWrapper) {
+                        plannerWrapper.runPlan(creep.room.name);
+                        plannerWrapper.savePlanToMemory(creep.room.name);
+                        console.log(`[AutoLayout] 已为房间 ${creep.room.name} 生成自动布局`);
+                    }
+                    // 启用布局系统
+                    if(creep.room.memory) {
+                        (creep.room.memory as any).layoutEnabled = true;
+                    }
                     creep.suicide();
                     return;
                 }

@@ -1818,18 +1818,27 @@ global.SRD = function (roomName, targetRoomName) {
     return "Failed to spawn";
 }
 
-global.SC = function (targetRoomName, x, y) {
-    if(typeof targetRoomName !== 'string' || typeof x !== 'number' || typeof y !== 'number' || 
-       x < 0 || x > 49 || y < 0 || y > 49) {
-        return "Invalid parameters: x and y must be numbers between 0-49, targetRoomName must be a string";
+global.SC = function (targetRoomName, x?, y?) {
+    if(typeof targetRoomName !== 'string') {
+        return "Invalid parameters: targetRoomName must be a string";
+    }
+    // 兼容旧版本：如果提供了x和y参数，仍然使用
+    if(x !== undefined && y !== undefined) {
+        if(typeof x !== 'number' || typeof y !== 'number' || 
+           x < 0 || x > 49 || y < 0 || y > 49) {
+            return "Invalid parameters: x and y must be numbers between 0-49";
+        }
     }
     if(!Memory.target_colonise) {
         Memory.target_colonise = {};
     }
     Memory.target_colonise.room = targetRoomName;
-    Memory.target_colonise.spawn_pos = new RoomPosition(x, y, targetRoomName);
+    // 如果提供了x和y，保存spawn_pos（向后兼容）
+    if(x !== undefined && y !== undefined) {
+        Memory.target_colonise.spawn_pos = new RoomPosition(x, y, targetRoomName);
+    }
     Memory.target_colonise.lastSpawnRanger = 1501;
-    return "Success!"
+    return "Success! Auto layout will be generated after claim."
 }
 
 global.SG = function (homeRoom, targetRoomName) {

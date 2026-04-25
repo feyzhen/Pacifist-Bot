@@ -84,12 +84,25 @@ const run = function (creep):CreepMoveReturnCode | -2 | -5 | -7 | void {
         // }
 
         const mySpawns = creep.room.find(FIND_MY_SPAWNS)
-        if(Game.time % 25 == 0 && Memory.target_colonise && Memory.target_colonise.spawn_pos && creep.room.find(FIND_MY_CONSTRUCTION_SITES).length == 0 && mySpawns.length == 0 && creep.room.name === Memory.target_colonise.room) {
-            if(typeof Memory.target_colonise.spawn_pos.x === 'number' && typeof Memory.target_colonise.spawn_pos.y === 'number' &&
-               Memory.target_colonise.spawn_pos.x >= 0 && Memory.target_colonise.spawn_pos.x <= 49 &&
-               Memory.target_colonise.spawn_pos.y >= 0 && Memory.target_colonise.spawn_pos.y <= 49) {
-                const location = new RoomPosition(Memory.target_colonise.spawn_pos.x, Memory.target_colonise.spawn_pos.y, creep.room.name);
+        if(Game.time % 25 == 0 && Memory.target_colonise && creep.room.find(FIND_MY_CONSTRUCTION_SITES).length == 0 && mySpawns.length == 0 && creep.room.name === Memory.target_colonise.room) {
+            // 优先使用自动布局的spawn位置
+            if(Memory.roomPlanner && Memory.roomPlanner[creep.room.name] && 
+               Memory.roomPlanner[creep.room.name].layout && 
+               Memory.roomPlanner[creep.room.name].layout.spawn && 
+               Memory.roomPlanner[creep.room.name].layout.spawn.length > 0) {
+                const spawnPos = Memory.roomPlanner[creep.room.name].layout.spawn[0];
+                const location = new RoomPosition(spawnPos.x, spawnPos.y, creep.room.name);
                 location.createConstructionSite(STRUCTURE_SPAWN);
+                console.log(`[AutoLayout] 使用布局中的spawn位置 (${spawnPos.x},${spawnPos.y})`);
+            }
+            // 回退到手动指定的位置
+            else if(Memory.target_colonise.spawn_pos) {
+                if(typeof Memory.target_colonise.spawn_pos.x === 'number' && typeof Memory.target_colonise.spawn_pos.y === 'number' &&
+                   Memory.target_colonise.spawn_pos.x >= 0 && Memory.target_colonise.spawn_pos.x <= 49 &&
+                   Memory.target_colonise.spawn_pos.y >= 0 && Memory.target_colonise.spawn_pos.y <= 49) {
+                    const location = new RoomPosition(Memory.target_colonise.spawn_pos.x, Memory.target_colonise.spawn_pos.y, creep.room.name);
+                    location.createConstructionSite(STRUCTURE_SPAWN);
+                }
             }
         }
 
