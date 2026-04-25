@@ -14,7 +14,7 @@ class LayoutManager {
     private config: LayoutConfig;
     private defaultConfig: LayoutConfig = {
         forceReplan: false,
-        minControllerLevel: 3,
+        minControllerLevel: 1,  // 降低到1级，支持新claim的房间
         enabledRooms: []  // 空数组表示所有房间都启用
     };
 
