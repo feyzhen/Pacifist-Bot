@@ -2381,7 +2381,7 @@ class SpecialRoleGenerator {
                             } else if (room.controller.level == 7) {
                                 room.memory.spawn_list.push([CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name}});
                             } else if (room.controller.level == 8) {
-                                room.memory.spawn_list.push([CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name}});
+                                room.memory.spawn_list.push([CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE, CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name}});
                             }
                             console.log('Adding Reserver to Spawn List: ' + newName);
                             values.lastSpawnReserver = Game.time;
