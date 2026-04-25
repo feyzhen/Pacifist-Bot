@@ -768,10 +768,7 @@ function market(room):any {
 
 
         // Pixel trading logic
-        if(!Memory.pixelManager) {
-            Memory.pixelManager = {};
-        }
-        const pixelCfg = Memory.pixelManager;
+        const pixelCfg = Memory.pixelManager || {};
         const keepAmount = pixelCfg.keepAmount ?? 500;
         const tradingEnabled = pixelCfg.tradingEnabled ?? true;
 
