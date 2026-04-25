@@ -16,6 +16,7 @@ import { getBody } from "Rooms/rooms.spawning";
     creep.heal(creep);
 
     if(creep.room.name != creep.memory.targetRoom && !creep.memory.line) {
+        console.log(`[Claimer] ${creep.name} 移动到目标房间 ${creep.memory.targetRoom}, 当前在 ${creep.room.name}`);
         return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
     }
     else if(creep.room.name != creep.memory.targetRoom && creep.memory.line) {
@@ -31,12 +32,37 @@ import { getBody } from "Rooms/rooms.spawning";
     const controller = creep.room.controller;
 
     if(controller && controller.level == 0 && !controller.reservation) {
+        console.log(`[Claimer] ${creep.name} 在目标房间 ${creep.room.name}, 控制器状态: level=${controller.level}, reservation=${controller.reservation ? controller.reservation.ticksToEnd : "none"}`
+        );
+        if (creep.pos.isNearTo(controller)) {
+            const result = creep.claimController(controller);
+            if (result == 0) {
+                // claim成功后，启用自动建造
+                if(!Memory.layoutConfig) {
+                    Memory.layoutConfig = {
+                        forceReplan: false,
+                        minControllerLevel: 1,
+                        enabledRooms: []
+                    };
+                }
+                if(!Memory.layoutConfig.enabledRooms.includes(creep.room.name)) {
+                    Memory.layoutConfig.enabledRooms.push(creep.room.name);
+                    console.log(`[Claimer] ${creep.name} 已将房间 ${creep.room.name} 添加到自动建造列表`);
+                }
 
-        if(creep.claimController(controller) == 0) {
-            creep.suicide();
-            return;
-        }
-        if(creep.claimController(controller) == ERR_NOT_IN_RANGE) {
+                // 设置房间layoutEnabled
+                if(!creep.room.memory) {
+                    creep.room.memory = {};
+                }
+                (creep.room.memory as any).layoutEnabled = true;
+
+                creep.suicide();
+                return;
+            } else {
+                console.log(`[Claimer] ${creep.name} claim结果: ${result}`);
+            }
+        } else {
+            console.log(`[Claimer] ${creep.name} 正moveTo ${controller.pos}`)
             creep.moveTo(controller);
         }
 
