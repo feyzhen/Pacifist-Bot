@@ -169,7 +169,7 @@ function add_creeps_to_spawn_list_refactored(room: Room, spawn: StructureSpawn) 
 
     // 6. 使用新的生成器类生成角色
     // 能量相关角色
-    EnergyRoleGenerator.generateAll(resourceData, room, spawn, storage, activeRemotes, EnergyManagers, upgraders, fillers, EnergyMinersInRoom, sites.length, spawnrules, rampartsInRoom, roomState);
+    EnergyRoleGenerator.generateAll(resourceData, room, spawn, storage, activeRemotes, EnergyManagers, upgraders, fillers, EnergyMinersInRoom, sites.length, spawnrules, rampartsInRoom, roomState, repairers);
 
     // 建造相关角色
     ConstructionRoleGenerator.generateAll(room, builders, repairers, maintainers, EnergyMinersInRoom, carriers, sites, storage, spawnMaintainer, spawnrules, rampartsInRoom, roomState);
@@ -922,7 +922,7 @@ class RoomConditions {
     }
 }
 
-// Energy role generator - encapsulates EnergyMiner, Carrier, EnergyManager generation logic
+// Energy role generator - encapsulates EnergyMiner, Carrier, EnergyManager, Upgrader, Filler generation logic
 class EnergyRoleGenerator {
     static generateEnergyMiners(resourceData: any, room: Room, activeRemotes: string[], roomState: any) {
         const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
@@ -1176,17 +1176,32 @@ class EnergyRoleGenerator {
         if (!rule || !rule.upgrade_creep) return;
 
         let shouldSpawn = false;
-        let spawnCondition = true;
+        let useSpendCreep = false;
 
         switch (rcl) {
             case 1:
                 if (energyMinersInRoom < 1) return;
                 shouldSpawn = upgraders < rule.upgrade_creep.amount && !room.memory.danger;
+                // Storage 满容量时额外生成
+                if (!shouldSpawn && storage && (storage as any).store.getFreeCapacity() < 200 && !room.memory.danger) {
+                    shouldSpawn = upgraders < rule.upgrade_creep.amount + 6;
+                }
                 break;
             case 2:
+                shouldSpawn = upgraders < rule.upgrade_creep.amount && !room.memory.danger &&
+                              (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500);
+                // Storage 满容量时额外生成
+                if (!shouldSpawn && storage && (storage as any).store.getFreeCapacity() < 200 && !room.memory.danger) {
+                    shouldSpawn = upgraders < rule.upgrade_creep.amount + 6;
+                }
+                break;
             case 3:
                 shouldSpawn = upgraders < rule.upgrade_creep.amount && !room.memory.danger &&
                               (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500);
+                // Storage 满容量时额外生成
+                if (!shouldSpawn && storage && (storage as any).store.getFreeCapacity() < 200 && !room.memory.danger) {
+                    shouldSpawn = upgraders < rule.upgrade_creep.amount + 6;
+                }
                 break;
             case 4:
                 shouldSpawn = upgraders < rule.upgrade_creep.amount &&
@@ -1197,46 +1212,130 @@ class EnergyRoleGenerator {
                               (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 21000);
                 break;
             case 5:
-            case 6:
-            case 7:
-            case 8:
                 shouldSpawn = upgraders < rule.upgrade_creep.amount && !room.memory.danger &&
-                              RoomConditions.canUpgradeController(room) &&
+                              storage && (storage as any).store[RESOURCE_ENERGY] > 30000 &&
                               (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500);
+                // 紧急降级保护
+                if (!shouldSpawn && room.controller.ticksToDowngrade < 6000 && upgraders < rule.upgrade_creep.amount && !room.memory.danger) {
+                    shouldSpawn = true;
+                }
+                break;
+            case 6:
+                shouldSpawn = upgraders < rule.upgrade_creep.amount + 3 && !room.memory.danger &&
+                              storage && (storage as any).store[RESOURCE_ENERGY] > 400000 &&
+                              (constructionSitesAmount == 0 || room.controller.ticksToDowngrade < 1500);
+                // 紧急降级保护
+                if (!shouldSpawn && room.controller.ticksToDowngrade < 80000 && upgraders < rule.upgrade_creep.amount) {
+                    shouldSpawn = true;
+                }
+                break;
+            case 7:
+                // 大号 upgrader (upgrade_creep_spend)
+                if (rule.upgrade_creep_spend) {
+                    const isTargetRoom = room.name === Memory.targetRampRoom?.room;
+                    const spendAmount = isTargetRoom ? rule.upgrade_creep_spend.amount + 3 : rule.upgrade_creep_spend.amount;
+                    if ((upgraders < spendAmount && !isTargetRoom || upgraders < spendAmount && isTargetRoom) &&
+                        storage && (storage as any).store[RESOURCE_ENERGY] > 400000 && !room.memory.danger) {
+                        shouldSpawn = true;
+                        useSpendCreep = true;
+                    }
+                }
+                // 小号 upgrader (upgrade_creep) - 紧急降级保护
+                if (!shouldSpawn && rule.upgrade_creep) {
+                    shouldSpawn = upgraders < rule.upgrade_creep.amount &&
+                                  room.controller.ticksToDowngrade < 110000 &&
+                                  storage && (storage as any).store[RESOURCE_ENERGY] > 10000 &&
+                                  (!room.memory.danger || room.controller.ticksToDowngrade < 80000);
+                }
+                break;
+            case 8:
+                shouldSpawn = upgraders < rule.upgrade_creep.amount &&
+                              room.controller.ticksToDowngrade < 125000 &&
+                              storage && (storage as any).store[RESOURCE_ENERGY] > 10000 &&
+                              (!room.memory.danger || room.controller.ticksToDowngrade < 110000);
                 break;
         }
 
         if (shouldSpawn) {
             const name = 'Upgrader-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-            room.memory.spawn_list.push(rule.upgrade_creep.body, name, {memory: {role: 'upgrader'}});
+            const body = useSpendCreep && rule.upgrade_creep_spend ? rule.upgrade_creep_spend.body : rule.upgrade_creep.body;
+            room.memory.spawn_list.push(body, name, {memory: {role: 'upgrader'}});
             console.log('Adding Upgrader to Spawn List: ' + name);
         }
     }
 
-    static generateFillers(room: Room, fillers: number, activeRemotes: string[], storage: any, spawnrules: any) {
+    static generateFillers(room: Room, fillers: number, activeRemotes: string[], storage: any, spawnrules: any, repairers: number) {
         const rcl = room.controller.level;
         const rule = spawnrules[rcl];
 
         if (!rule || !rule.filler_creep || !storage) return;
 
         let shouldSpawn = false;
-        let requiredAmount = rule.filler_creep.amount;
 
-        // 根据远程房间数量调整所需filler数量
-        if (activeRemotes.length > 1) {
-            requiredAmount += 1;
-        }
-        if (activeRemotes.length > 2) {
-            requiredAmount += 1;
-        }
-
-        // RCL 4 特殊条件：危险状态下需要更多filler
-        if (rcl === 4) {
-            shouldSpawn = (fillers < rule.filler_creep.amount ||
-                          fillers < rule.filler_creep.amount + 1 && (activeRemotes.length > 1 || room.memory.danger && room.energyAvailable < room.energyCapacityAvailable/1.5) ||
-                          fillers < rule.filler_creep.amount + 2 && activeRemotes.length > 2) && storage;
-        } else {
-            shouldSpawn = fillers < requiredAmount && storage;
+        switch (rcl) {
+            case 1:
+            case 2:
+            case 3:
+                shouldSpawn = (fillers < rule.filler_creep.amount ||
+                              fillers < rule.filler_creep.amount + 1 && activeRemotes.length > 1 ||
+                              fillers < rule.filler_creep.amount + 2 && activeRemotes.length > 2) && storage;
+                break;
+            case 4:
+                shouldSpawn = (fillers < rule.filler_creep.amount ||
+                              fillers < rule.filler_creep.amount + 1 && (activeRemotes.length > 1 || room.memory.danger && room.energyAvailable < room.energyCapacityAvailable/1.5) ||
+                              fillers < rule.filler_creep.amount + 2 && activeRemotes.length > 2) && storage;
+                break;
+            case 5:
+                shouldSpawn = (fillers < rule.filler_creep.amount ||
+                              fillers < rule.filler_creep.amount + 1 && activeRemotes.length > 1 ||
+                              fillers < rule.filler_creep.amount + 2 && activeRemotes.length > 2) && storage;
+                break;
+            case 6:
+                shouldSpawn = (fillers < rule.filler_creep.amount ||
+                              fillers < rule.filler_creep.amount + 1 && activeRemotes.length > 1 ||
+                              fillers < rule.filler_creep.amount + 2 && activeRemotes.length > 2) && storage;
+                // 目标房间额外 filler
+                if (!shouldSpawn && fillers < rule.filler_creep.amount + 1 && storage && Memory.targetRampRoom?.room == room.name) {
+                    shouldSpawn = true;
+                }
+                // 能量容量低时额外 filler
+                if (!shouldSpawn && fillers < rule.filler_creep.amount + 1 && storage && room.energyCapacityAvailable < 500) {
+                    shouldSpawn = true;
+                }
+                break;
+            case 7:
+                shouldSpawn = (fillers < rule.filler_creep.amount ||
+                              fillers < rule.filler_creep.amount + 1 && activeRemotes.length > 2 ||
+                              fillers < rule.filler_creep.amount + 2 && activeRemotes.length > 3) && storage;
+                // 目标房间额外 filler
+                if (!shouldSpawn && fillers < rule.filler_creep.amount + 1 && storage && Memory.targetRampRoom?.room == room.name) {
+                    shouldSpawn = true;
+                }
+                // 能量容量低时额外 filler
+                if (!shouldSpawn && fillers < rule.filler_creep.amount + 1 && storage && room.energyCapacityAvailable < 500) {
+                    shouldSpawn = true;
+                }
+                break;
+            case 8:
+                shouldSpawn = (fillers < rule.filler_creep.amount ||
+                              fillers < rule.filler_creep.amount + 1 && repairers > 1 ||
+                              fillers < rule.filler_creep.amount + 2 && repairers > 3 ||
+                              fillers < rule.filler_creep.amount + 1 && repairers > 2 ||
+                              fillers < rule.filler_creep.amount + 1 && activeRemotes.length > 2 ||
+                              fillers < rule.filler_creep.amount + 2 && activeRemotes.length > 3) && storage;
+                // 目标房间额外 filler
+                if (!shouldSpawn && fillers < rule.filler_creep.amount + 1 && storage && Memory.targetRampRoom?.room == room.name) {
+                    shouldSpawn = true;
+                }
+                // 能量容量低时额外 filler
+                if (!shouldSpawn && fillers < rule.filler_creep.amount + 1 && storage && room.energyCapacityAvailable < 500) {
+                    shouldSpawn = true;
+                }
+                // 能量可用300时的紧急 filler
+                if (!shouldSpawn && fillers < 1 && room.energyAvailable === 300 && storage) {
+                    shouldSpawn = true;
+                }
+                break;
         }
 
         if (shouldSpawn) {
@@ -1246,12 +1345,12 @@ class EnergyRoleGenerator {
         }
     }
 
-    static generateAll(resourceData: any, room: Room, spawn: any, storage: any, activeRemotes: string[], energyManagers: number, upgraders: number, fillers: number, energyMinersInRoom: number, constructionSitesAmount: number, spawnrules: any, rampartsInRoom: any[], roomState: any) {
+    static generateAll(resourceData: any, room: Room, spawn: any, storage: any, activeRemotes: string[], energyManagers: number, upgraders: number, fillers: number, energyMinersInRoom: number, constructionSitesAmount: number, spawnrules: any, rampartsInRoom: any[], roomState: any, repairers: number) {
         this.generateEnergyMiners(resourceData, room, activeRemotes, roomState);
         this.generateCarriers(resourceData, room, spawn, storage, activeRemotes);
         this.generateEnergyManagers(room, spawn, storage, energyManagers, spawnrules, roomState);
         this.generateUpgraders(room, upgraders, energyMinersInRoom, constructionSitesAmount, spawnrules, rampartsInRoom);
-        this.generateFillers(room, fillers, activeRemotes, storage, spawnrules);
+        this.generateFillers(room, fillers, activeRemotes, storage, spawnrules, repairers);
     }
 }
 
