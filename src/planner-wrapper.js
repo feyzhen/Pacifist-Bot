@@ -197,7 +197,7 @@ const config = {
     controllerWeight: 3,    // 到 controller 路程长度权重倍数，数字越大则中心越靠近 controller
     sourceWeight: 1,        // 到 source 路程长度权重倍数，数字越大则中心越靠近 source
     mineralWeight: 2,       // 到 mineral 路程长度权重倍数，数字越大则中心越靠近 mineral
-    shareControllerLink: false, // true 则允许 controller 和中央建筑共用一个 link
+    shareControllerLink: true, // true 则允许 controller 和中央建筑共用一个 link
     labProposalNum: 10,     // 如果地形太狭窄导致没有摆 lab，则可以尝试把这个数字减小到 9 或 8
     maxExtensionDistance: 15, // 动态规划摆 extension 的最远距离，如果该距离内摆不完则会沿路摆
     acceptThreshold: 2, // 动态规划中控制 extension 分布
@@ -2161,7 +2161,7 @@ function placeTower(towerCandidatePoses, enermyPoses, layoutCost, roads, fakeRoa
  */
 function placeRoadsAndLinkAndRampartAndTower(room, start, layout, layoutCost, extensionPos, roadPos, entryRoots, exitGroups, exitMaps, shareControllerLink, rv) {
     /** @type {CostMatrix} */
-    let pfCostMat, roads = getEmptyMat(1, 48), px, py, x, y;
+    let pfCostMat, roads = getEmptyMat(1, 48), fakeRoads = getEmptyMat(1, 49), px, py, x, y;
     let removedExt = getEmptyMat(2, 47), removedNum = 0;
     /**
      * src 和 mineral 相邻空地、controller range2 空地设为与 swamp 相同代价
