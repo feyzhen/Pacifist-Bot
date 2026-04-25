@@ -2341,14 +2341,51 @@ class SpecialRoleGenerator {
     }
 
     static generateClaimers(room: Room, claimers: number, storage: any, roomState: any) {
-        const target_colonise = (room.memory as any).target_colonise;
-        if (target_colonise && Memory.CanClaimRemote >= 1 && claimers < 1 && room.controller.level >= 3 && Game.time % 800 <= 100 && storage && (storage as any).store[RESOURCE_ENERGY] > 10000) {
+        if (!Memory.target_colonise) {
+            Memory.target_colonise = {};
+        }
+        let target_colonise;
+        if (Memory.target_colonise) {
+            target_colonise = Memory.target_colonise.room;
+        }
+        if (target_colonise) {
             const distance_to_target_room = Game.map.getRoomLinearDistance(room.name, target_colonise);
-            if (distance_to_target_room <= 7 && ((Game.rooms[target_colonise] && !Game.rooms[target_colonise].controller.my) || Game.rooms[target_colonise] == undefined)) {
-                const newName = 'Claimer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push([MOVE, CLAIM], newName, {memory: {role: 'claimer', targetRoom: target_colonise, homeRoom: room.name}});
-                console.log('Adding Claimer to Spawn List: ' + newName);
-                Memory.CanClaimRemote -= 1;
+            // need to check if this room is the closest room level 7 or higher or not
+
+            // Assuming you have access to your game state and rooms
+            let closestRoom = null;
+            let closestDistance = Infinity;
+            let maxEnergy = 0;
+            const targetRoomName = target_colonise; // Assuming target_colonise contains the target room name
+
+            // Loop through all your rooms
+            for (const roomName in Game.rooms) {
+                const r = Game.rooms[roomName];
+
+                // Check if the room has a controller, and the controller is yours, and it is at least level 3
+                if (r.controller && r.controller.my && r.controller.level >= 3) {
+                    // Calculate the distance between the current room and the target room
+                    const distance = Game.map.getRoomLinearDistance(r.name, targetRoomName);
+
+                    // Get the amount of energy in the storage of the current room
+                    const energyInStorage = r.storage ? r.storage.store[RESOURCE_ENERGY] || 0 : 0;
+
+                    // Update the closest room if this room is closer to the target room or has more energy
+                    if (distance < closestDistance || (distance === closestDistance && energyInStorage > maxEnergy)) {
+                        closestRoom = r;
+                        closestDistance = distance;
+                        maxEnergy = energyInStorage;
+                    }
+                }
+            }
+
+            if (closestRoom && closestRoom.name == room.name) {
+                if (target_colonise && Memory.CanClaimRemote >= 1 && claimers < 1 && room.controller.level >= 3 && Game.time % 800 <= 100 && storage && (storage as any).store[RESOURCE_ENERGY] > 10000 && distance_to_target_room <= 7 && ((Game.rooms[target_colonise] && !Game.rooms[target_colonise].controller.my) || Game.rooms[target_colonise] == undefined)) {
+                    const newName = 'Claimer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.push([MOVE, CLAIM], newName, {memory: {role: 'claimer', targetRoom: target_colonise, homeRoom: room.name}});
+                    console.log('Adding Claimer to Spawn List: ' + newName);
+                    Memory.CanClaimRemote -= 1;
+                }
             }
         }
     }
