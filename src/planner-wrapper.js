@@ -1648,6 +1648,205 @@ function sortGoalsByLinkPriority(room, goalObjects, centralLinkPos, goalNearestP
     return sortedGoals;
 }
 
+function placeBinContainer(room, storagePos, layout, layoutCost, extensionPos, removedPosList) {
+    // Bin容器放置逻辑：固定在storage下方一格
+    let binPos = { x: storagePos.x, y: storagePos.y + 1 };
+    
+    // 检查位置是否在房间边界内
+    if (binPos.x < 1 || binPos.x > 48 || binPos.y < 1 || binPos.y > 48) {
+        // 如果下方超出边界，尝试上方
+        binPos = { x: storagePos.x, y: storagePos.y - 1 };
+        if (binPos.x < 1 || binPos.x > 48 || binPos.y < 1 || binPos.y > 48) {
+            // 如果上方也超出，尝试左方
+            binPos = { x: storagePos.x - 1, y: storagePos.y };
+            if (binPos.x < 1 || binPos.x > 48 || binPos.y < 1 || binPos.y > 48) {
+                // 如果左方也超出，尝试右方
+                binPos = { x: storagePos.x + 1, y: storagePos.y };
+            }
+        }
+    }
+    
+    // 确保最终位置在边界内
+    if (binPos.x >= 1 && binPos.x <= 48 && binPos.y >= 1 && binPos.y <= 48) {
+        // 检查该位置是否已有建筑
+        if (layoutCost[binPos.x][binPos.y] !== 255) {
+            // 如果有extension，需要移除
+            if (binPos.y in extensionPos[binPos.x]) {
+                delete extensionPos[binPos.x][binPos.y];
+                removedPosList.push(binPos);
+            }
+            
+            // 添加bin容器到布局
+            layout[STRUCTURE_CONTAINER].push(binPos);
+            layoutCost[binPos.x][binPos.y] = 255;
+            
+            return binPos;
+        }
+    }
+    
+    return null;
+}
+
+function findContainerBetweenLinkAndSource(linkPos, workPos, layout, layoutCost, extensionPos, removedPosList, terrain) {
+    // 在link和source之间寻找最佳的container位置
+    let bestContainerPos = null;
+    let bestCost = 999;
+    
+    // 寻找link和source之间的路径
+    let pathResult = PathFinder.search(
+        { x: linkPos.x, y: linkPos.y, roomName: '' },
+        { pos: workPos, range: 1 },
+        {
+            maxRooms: 1,
+            plainCost: 2,
+            swampCost: 4,
+            maxOps: 100,
+            roomCallback: (roomName) => {
+                let costMat = new PathFinder.CostMatrix();
+                // 基于layoutCost创建cost matrix
+                for (let x = 0; x < 50; x++) {
+                    for (let y = 0; y < 50; y++) {
+                        if (layoutCost[x][y] === 255) {
+                            costMat.set(x, y, 255);
+                        } else if (terrain[x + y * 50] & TERRAIN_MASK_WALL) {
+                            costMat.set(x, y, 255);
+                        }
+                    }
+                }
+                return costMat;
+            }
+        }
+    );
+    
+    if (!pathResult.incomplete && pathResult.path.length > 0) {
+        // 在路径上寻找最佳container位置，优先选择中间位置
+        for (let i = 0; i < pathResult.path.length; i++) {
+            let pos = pathResult.path[i];
+            let x = pos.x, y = pos.y;
+            let u = x + y * 50;
+            
+            // 跳过link位置和work位置
+            if ((x === linkPos.x && y === linkPos.y) || (x === workPos.x && y === workPos.y)) {
+                continue;
+            }
+            
+            // 检查位置是否可用
+            if (terrain[u] & TERRAIN_MASK_WALL || layoutCost[x][y] === 255) {
+                continue;
+            }
+            
+            // 计算成本：距离路径中点的位置越近越好
+            let midIndex = Math.floor(pathResult.path.length / 2);
+            let distanceFromMid = Math.abs(i - midIndex);
+            let cost = distanceFromMid;
+            
+            // 如果有extension，增加成本但可以考虑
+            if (y in extensionPos[x]) {
+                cost += 3;
+            }
+            
+            if (cost < bestCost) {
+                bestCost = cost;
+                bestContainerPos = { x, y };
+            }
+        }
+    }
+    
+    // 如果在路径上没找到合适位置，尝试在link周围寻找
+    if (!bestContainerPos) {
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                if (dx === 0 && dy === 0) continue;
+                
+                let x = linkPos.x + dx;
+                let y = linkPos.y + dy;
+                let u = x + y * 50;
+                
+                // 检查边界
+                if (x < 1 || x > 48 || y < 1 || y > 48) continue;
+                
+                // 检查位置是否可用
+                if (terrain[u] & TERRAIN_MASK_WALL || layoutCost[x][y] === 255) continue;
+                
+                // 计算到source的距离
+                let distanceToSource = getRange(x, y, workPos.x, workPos.y);
+                let cost = distanceToSource;
+                
+                // 如果有extension，增加成本
+                if (y in extensionPos[x]) {
+                    cost += 3;
+                }
+                
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestContainerPos = { x, y };
+                }
+            }
+        }
+    }
+    
+    // 如果找到了最佳位置，放置container
+    if (bestContainerPos) {
+        let x = bestContainerPos.x, y = bestContainerPos.y;
+        
+        // 如果有extension，需要移除
+        if (y in extensionPos[x]) {
+            delete extensionPos[x][y];
+            removedPosList.push(bestContainerPos);
+        }
+        
+        // 添加container到布局
+        layout[STRUCTURE_CONTAINER].push(bestContainerPos);
+        layoutCost[x][y] = 255;
+        
+        return bestContainerPos;
+    }
+    
+    return null;
+}
+
+function sortGoalsByContainerPriority(room, goalObjects, centralLinkPos, goalNearestPos) {
+    /**@type {any[]} */
+    let sortedGoals = [];
+    let sources = [];
+    let mineral = null;
+    let controller = null;
+
+    // 1. 首先处理Controller（优先级高于Mineral但低于Source）
+    for (let goal of goalObjects) {
+        if (goal.progressTotal !== undefined) {
+            controller = goal;
+            break;
+        }
+    }
+
+    // 2. 然后处理Source（第二优先级，仅次于Bin）
+    for (let goal of goalObjects) {
+        if (!goal.mineralType && goal.progressTotal === undefined) {
+            sources.push(goal);
+        }
+    }
+
+    // 3. 最后处理Mineral（最低优先级）
+    for (let goal of goalObjects) {
+        if (goal.mineralType) {
+            mineral = goal;
+            break;
+        }
+    }
+
+    // 按优先级添加：Controller > Sources > Mineral
+    if (controller) {
+        sortedGoals.push(controller);
+    }
+    sortedGoals.push(...sources);
+    if (mineral) {
+        sortedGoals.push(mineral);
+    }
+
+    return sortedGoals;
+}
+
 function placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roads, fakeRoads, extensionPos, exitMaps, layout, layoutCost, vertexVisited, vertexDist, shareControllerLink, rv) {
     /**@type {RoomPosition[]} */
     let removedPosList = [], terrain = room.getTerrain().getRawBuffer();
@@ -1666,8 +1865,18 @@ function placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roa
     layout[STRUCTURE_RAMPART] = layout[STRUCTURE_RAMPART] || [];
     layout[WORK_POS] = [];
 
-    // 按 link 优先级排序 goalObjects
-    goalObjects = sortGoalsByLinkPriority(room, goalObjects, centralLinkPos, goalNearestPos);
+    // 1. 优先处理Bin容器（最高优先级）
+    let storagePos = null;
+    if (layout[STRUCTURE_STORAGE] && layout[STRUCTURE_STORAGE].length > 0) {
+        storagePos = layout[STRUCTURE_STORAGE][0];
+        let binPos = placeBinContainer(room, storagePos, layout, layoutCost, extensionPos, removedPosList);
+        if (binPos) {
+            rv.text('BIN', binPos.x, binPos.y, { color: global.colours.黄色, font: 0.8 });
+        }
+    }
+
+    // 2. 重新排序goalObjects，确保Source优先于Mineral（实现Bin > Source > Mineral的优先级）
+    goalObjects = sortGoalsByContainerPriority(room, goalObjects, centralLinkPos, goalNearestPos);
 
     for (let goal of goalObjects) {
         let goalPos = goal.pos;
@@ -1887,6 +2096,14 @@ function placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roa
                     if (bestLinkPos.y in extensionPos[bestLinkPos.x]) {
                         delete extensionPos[bestLinkPos.x][bestLinkPos.y];
                         removedPosList.push(bestLinkPos);
+                    }
+                    
+                    // 在link到source之间放置container
+                    if (!goal.mineralType) { // 只对source和controller放置container，不对mineral
+                        let containerPos = findContainerBetweenLinkAndSource(bestLinkPos, bestPos, layout, layoutCost, extensionPos, removedPosList, terrain);
+                        if (containerPos) {
+                            // container会在findContainerBetweenLinkAndSource函数中添加到layout
+                        }
                     }
                 } else {
                     layout[STRUCTURE_CONTAINER].push(bestPos);      // 没有 link 时，container 位置造在工位脚下
