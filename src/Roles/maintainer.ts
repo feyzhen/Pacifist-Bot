@@ -69,12 +69,20 @@ const run = function (creep) {
         }
 
         if(!creep.memory.rampartsToRepair) {
-            const rampartsInRoom = creep.room.find(FIND_MY_STRUCTURES, {filter: s => s.structureType == STRUCTURE_RAMPART && s.hits < 500000 && (!creep.room.storage || creep.room.storage.pos.getRangeTo(s) >= 9)});
-            const idsOfRamparts = [];
-            for(const rampart of rampartsInRoom) {
-                idsOfRamparts.push(rampart.id);
-            }
-            creep.memory.rampartsToRepair = idsOfRamparts;
+            const rampartsInRoom = creep.room.find(FIND_MY_STRUCTURES, {
+                filter: s => {
+                    if (s.structureType !== STRUCTURE_RAMPART) return false;
+                    
+                    // 原有逻辑：血量 < 500000 的 rampart 需要修复
+                    // 距离 storage 远的 rampart 优先级较低
+                    return s.hits < 500000 && 
+                           (!creep.room.storage || creep.room.storage.pos.getRangeTo(s) >= 9);
+                }
+            });
+            
+            // 按血量排序，优先修复最低血量的（自然优先级：紧急 < 高 < 中）
+            rampartsInRoom.sort((a, b) => a.hits - b.hits);
+            creep.memory.rampartsToRepair = rampartsInRoom.map(r => r.id);
         }
 
         const rampartsIDS = creep.memory.rampartsToRepair;
