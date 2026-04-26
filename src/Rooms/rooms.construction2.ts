@@ -12,12 +12,51 @@ function getNeighbours(tile, listOfLocations) {
   return neighbours;
 }
 
+/**
+ * 检查 rampart 是否在保护重要建筑
+ * @param rampartPos rampart 位置
+ * @param room 房间对象
+ * @returns 是否在保护重要建筑
+ */
+function isProtectingImportantBuilding(rampartPos: RoomPosition, room: Room): boolean {
+  // 检查 rampart 位置是否有除 rampart、road 以外的建筑物
+  const structures = rampartPos.lookFor(LOOK_STRUCTURES);
+  for (const structure of structures) {
+    // 排除 rampart 和 road，其他建筑物都值得保护
+    if (structure.structureType !== STRUCTURE_RAMPART && 
+        structure.structureType !== STRUCTURE_ROAD) {
+      return true; // 有需要保护的建筑
+    }
+  }
+  
+  // 检查是否在 source 附近（2格范围内）
+  const sources = room.find(FIND_SOURCES);
+  for (const source of sources) {
+    if (rampartPos.getRangeTo(source) <= 2) {
+      return true; // 在 source 采集范围内
+    }
+  }
+  
+  // 检查是否在 controller 附近
+  if (room.controller && rampartPos.getRangeTo(room.controller) <= 2) {
+    return true; // 在 controller 范围内
+  }
+  
+  return false;
+}
+
 function pathBuilder(neighbors, structure, room, usingPathfinder = true) {
   const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
   let buldingAlreadyHereCount = 0;
   let constructionSitesPlaced = 0;
 
   const keepTheseRoads = [];
+
+  // RCL 限制：road 和 rampart 只能在 RCL > 3 时建造
+  if ((structure === STRUCTURE_ROAD || structure === STRUCTURE_RAMPART) && 
+      room.controller.level <= 3) {
+    return 0;
+  }
 
   if (structure == STRUCTURE_RAMPART && !usingPathfinder) {
     const listOfRampartPositions = [];
@@ -40,9 +79,15 @@ function pathBuilder(neighbors, structure, room, usingPathfinder = true) {
       const lookForExistingStructures = blockSpot.lookFor(LOOK_STRUCTURES);
       const lookForTerrain = blockSpot.lookFor(LOOK_TERRAIN);
 
+      // 检查现有 rampart 的血量，用于后续拆除决策
+      let existingRampart = null;
+      let existingRampartHits = 0;
+      
       for (const building of lookForExistingStructures) {
-        if ((building as any).structureType === STRUCTURE_RAMPART && (building as any).hits > 5000000) {
-          return;
+        if (building.structureType === STRUCTURE_RAMPART) {
+          existingRampart = building;
+          existingRampartHits = building.hits;
+          break;
         }
       }
 
@@ -118,12 +163,29 @@ function pathBuilder(neighbors, structure, room, usingPathfinder = true) {
       }
 
       if (incomplete) {
-        if (lookForExistingStructures.length > 0) {
-          for (let i = 0; i < lookForExistingStructures.length; i++) {
-            if (lookForExistingStructures[i].structureType == STRUCTURE_RAMPART) {
-              lookForExistingStructures[i].destroy();
-            }
+        if (existingRampart) {
+          // 检查是否是关键建筑的保护 rampart
+          const isProtectingCriticalStructure = isProtectingImportantBuilding(existingRampart.pos, room);
+          
+          if (isProtectingCriticalStructure) {
+            console.log(`[Rampart Layout] 保留关键建筑保护 rampart (${existingRampartHits} hits) 在 (${existingRampart.pos.x},${existingRampart.pos.y})`);
+            return; // 永远不拆除关键建筑的保护 rampart
           }
+          
+          // 拆除决策：考虑血量因素
+          // 高血量 rampart：保留，不拆除（避免资源浪费）
+          if (existingRampartHits > 5000000) {
+            console.log(`[Rampart Layout] 保留高血量 rampart (${existingRampartHits} hits) 在 (${existingRampart.pos.x},${existingRampart.pos.y})`);
+            return;
+          }
+          // 中等血量 rampart：保留，让 maintainer 修复
+          if (existingRampartHits >= 10000) {
+            console.log(`[Rampart Layout] 保留中等血量 rampart (${existingRampartHits} hits) 在 (${existingRampart.pos.x},${existingRampart.pos.y}) - 让 maintainer 修复`);
+            return;
+          }
+          // 低血量 rampart：拆除（资源成本低）
+          console.log(`[Rampart Layout] 拆除低血量 rampart (${existingRampartHits} hits) 在 (${existingRampart.pos.x},${existingRampart.pos.y}) - 位置不合适`);
+          existingRampart.destroy();
         }
         return;
       }
