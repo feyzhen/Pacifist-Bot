@@ -159,7 +159,7 @@ function add_creeps_to_spawn_list_refactored(room: Room, spawn: StructureSpawn) 
     const sweepers = roleCount.sweeper.inRoom;
     const SafeModers = roleCount.SafeModer.inRoom;
     const SneakyControllerUpgraders = roleCount.SneakyControllerUpgrader.total;
-    const containerbuilders = roleCount.remoteBuilder.total;
+    const remoteBuilders = roleCount.remoteBuilder.total;
     const RangedAttackers = roleCount.RangedAttacker.total;
     const DrainTowers = roleCount.DrainTower.total;
     const RemoteDismantlers = roleCount.RemoteDismantler.total;
@@ -188,7 +188,7 @@ function add_creeps_to_spawn_list_refactored(room: Room, spawn: StructureSpawn) 
     SpecialUtilityGenerator.generateAll(room, Signers, Priests, RampartErectors, sweepers, SafeModers, storage, roomState);
 
     // 远程防御角色
-    RemoteDefenseGenerator.generateAll(room, SneakyControllerUpgraders, containerbuilders, RangedAttackers, DrainTowers, RemoteDismantlers, Dismantlers, annoyers, storage, resourceData, activeRemotes, attackers);
+    RemoteDefenseGenerator.generateAll(room, SneakyControllerUpgraders, remoteBuilders, RangedAttackers, DrainTowers, RemoteDismantlers, Dismantlers, annoyers, storage, resourceData, activeRemotes, attackers);
 
 
     // 8. 处理核弹威胁逻辑
@@ -932,13 +932,13 @@ class EnergyRoleGenerator {
             if (activeRemotes.includes(targetRoomName)) {
                 let index = 0;
 
-                let containerBuilders = [];
+                let remoteBuilders = [];
                 if (room.controller.level <= 5) {
-                    containerBuilders = _.filter(Game.creeps, (creep) => creep.memory.role == 'containerBuilder' && creep.memory.targetRoom == room.name);
+                    remoteBuilders = _.filter(Game.creeps, (creep) => creep.memory.role == 'remoteBuilder' && creep.memory.targetRoom == room.name);
                 }
 
                 _.forEach(data.energy, function(values, sourceId: any) {
-                    if (room.controller.level <= 4 && containerBuilders.length) {
+                    if (room.controller.level <= 4 && remoteBuilders.length) {
                         return;
                     }
 
@@ -2055,7 +2055,7 @@ class SpecialUtilityGenerator {
     }
 }
 
-// Remote defense role generator - handles SneakyControllerUpgrader, ContainerBuilder, RangedAttacker, DrainTower, RemoteDismantler, Dismantler, Annoyer
+// Remote defense role generator - handles SneakyControllerUpgrader, remoteBuilder, RangedAttacker, DrainTower, RemoteDismantler, Dismantler, Annoyer
 class RemoteDefenseGenerator {
     static generateSneakyControllerUpgrader(room: Room, SneakyControllerUpgraders: number, storage: any) {
         if (SneakyControllerUpgraders < 1 && room.controller.level >= 5 && !room.memory.danger && storage && (storage as any).store[RESOURCE_ENERGY] > 180000 && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
@@ -2109,7 +2109,7 @@ class RemoteDefenseGenerator {
         }
     }
 
-    static generateContainerBuilder(room: Room, containerbuilders: number, storage: any) {
+    static generateRemoteBuilder(room: Room, remoteBuilders: number, storage: any) {
         if (!Memory.target_colonise) {
             Memory.target_colonise = {};
         }
@@ -2136,10 +2136,10 @@ class RemoteDefenseGenerator {
                 }
             }
             if (closestRoom && closestRoom.name == room.name) {
-                if (target_colonise && containerbuilders < 2 && !room.memory.danger && room.controller.level >= 3 && storage && (storage as any).store[RESOURCE_ENERGY] > 10000 && Game.cpu.bucket > 7750 && distance_to_target_room <= 7 && Game.rooms[target_colonise] && (Game.rooms[target_colonise].find(FIND_MY_SPAWNS).length == 0 || Game.rooms[target_colonise].controller.level <= 1 || (Game.rooms[target_colonise].controller.level >= 4 && (!Game.rooms[target_colonise].storage && containerbuilders < 1 || Game.rooms[target_colonise].energyCapacityAvailable <= 500)) || (Game.rooms[target_colonise].find(FIND_MY_SPAWNS).length == 0 && containerbuilders < 1)) && Game.rooms[target_colonise].controller.level >= 1 && Game.rooms[target_colonise].controller.my) {
-                    const newName = 'ContainerBuilder-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                if (target_colonise && remoteBuilders < 2 && !room.memory.danger && room.controller.level >= 3 && storage && (storage as any).store[RESOURCE_ENERGY] > 10000 && Game.cpu.bucket > 7750 && distance_to_target_room <= 7 && Game.rooms[target_colonise] && (Game.rooms[target_colonise].find(FIND_MY_SPAWNS).length == 0 || Game.rooms[target_colonise].controller.level <= 1 || (Game.rooms[target_colonise].controller.level >= 4 && (!Game.rooms[target_colonise].storage && remoteBuilders < 1 || Game.rooms[target_colonise].energyCapacityAvailable <= 500)) || (Game.rooms[target_colonise].find(FIND_MY_SPAWNS).length == 0 && remoteBuilders < 1)) && Game.rooms[target_colonise].controller.level >= 1 && Game.rooms[target_colonise].controller.my) {
+                    const newName = 'remoteBuilder-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(getBody([WORK, CARRY, CARRY, CARRY, MOVE], room, 50), newName, {memory: {role: 'remoteBuilder', targetRoom: target_colonise, homeRoom: room.name}});
-                    console.log('Adding ContainerBuilder to Spawn List: ' + newName);
+                    console.log('Adding remoteBuilder to Spawn List: ' + newName);
                 }
             }
         }
@@ -2302,9 +2302,9 @@ class RemoteDefenseGenerator {
         });
     }
 
-    static generateAll(room: Room, SneakyControllerUpgraders: number, containerbuilders: number, RangedAttackers: number, DrainTowers: number, RemoteDismantlers: number, Dismantlers: number, annoyers: number, storage: any, resourceData: any, activeRemotes: string[], attackers: number) {
+    static generateAll(room: Room, SneakyControllerUpgraders: number, remoteBuilders: number, RangedAttackers: number, DrainTowers: number, RemoteDismantlers: number, Dismantlers: number, annoyers: number, storage: any, resourceData: any, activeRemotes: string[], attackers: number) {
         this.generateSneakyControllerUpgrader(room, SneakyControllerUpgraders, storage);
-        this.generateContainerBuilder(room, containerbuilders, storage);
+        this.generateRemoteBuilder(room, remoteBuilders, storage);
         this.generateRangedAttacker(room, RangedAttackers, storage);
         this.generateDrainTower(room, DrainTowers);
         this.generateRemoteDismantler(room, RemoteDismantlers, storage);
