@@ -735,7 +735,7 @@ function buildFromLayout(room: Room): ConstructionSite[] | null {
   const createdSites: ConstructionSite[] = [];
 
   // 🎯 使用优先级建造（统一逻辑）
-  const buildOrder = [
+  let buildOrder = [
     STRUCTURE_SPAWN,
     STRUCTURE_EXTENSION,
     STRUCTURE_STORAGE,
@@ -750,6 +750,11 @@ function buildFromLayout(room: Room): ConstructionSite[] | null {
     STRUCTURE_FACTORY,
     STRUCTURE_NUKER
   ];
+
+  // RCL 限制：RCL <= 3 时移除 road 和 rampart
+  if (room.controller.level <= 3) {
+    buildOrder = buildOrder.filter(type => type !== STRUCTURE_ROAD && type !== STRUCTURE_RAMPART);
+  }
 
   // 建造缺失建筑
   for (const structureType of buildOrder) {
@@ -990,6 +995,11 @@ function handleMismatchedStructures(room: Room, layout: any): void {
 
 const RampartBorderCallbackFunction = (roomName: string): boolean | CostMatrix => {
   const currentRoom: any = Game.rooms[roomName];
+
+  // RCL 限制：RCL <= 3 时不生成 rampart 位置
+  if (currentRoom.controller.level <= 3) {
+    return new PathFinder.CostMatrix(); // 返回空的 CostMatrix，禁止所有位置
+  }
 
   const costs = new PathFinder.CostMatrix();
 
