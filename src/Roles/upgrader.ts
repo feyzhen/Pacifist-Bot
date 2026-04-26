@@ -10,10 +10,7 @@ const run = function (creep) {
         creep.memory.role = "builder";
         creep.memory.locked = false;
     }
-	if(creep.room.controller.level == 2 && creep.ticksToLive % 100 == 0 && creep.room.find(FIND_MY_CONSTRUCTION_SITES).length > 0) {
-		creep.memory.role = "builder";
-	}
-
+	
 	// if(creep.fatigue > 0) {
 	// 	console.log('hi')
 	// 	creep.room.createConstructionSite(creep.pos, STRUCTURE_ROAD);
