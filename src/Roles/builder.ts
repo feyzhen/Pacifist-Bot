@@ -3,8 +3,6 @@
  * @param {Creep} creep
  **/
 
-// 导入桥接函数
-import { findLockedFromLayout } from "../Rooms/rooms.construction2";
 
  /**
  * 原始 findLocked 函数备份（传统系统）
@@ -13,55 +11,50 @@ import { findLockedFromLayout } from "../Rooms/rooms.construction2";
  */
 function findLockedLegacy(creep) {
 	const buildingsToBuild = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
+	
+	if (buildingsToBuild.length === 0) {
+		creep.memory.suicide = true;
+		return null;
+	}
 
-	if(buildingsToBuild.length > 0) {
-		let buildings;
-		if(creep.room.controller.level == 2 ) {
-			const spawn = creep.room.find(FIND_MY_SPAWNS);
-			buildings = buildingsToBuild.filter(function(building) {return building.structureType == STRUCTURE_LINK || building.structureType == STRUCTURE_STORAGE || building.pos.x == spawn[0].pos.x && building.pos.y == spawn[0].pos.y -2;});
-		}
-		else {
-			buildings = buildingsToBuild.filter(function(building) {return building.structureType == STRUCTURE_LINK || building.structureType == STRUCTURE_STORAGE;});
-		}
+	// 🎯 使用与buildFromLayout相同的优先级顺序
+	const buildOrder = [
+		STRUCTURE_SPAWN,
+		STRUCTURE_EXTENSION,
+		STRUCTURE_STORAGE,
+		STRUCTURE_TERMINAL,
+		STRUCTURE_LINK,
+		STRUCTURE_TOWER,
+		STRUCTURE_CONTAINER,
+		STRUCTURE_ROAD, STRUCTURE_RAMPART,
+		STRUCTURE_POWER_SPAWN,
+		STRUCTURE_EXTRACTOR,
+		STRUCTURE_LAB,
+		STRUCTURE_FACTORY,
+		STRUCTURE_NUKER
+	];
 
-		if(buildings.length > 0) {
+	// 🚀 按优先级查找目标
+	for (const structureType of buildOrder) {
+		const filteredBuildings = buildingsToBuild.filter(building => 
+			building.structureType === structureType
+		);
+		
+		if (filteredBuildings.length > 0) {
 			creep.memory.suicide = false;
 			creep.say("🎯", true);
-			buildings.sort((a,b) => b.progressTotal - a.progressTotal);
-			return buildings[0].id;
+			
+			// 按进度排序，优先建造进度多的
+			filteredBuildings.sort((a, b) => b.progressTotal - a.progressTotal);
+			return filteredBuildings[0].id;
 		}
 	}
 
-	if(buildingsToBuild.length > 0) {
-		const buildings = buildingsToBuild.filter(function(building) {return building.structureType == STRUCTURE_EXTENSION;});
-		if(buildings.length > 0) {
-			creep.memory.suicide = false;
-			creep.say("🎯", true);
-			buildings.sort((a,b) => b.progressTotal - a.progressTotal);
-			return buildings[0].id;
-		}
-	}
-
-	if(buildingsToBuild.length > 0) {
-		const buildings = buildingsToBuild.filter(function(building) {return building.structureType == STRUCTURE_CONTAINER;});
-		if(buildings.length > 0) {
-			creep.memory.suicide = false;
-			creep.say("🎯", true);
-			buildings.sort((a,b) => b.progressTotal - a.progressTotal);
-			return buildings[0].id;
-		}
-	}
-
-    if(buildingsToBuild.length > 0) {
-		creep.memory.suicide = false;
-		creep.say("🎯", true);
-		const closestBuildingToBuild = creep.pos.findClosestByRange(buildingsToBuild);
-		// buildingsToBuild.sort((a,b) => b.progressTotal - a.progressTotal);
-        // return buildingsToBuild[0].id;
-		return closestBuildingToBuild.id;
-		// if building is link or storage build first.
-    }
-	creep.memory.suicide = true;
+	// 📍 兜底：选择最近的建筑
+	creep.memory.suicide = false;
+	creep.say("🎯", true);
+	const closestBuilding = creep.pos.findClosestByRange(buildingsToBuild);
+	return closestBuilding.id;
 }
 
 /**
@@ -70,23 +63,10 @@ function findLockedLegacy(creep) {
  * @returns 目标ID或null
  */
 function findLocked(creep) {
-    // 首先尝试新的布局系统
-    try {
-        const layoutTarget = findLockedFromLayout(creep);
-        if (layoutTarget) {
-            console.log(`[Builder] ${creep.name} 使用布局系统找到目标: ${layoutTarget}`);
-            return layoutTarget;
-        }
-        
-        console.log(`[Builder] ${creep.name} 布局系统无目标，回退到传统系统`);
-    } catch (error) {
-        console.log(`[Builder] ${creep.name} 布局系统错误: ${error}，回退到传统系统`);
-    }
-    
-    // 回退到传统系统
+    // 直接使用传统系统，布局系统由自动建造处理
     const legacyTarget = findLockedLegacy(creep);
     if (legacyTarget) {
-        console.log(`[Builder] ${creep.name} 使用传统系统找到目标: ${legacyTarget}`);
+        console.log(`[Builder] ${creep.name} 找到目标: ${legacyTarget}`);
     }
     
     return legacyTarget;

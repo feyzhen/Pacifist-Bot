@@ -682,13 +682,11 @@ function spawnHauler(room, task) {
 }
 
 /**
- * 根据布局建造建筑（支持策略配置和传统角色兼容）
+ * 根据布局建造建筑（支持策略配置）
  * @param room 房间对象
- * @param targetStructureType 目标结构类型（可选，用于传统角色兼容）
- * @param maxTargets 最大目标数量（可选，用于传统角色兼容）
- * @returns 建造目标数组或null（用于传统角色兼容）
+ * @returns 创建的工地数组
  */
-function buildFromLayout(room: Room, targetStructureType?: string, maxTargets?: number): ConstructionSite[] | null {
+function buildFromLayout(room: Room): ConstructionSite[] | null {
   if (!Memory.roomPlanner || !Memory.roomPlanner[room.name]) {
     return null; // 回退到传统系统
   }
@@ -725,11 +723,6 @@ function buildFromLayout(room: Room, targetStructureType?: string, maxTargets?: 
 
   const constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
   const existingStructures = room.find(FIND_MY_STRUCTURES);
-
-  // 传统角色调用模式：返回目标数组而不是直接建造
-  if (targetStructureType || maxTargets !== undefined) {
-    return getLayoutTargets(room, layout, targetStructureType, maxTargets, existingStructures, constructionSites);
-  }
 
   // 原有的自动建造模式
   const maxConstructionSites = 3; // 限制同时建造的工地数量
@@ -838,200 +831,8 @@ function buildFromLayout(room: Room, targetStructureType?: string, maxTargets?: 
   return createdSites;
 }
 
-/**
- * 获取布局中的建造目标（用于传统角色兼容）
- */
-function getLayoutTargets(
-  room: Room,
-  layout: any,
-  targetStructureType?: string,
-  maxTargets?: number,
-  existingStructures?: Structure[],
-  constructionSites?: ConstructionSite[]
-): ConstructionSite[] | null {
-  if (!existingStructures) existingStructures = room.find(FIND_MY_STRUCTURES);
-  if (!constructionSites) constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
 
-  const targets: { structureType: string; pos: RoomPosition }[] = [];
 
-  // 遍历布局中的所有结构类型
-  for (const [structureType, positions] of Object.entries(layout)) {
-    if (targetStructureType && structureType !== targetStructureType) continue;
-    if (!Array.isArray(positions)) continue;
-
-    for (const pos of positions) {
-      const roomPos = new RoomPosition(pos.x, pos.y, room.name);
-
-      // 检查是否已有建筑或工地
-      const hasStructure = existingStructures.some(s =>
-        s.pos.x === pos.x && s.pos.y === pos.y && s.structureType === structureType
-      );
-      const hasConstruction = constructionSites.some(s =>
-        s.pos.x === pos.x && s.pos.y === pos.y && s.structureType === structureType
-      );
-
-      if (!hasStructure && !hasConstruction) {
-        targets.push({ structureType, pos: roomPos });
-      }
-    }
-  }
-
-  // 限制结果数量
-  if (maxTargets && targets.length > maxTargets) {
-    targets.length = maxTargets;
-  }
-
-  return targets.length > 0 ? targets as any : null;
-}
-
-/**
- * 布局感知的目标查找器（用于传统角色兼容）
- * @param creep creep对象
- * @returns 目标ID或null
- */
-function findLockedFromLayout(creep: Creep): string | null {
-  try {
-    const room = creep.room;
-
-    // 检查房间是否启用布局系统
-    if ((room.memory as any).layoutEnabled === false) {
-      console.log(`[Layout] 房间 ${room.name} 禁用布局系统，回退到传统系统`);
-      return null; // 明确禁用时回退到传统系统
-    }
-
-    // 检查基础条件
-    if (!Memory.roomPlanner || !Memory.roomPlanner[room.name]) {
-      console.log(`[Layout] 房间 ${room.name} 无布局数据，回退到传统系统`);
-      return null;
-    }
-
-    // 获取布局目标
-    const layoutTargets = buildFromLayout(room);
-
-    if (!layoutTargets || layoutTargets.length === 0) {
-      console.log(`[Layout] 房间 ${room.name} 无可用布局目标，回退到传统系统`);
-      return null; // 无布局目标，回退到传统系统
-    }
-
-    // 应用优先级逻辑（类似传统findLocked）
-    const prioritizedTargets = prioritizeTargets(layoutTargets, creep);
-
-    if (prioritizedTargets.length > 0) {
-      creep.memory.suicide = false;
-      creep.say("布局", true);
-
-      // 创建工地并返回ID
-      const target = prioritizedTargets[0];
-      const result = target.pos.createConstructionSite(target.structureType);
-
-      if (result === OK) {
-        // 获取创建的工地ID
-        const newSite = target.pos.lookFor(LOOK_CONSTRUCTION_SITES)[0];
-        if (newSite) {
-          console.log(`[Layout] 成功创建工地: ${target.structureType} 在 ${room.name}(${target.pos.x},${target.pos.y})`);
-          return newSite.id;
-        } else {
-          console.log(`[Layout] 工地创建成功但无法获取对象: ${target.structureType} 在 ${room.name}(${target.pos.x},${target.pos.y})`);
-        }
-      } else {
-        console.log(`[Layout] 工地创建失败 (${result}): ${target.structureType} 在 ${room.name}(${target.pos.x},${target.pos.y})`);
-      }
-    } else {
-      console.log(`[Layout] 房间 ${room.name} 无优先级目标，回退到传统系统`);
-    }
-
-    creep.memory.suicide = true;
-    return null;
-  } catch (error) {
-    console.log(`[Layout] findLockedFromLayout 错误: ${error} 在房间 ${creep.room.name}`);
-    return null; // 出错时回退到传统系统
-  }
-}
-
-/**
- * 优先级排序函数（模拟传统findLocked逻辑）
- * @param targets 目标数组
- * @param creep creep对象
- * @returns 排序后的目标数组
- */
-function prioritizeTargets(targets: any[], creep: Creep): any[] {
-  const room = creep.room;
-
-  // 按结构类型分组
-  const groupedTargets: { [key: string]: any[] } = {};
-  for (const target of targets) {
-    if (!groupedTargets[target.structureType]) {
-      groupedTargets[target.structureType] = [];
-    }
-    groupedTargets[target.structureType].push(target);
-  }
-
-  const prioritized: any[] = [];
-
-  // RCL 2 特殊处理：优先建造spawn位置的重要建筑
-  if (room.controller.level === 2) {
-    const spawn = room.find(FIND_MY_SPAWNS)[0];
-    if (spawn && groupedTargets[STRUCTURE_LINK]) {
-      prioritized.push(...groupedTargets[STRUCTURE_LINK]);
-    }
-    if (spawn && groupedTargets[STRUCTURE_STORAGE]) {
-      prioritized.push(...groupedTargets[STRUCTURE_STORAGE]);
-    }
-    // spawn位置的建筑
-    if (spawn && groupedTargets[STRUCTURE_EXTENSION]) {
-      const spawnPosTargets = groupedTargets[STRUCTURE_EXTENSION].filter(
-        t => t.pos.x === spawn.pos.x && t.pos.y === spawn.pos.y - 2
-      );
-      prioritized.push(...spawnPosTargets);
-    }
-  } else {
-    // RCL 3+ 标准优先级
-    if (groupedTargets[STRUCTURE_LINK]) {
-      prioritized.push(...groupedTargets[STRUCTURE_LINK]);
-    }
-    if (groupedTargets[STRUCTURE_STORAGE]) {
-      prioritized.push(...groupedTargets[STRUCTURE_STORAGE]);
-    }
-  }
-
-  // Extension优先级
-  if (groupedTargets[STRUCTURE_EXTENSION]) {
-    prioritized.push(...groupedTargets[STRUCTURE_EXTENSION]);
-  }
-
-  // Container优先级
-  if (groupedTargets[STRUCTURE_CONTAINER]) {
-    prioritized.push(...groupedTargets[STRUCTURE_CONTAINER]);
-  }
-
-  // 其他所有建筑
-  for (const [structureType, typeTargets] of Object.entries(groupedTargets)) {
-    // 检查是否所有目标都已在优先级列表中
-    const unprioritizedTargets = typeTargets.filter(target =>
-      !prioritized.some(prioritized =>
-        prioritized.pos.x === target.pos.x &&
-        prioritized.pos.y === target.pos.y &&
-        prioritized.structureType === target.structureType
-      )
-    );
-    prioritized.push(...unprioritizedTargets);
-  }
-
-  // 按进度排序（如果有工地的话）
-  prioritized.sort((a, b) => {
-    const aProgress = a.progressTotal || 0;
-    const bProgress = b.progressTotal || 0;
-    return bProgress - aProgress; // 进度大的优先
-  });
-
-  // 如果没有优先级目标，返回距离最近的
-  if (prioritized.length === 0 && targets.length > 0) {
-    const closest = creep.pos.findClosestByRange(targets);
-    return closest ? [closest] : [];
-  }
-
-  return prioritized;
-}
 
 /**
  * 执行拆除逻辑
@@ -1273,10 +1074,7 @@ export {
   Situational_Building,
   handleResourceDismantling,
   buildFromLayout,
-  syncLayoutRoadsToKeepTheseRoads,
-  findLockedFromLayout,
-  prioritizeTargets,
-  getLayoutTargets
+  syncLayoutRoadsToKeepTheseRoads
 };
 
 // 🔥 步骤3: 移除默认导出 - 新系统不需要导出 construction
