@@ -1585,18 +1585,19 @@ class MilitaryRoleGenerator {
 
         if (HostileCreeps.length === 0) return;
 
-        let inRangeFourteen = false;
+        // let inRangeFourteen = false;
         let addtolist = true;
 
-        for (const hostile of HostileCreeps) {
-            const distance = hostile.pos.getRangeTo(room.controller.pos);
-            if (distance <= 14) {
-                inRangeFourteen = true;
-                break;
-            }
-        }
+        // for (const hostile of HostileCreeps) {
+        //     const distance = hostile.pos.getRangeTo(room.controller.pos);
+        //     if (distance <= 14) {
+        //         inRangeFourteen = true;
+        //         break;
+        //     }
+        // }
 
-        if (inRangeFourteen && RampartDefenders < 1) {
+        // if (inRangeFourteen && RampartDefenders < 1) {
+        if (RampartDefenders < 1) {
             let found = false;
             for (const enemyCreep of HostileCreeps) {
                 for (const part of enemyCreep.body) {
@@ -1720,7 +1721,7 @@ class SpecialDefenseGenerator {
             let addtolist = true;
             let HostileCreeps = roomState.hostileCreeps;
             HostileCreeps = HostileCreeps.filter(function(c: any) {return c.owner.username !== "Invader" && c.ticksToLive > 350;});
-            let inRangeFourteen = false;
+            // let inRangeFourteen = false;
             if (HostileCreeps.length > 0) {
                 if (storage && storage.pos.getRangeTo(storage.pos.findClosestByRange(HostileCreeps)) <= 14) {
                     if (HostileCreeps.length > 4 && RampartDefenders <= 1 && storage &&
@@ -1762,10 +1763,11 @@ class SpecialDefenseGenerator {
                             this.handleBoostAllocation(room, storage, 'lab4', 960);
                         }
                     }
-                    inRangeFourteen = true;
+                    // inRangeFourteen = true;
                 }
             }
-            if (inRangeFourteen && RampartDefenders < 1) {
+            // if (inRangeFourteen && RampartDefenders < 1) {
+            if (RampartDefenders < 1) {
                 let found = false;
                 for (const enemyCreep of HostileCreeps) {
                     for (const part of enemyCreep.body) {
