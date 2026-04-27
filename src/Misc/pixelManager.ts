@@ -21,11 +21,11 @@
 const DEFAULTS = {
     enabled: true,
     keepAmount: 500,
-    tradingEnabled: true,
+    tradingEnabled: false,
 } as const;
 
 function getConfig(): typeof DEFAULTS & Record<string, any> {
-    if (!Memory.pixelManager) Memory.pixelManager = {};
+    if (!Memory.pixelManager) Memory.pixelManager = DEFAULTS;
     return Object.assign({}, DEFAULTS, Memory.pixelManager);
 }
 
