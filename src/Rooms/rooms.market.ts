@@ -1,5 +1,5 @@
 function market(room):any {
-    if(room.terminal && room.terminal.cooldown == 0 && room.storage && room.memory.Structures.spawn && Game.getObjectById(room.memory.Structures.spawn) && Game.time % 10 == 0 && Game.cpu.bucket > 1000) {
+    if(room.terminal && room.terminal.cooldown == 0 && room.storage && room.memory.Structures.spawn && Game.getObjectById(room.memory.Structures.spawn) && Game.time % 10 == 0 && (Game.cpu.bucket > 1000 || Memory.pixelManager?.enabled)) {
         const BaseResources = [RESOURCE_HYDROGEN, RESOURCE_OXYGEN, RESOURCE_UTRIUM, RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_CATALYST];
         const Mineral:any = Game.getObjectById(room.memory.mineral) || room.findMineral();
 

@@ -129,7 +129,7 @@ function findLocked(creep, storage) {
  const run = function (creep) {
     creep.memory.moving = false;
 
-    if(Game.cpu.bucket < 100 && !creep.memory.boosted)return;
+    if(Game.cpu.bucket < 100 && !creep.memory.boosted) return;
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
         const result = creep.Boost();
         if(!result) {
@@ -253,7 +253,7 @@ function findLocked(creep, storage) {
                     const rangeB = creep.pos.getRangeTo(b.pos);
                     return rangeA - rangeB;
                 });
-                
+
                 const currentTarget = urgentRamparts.find(r => r.id === repairTarget.id);
                 if(!currentTarget || urgentRamparts[0].hits < currentTarget.hits) {
                     creep.say("紧急rampart", true);

@@ -22,7 +22,7 @@
             else if(creep.room.controller.level == 8 && !creep.room.memory.danger && Game.cpu.bucket < 9000 && creep.room.terminal && creep.room.terminal.store[RESOURCE_BATTERY] > 1000) {
                 creep.room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE], newName, {memory: {role: 'EnergyManager'}});
             }
-            else if(creep.room.controller.level == 8 && !creep.room.memory.danger && Game.cpu.bucket >= 5000) {
+            else if(creep.room.controller.level == 8 && !creep.room.memory.danger && (Game.cpu.bucket >= 5000 || Memory.pixelManager?.enabled)) {
                 creep.room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE], newName, {memory: {role: 'EnergyManager'}});
             }
             else if(creep.room.controller.level == 8 && (creep.room.memory.danger || Game.cpu.bucket < 5000)) {
