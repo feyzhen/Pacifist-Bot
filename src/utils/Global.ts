@@ -19,6 +19,7 @@ declare global {
         enabled?: boolean;
         keepAmount?: number;
         tradingEnabled?: boolean;
+        wasEnabledBeforeDanger?: boolean;
       };
       AvoidRooms: any;
       AvoidRoomsTemp: { [key: string]: number };

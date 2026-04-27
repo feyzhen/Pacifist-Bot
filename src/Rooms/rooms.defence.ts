@@ -17,7 +17,7 @@ function hasDamagedRamparts(roomName: string): boolean {
     const storage = room.storage;
     if (!storage) { return false; }
 
-    const MIN_HITS  = 750_000;
+    const MIN_HITS  = 750000;
     const MIN_RANGE = 8;
     const MAX_RANGE = 13;
 
@@ -66,7 +66,7 @@ function roomDefence(room: Room): void {
     if (
         room.memory.danger &&
         (
-            room.memory.danger_timer >= 11_000 ||
+            room.memory.danger_timer >= 11000 ||
             room.memory.danger_timer >= 50 &&
             Game.time % 5 === 0 &&
             hasDamagedRamparts(room.name) &&
@@ -109,7 +109,7 @@ function roomDefence(room: Room): void {
         if (rampartToRepair) {
             for (const tower of towers) {
                 if (
-                    rampartToRepair.hits < 2_500_000 ||
+                    rampartToRepair.hits < 2500000 ||
                     tower.pos.getRangeTo(rampartToRepair) <= 8 ||
                     tower.store[RESOURCE_ENERGY] >= 800
                 ) {
@@ -226,6 +226,13 @@ function roomDefence(room: Room): void {
         if (hostileCreeps.length > 0) {
             room.memory.danger = true;
 
+            // 保存原始 pixelManager 状态并关闭
+            if (Memory.pixelManager?.enabled && !Memory.pixelManager.wasEnabledBeforeDanger) {
+                Memory.pixelManager.wasEnabledBeforeDanger = Memory.pixelManager.enabled;
+                Memory.pixelManager.enabled = false;
+                console.log(`[Defence] PixelManager disabled due to danger in room ${room.name}`);
+            }
+
             // Hostile power creeps get tower-attacked directly
             const hostilePowerCreeps = room.find(FIND_HOSTILE_POWER_CREEPS);
             if (hostilePowerCreeps.length) {
@@ -321,13 +328,20 @@ function roomDefence(room: Room): void {
         } else {
             room.memory.danger      = false;
             room.memory.rampartToMan = false;
+
+            // 从 Memory 恢复 pixelManager 状态
+            if (Memory.pixelManager?.wasEnabledBeforeDanger !== undefined) {
+                Memory.pixelManager.enabled = Memory.pixelManager.wasEnabledBeforeDanger;
+                delete Memory.pixelManager.wasEnabledBeforeDanger;
+                console.log(`[Defence] PixelManager restored to ${Memory.pixelManager.enabled} in room ${room.name}`);
+            }
         }
 
         room.memory.blown_fuse = hostileCreeps.length > 0;
     }
 
     if (room.controller.safeMode) {
-        room.memory.danger      = false;
+        room.memory.danger      = false;  // 触发安全模式下，不会自动恢复pixelManager状态
         room.memory.blown_fuse  = false;
         room.memory.danger_timer = 0;
     }
