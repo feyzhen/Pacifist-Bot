@@ -18,8 +18,8 @@ function hasDamagedRamparts(roomName: string): boolean {
     if (!storage) { return false; }
 
     const MIN_HITS  = 750000;
-    const MIN_RANGE = 8;
-    const MAX_RANGE = 13;
+    const MIN_RANGE = 3;
+    const MAX_RANGE = 10;
 
     return room.find(FIND_MY_STRUCTURES, {
         filter: (s: any) =>
