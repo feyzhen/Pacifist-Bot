@@ -235,7 +235,7 @@ function runOutputLabs(room: Room, labs: Record<string, any>, inputLab1: any, in
 
 // ── Main export ───────────────────────────────────────────────────────────────
 function labs(room: Room): void {
-    if (!room.memory.labs || Game.time % 120 === 0) {
+    if (!room.memory.labs || Game.time % 2000 === 0) {
         if (!room.memory.labs) room.memory.labs = {};
         discoverLabs(room);
     }
