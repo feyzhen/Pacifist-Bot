@@ -799,7 +799,7 @@ const SPAWN_RULES_CONFIG = {
         },
         repair_creep: {
             amount: 3,
-            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
+            bodyPattern: [WORK, WORK, WORK, CARRY, MOVE]
         },
         maintain_creep: {
             amount: 1,
@@ -829,11 +829,11 @@ const SPAWN_RULES_CONFIG = {
         },
         repair_creep: {
             amount: 1,
-            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY]
+            bodyPattern: [WORK, WORK, WORK, CARRY, MOVE]
         },
         maintain_creep: {
             amount: 1,
-            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY]
+            bodyPattern: [WORK, WORK, CARRY, MOVE]
         }
     },
     8: {
@@ -855,11 +855,11 @@ const SPAWN_RULES_CONFIG = {
         },
         repair_creep: {
             amount: 2,
-            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY]
+            bodyPattern: [WORK, WORK, WORK, CARRY, MOVE]
         },
         maintain_creep: {
             amount: 1,
-            bodyPattern: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY]
+            bodyPattern: [WORK, WORK, CARRY, MOVE]
         }
     }
 };
@@ -1485,7 +1485,7 @@ class ConstructionRoleGenerator {
 
         if (shouldSpawn) {
             const name = 'Repair-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-            room.memory.spawn_list.push(rule.repair_creep.body, name, {memory: {role: 'repair', homeRoom: room.name}});
+            room.memory.spawn_list.push(getBody(rule.repair_creep.body, room), name, {memory: {role: 'repair', homeRoom: room.name}});
             console.log('Adding Repair to Spawn List: ' + name);
         }
     }
@@ -1538,7 +1538,7 @@ class ConstructionRoleGenerator {
         if (shouldSpawn) {
             if (spawnMaintainer) {
                 const name = 'Maintainer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(rule.maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});
+                room.memory.spawn_list.push(getBody(rule.maintain_creep.body, room, 50), name, {memory: {role: 'maintainer', homeRoom: room.name}});
                 console.log('Adding Maintainer to Spawn List: ' + name);
             } else if (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0) {
                 for (const roadID of room.memory.keepTheseRoads) {
@@ -1550,7 +1550,7 @@ class ConstructionRoleGenerator {
                         }
                         if (canSpawn) {
                             const name = 'Maintainer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                            room.memory.spawn_list.push(rule.maintain_creep.body, name, {memory: {role: 'maintainer', homeRoom: room.name}});
+                            room.memory.spawn_list.push(getBody(rule.maintain_creep.body, room, 50), name, {memory: {role: 'maintainer', homeRoom: room.name}});
                             console.log('Adding Maintainer to Spawn List: ' + name);
                             break;
                         }
