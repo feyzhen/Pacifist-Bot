@@ -1651,7 +1651,7 @@ function sortGoalsByLinkPriority(room, goalObjects, centralLinkPos, goalNearestP
 function placeBinContainer(room, storagePos, layout, layoutCost, extensionPos, removedPosList) {
     // Bin容器放置逻辑：固定在storage下方一格
     let binPos = { x: storagePos.x, y: storagePos.y + 1 };
-    
+
     // 检查位置是否在房间边界内
     if (binPos.x < 1 || binPos.x > 48 || binPos.y < 1 || binPos.y > 48) {
         // 如果下方超出边界，尝试上方
@@ -1665,7 +1665,7 @@ function placeBinContainer(room, storagePos, layout, layoutCost, extensionPos, r
             }
         }
     }
-    
+
     // 确保最终位置在边界内
     if (binPos.x >= 1 && binPos.x <= 48 && binPos.y >= 1 && binPos.y <= 48) {
         // 检查该位置是否已有建筑
@@ -1675,15 +1675,15 @@ function placeBinContainer(room, storagePos, layout, layoutCost, extensionPos, r
                 delete extensionPos[binPos.x][binPos.y];
                 removedPosList.push(binPos);
             }
-            
+
             // 添加bin容器到布局
             layout[STRUCTURE_CONTAINER].push(binPos);
             layoutCost[binPos.x][binPos.y] = 255;
-            
+
             return binPos;
         }
     }
-    
+
     return null;
 }
 
@@ -1691,7 +1691,7 @@ function findContainerBetweenLinkAndSource(linkPos, workPos, layout, layoutCost,
     // 在link和source之间寻找最佳的container位置
     let bestContainerPos = null;
     let bestCost = 999;
-    
+
     // 寻找link和source之间的路径
     let pathResult = PathFinder.search(
         { x: linkPos.x, y: linkPos.y, roomName: '' },
@@ -1717,66 +1717,66 @@ function findContainerBetweenLinkAndSource(linkPos, workPos, layout, layoutCost,
             }
         }
     );
-    
+
     if (!pathResult.incomplete && pathResult.path.length > 0) {
         // 在路径上寻找最佳container位置，优先选择中间位置
         for (let i = 0; i < pathResult.path.length; i++) {
             let pos = pathResult.path[i];
             let x = pos.x, y = pos.y;
             let u = x + y * 50;
-            
+
             // 跳过link位置和work位置
             if ((x === linkPos.x && y === linkPos.y) || (x === workPos.x && y === workPos.y)) {
                 continue;
             }
-            
+
             // 检查位置是否可用
             if (terrain[u] & TERRAIN_MASK_WALL || layoutCost[x][y] === 255) {
                 continue;
             }
-            
+
             // 计算成本：距离路径中点的位置越近越好
             let midIndex = Math.floor(pathResult.path.length / 2);
             let distanceFromMid = Math.abs(i - midIndex);
             let cost = distanceFromMid;
-            
+
             // 如果有extension，增加成本但可以考虑
             if (y in extensionPos[x]) {
                 cost += 3;
             }
-            
+
             if (cost < bestCost) {
                 bestCost = cost;
                 bestContainerPos = { x, y };
             }
         }
     }
-    
+
     // 如果在路径上没找到合适位置，尝试在link周围寻找
     if (!bestContainerPos) {
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 if (dx === 0 && dy === 0) continue;
-                
+
                 let x = linkPos.x + dx;
                 let y = linkPos.y + dy;
                 let u = x + y * 50;
-                
+
                 // 检查边界
                 if (x < 1 || x > 48 || y < 1 || y > 48) continue;
-                
+
                 // 检查位置是否可用
                 if (terrain[u] & TERRAIN_MASK_WALL || layoutCost[x][y] === 255) continue;
-                
+
                 // 计算到source的距离
                 let distanceToSource = getRange(x, y, workPos.x, workPos.y);
                 let cost = distanceToSource;
-                
+
                 // 如果有extension，增加成本
                 if (y in extensionPos[x]) {
                     cost += 3;
                 }
-                
+
                 if (cost < bestCost) {
                     bestCost = cost;
                     bestContainerPos = { x, y };
@@ -1784,24 +1784,24 @@ function findContainerBetweenLinkAndSource(linkPos, workPos, layout, layoutCost,
             }
         }
     }
-    
+
     // 如果找到了最佳位置，放置container
     if (bestContainerPos) {
         let x = bestContainerPos.x, y = bestContainerPos.y;
-        
+
         // 如果有extension，需要移除
         if (y in extensionPos[x]) {
             delete extensionPos[x][y];
             removedPosList.push(bestContainerPos);
         }
-        
+
         // 添加container到布局
         layout[STRUCTURE_CONTAINER].push(bestContainerPos);
         layoutCost[x][y] = 255;
-        
+
         return bestContainerPos;
     }
-    
+
     return null;
 }
 
@@ -2097,7 +2097,7 @@ function placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roa
                         delete extensionPos[bestLinkPos.x][bestLinkPos.y];
                         removedPosList.push(bestLinkPos);
                     }
-                    
+
                     // 在link到source之间放置container
                     if (!goal.mineralType) { // 只对source和controller放置container，不对mineral
                         let containerPos = findContainerBetweenLinkAndSource(bestLinkPos, bestPos, layout, layoutCost, extensionPos, removedPosList, terrain);
@@ -2577,14 +2577,14 @@ function placeLab(roadPosQueue, layout, layoutCost, extensionPos, costMat, rv) {
                 }
             }
             // console.log(`test (${roadPos.x}, ${roadPos.y}) with potential ${potentialLabPos.length}`);
-            for (i=0; i<potentialLabPos.length-1 && !labPos.length; i++) {
+            for (i = 0; i < potentialLabPos.length - 1 && !labPos.length; i++) {
                 labA = potentialLabPos[i];
                 labAX = labA.x;
                 labAY = labA.y;
                 if (labAX <= xMin || labAX >= xMax || labAY <= yMin || labAY >= yMax) continue;
                 labPosNearA = [];
-                for (px = labAX-2; px <= labAX+2; px++) {
-                    for (py = labAY-2; py <= labAY+2; py++) {
+                for (px = labAX - 2; px <= labAX + 2; px++) {
+                    for (py = labAY - 2; py <= labAY + 2; py++) {
                         if (py in extensionPos[px] && (px != labAX || py != labAY)) {
                             labPosNearA.push({ x: px, y: py });
                         }
@@ -2592,7 +2592,7 @@ function placeLab(roadPosQueue, layout, layoutCost, extensionPos, costMat, rv) {
                 }
                 if (labPosNearA.length < 9) continue;
                 labPosNearA.sort((a, b) => costMat[a.x][a.y] - costMat[b.x][b.y]);
-                for (j=i+1; j<potentialLabPos.length; j++) {
+                for (j = i + 1; j < potentialLabPos.length; j++) {
                     labB = potentialLabPos[j];
                     labBX = labB.x;
                     labBY = labB.y;
@@ -2605,16 +2605,16 @@ function placeLab(roadPosQueue, layout, layoutCost, extensionPos, costMat, rv) {
                         }
                     }
                     if (labPosNearAB.length >= 8) {
-                        xMin = xMax = labA.x, yMin = yMax = labA.y;
+                        (xMin = xMax = labA.x), (yMin = yMax = labA.y);
                         labPos.push(labA);
                         labPos.push(labB);
-                        for (j=0; j<8; j++) {
+                        for (j = 0; j < 8; j++) {
                             pos = labPosNearAB[j];
                             if (pos.x < xMin) xMin = pos.x;
                             else if (pos.x > xMax) xMax = pos.x;
                             if (pos.y < yMin) yMin = pos.y;
                             else if (pos.y > yMax) yMax = pos.y;
-                            labPos.push(pos)
+                            labPos.push(pos);
                         }
                         break;
                     }
@@ -2622,14 +2622,14 @@ function placeLab(roadPosQueue, layout, layoutCost, extensionPos, costMat, rv) {
             }
             if (labPos.length) {
                 // 重新整理，找最近的合适 lab 作为原料 lab，原料 lab 位于 layout[STRUCTURE_LAB] 末尾两个
-                let coreLabs = [], minDist = 50;
+                let coreLabs = [], outerLabs = [], minDist = 50;
                 for (let pos of labPos) {
                     px = pos.x, py = pos.y;
                     layoutCost[px][py] = 255;
                     if (px - xMin <= 2 && xMax - px <= 2 && py - yMin <= 2 && yMax - py <= 2) {
                         coreLabs.push(pos);
                     } else {
-                        layout[STRUCTURE_LAB].push(pos);
+                        outerLabs.push(pos);
                     }
                     // delete extensionPos[pos.x][pos.y];
                 }
@@ -2637,6 +2637,7 @@ function placeLab(roadPosQueue, layout, layoutCost, extensionPos, costMat, rv) {
                     coreLabs.sort((a, b) => costMat[b.x][b.y] - costMat[a.x][a.y]);
                 }
                 layout[STRUCTURE_LAB].push(...coreLabs);
+                layout[STRUCTURE_LAB].push(...outerLabs);
                 break;
             }
         }
