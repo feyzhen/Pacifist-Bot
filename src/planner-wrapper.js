@@ -2097,18 +2097,8 @@ function placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roa
                         delete extensionPos[bestLinkPos.x][bestLinkPos.y];
                         removedPosList.push(bestLinkPos);
                     }
-
-                    // 在link到source之间放置container
-                    if (!goal.mineralType) { // 只对source和controller放置container，不对mineral
-                        let containerPos = findContainerBetweenLinkAndSource(bestLinkPos, bestPos, layout, layoutCost, extensionPos, removedPosList, terrain, room.name);
-                        if (containerPos) {
-                            // container会在findContainerBetweenLinkAndSource函数中添加到layout
-                        }
-                    }
-                } else {
-                    layout[STRUCTURE_CONTAINER].push(bestPos);      // 没有 link 时，container 位置造在工位脚下
                 }
-
+                layout[STRUCTURE_CONTAINER].push(bestPos);
                 layout[WORK_POS].push(bestPos);
                 pfCostMat.set(bestPos.x, bestPos.y, pfCostMat.get(bestPos.x, bestPos.y) + EXTENSION_COST);
                 u = bestPos.x + bestPos.y * 50;
