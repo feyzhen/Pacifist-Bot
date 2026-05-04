@@ -1687,14 +1687,14 @@ function placeBinContainer(room, storagePos, layout, layoutCost, extensionPos, r
     return null;
 }
 
-function findContainerBetweenLinkAndSource(linkPos, workPos, layout, layoutCost, extensionPos, removedPosList, terrain) {
+function findContainerBetweenLinkAndSource(linkPos, workPos, layout, layoutCost, extensionPos, removedPosList, terrain, roomName) {
     // 在link和source之间寻找最佳的container位置
     let bestContainerPos = null;
     let bestCost = 999;
 
     // 寻找link和source之间的路径
     let pathResult = PathFinder.search(
-        { x: linkPos.x, y: linkPos.y, roomName: '' },
+        { x: linkPos.x, y: linkPos.y, roomName: roomName },
         { pos: workPos, range: 1 },
         {
             maxRooms: 1,
@@ -2100,7 +2100,7 @@ function placeLinkAndContainer(room, goalObjects, goalNearestPos, pfCostMat, roa
 
                     // 在link到source之间放置container
                     if (!goal.mineralType) { // 只对source和controller放置container，不对mineral
-                        let containerPos = findContainerBetweenLinkAndSource(bestLinkPos, bestPos, layout, layoutCost, extensionPos, removedPosList, terrain);
+                        let containerPos = findContainerBetweenLinkAndSource(bestLinkPos, bestPos, layout, layoutCost, extensionPos, removedPosList, terrain, room.name);
                         if (containerPos) {
                             // container会在findContainerBetweenLinkAndSource函数中添加到layout
                         }
