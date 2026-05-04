@@ -771,6 +771,10 @@ const SPAWN_RULES_CONFIG = {
             amount: 1,
             bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
         },
+        energy_manager_creep: {
+            amount: 1,
+            bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+        },
         repair_creep: {
             amount: 1,
             bodyPattern: [WORK, CARRY, MOVE]
@@ -1144,7 +1148,7 @@ class EnergyRoleGenerator {
     static generateEnergyManagers(room: Room, spawn: any, storage: any, energyManagers: number, spawnrules: any, roomState: any) {
         const rcl = room.controller.level;
 
-        if (rcl >= 6 && energyManagers < spawnrules[rcl].energy_manager_creep.amount && storage) {
+        if (rcl >= 5 && energyManagers < spawnrules[rcl].energy_manager_creep.amount && storage) {
             const allStructures = roomState.allStructures;
             const links = allStructures.filter(s => s.structureType === STRUCTURE_LINK);
             const sourceLinks = links.filter(link => {
@@ -1156,7 +1160,7 @@ class EnergyRoleGenerator {
                 return storage && link.pos.getRangeTo(storage as any) < 5;
             });
 
-            if (sourceLinks.length > 0 || targetLinks.length > 0 || room.terminal) {
+            if ((sourceLinks.length > 0 && targetLinks.length > 0) || room.terminal) {
                 const name = 'EnergyManager-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
 
                 if (rcl === 8 && room.energyAvailable < room.energyCapacityAvailable * 0.5 && room.energyAvailable <= 300) {
