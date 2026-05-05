@@ -38,7 +38,7 @@ function towerShootIfAllowed(
     target: Creep,
     shotCounter: number
 ): void {
-    if (shotCounter % 800 < 60 && target.ticksToLive > 50) {
+    if (shotCounter % 400 < 100 && target.ticksToLive > 50) {
         tower.attack(target);
     }
 }
@@ -237,7 +237,7 @@ function roomDefence(room: Room): void {
             // 每10tick重新评估目标，避免频繁切换
             if (Game.time % 10 === 0) {
                 const filteredEnemies = hostileCreeps.filter(c => !isAlly(c.owner.username));
-                
+
                 if (filteredEnemies.length > 0) {
                     // 按优先级排序敌人
                     const prioritizedTargets = filteredEnemies.sort((a, b) => {
@@ -245,24 +245,24 @@ function roomDefence(room: Room): void {
                         const aHeal = a.getActiveBodyparts(HEAL);
                         const bHeal = b.getActiveBodyparts(HEAL);
                         if (aHeal !== bHeal) return bHeal - aHeal;
-                        
+
                         // 2. 然后是远程攻击能力
                         const aRanged = a.getActiveBodyparts(RANGED_ATTACK);
                         const bRanged = b.getActiveBodyparts(RANGED_ATTACK);
                         if (aRanged !== bRanged) return bRanged - aRanged;
-                        
+
                         // 3. 然后是近战攻击能力
                         const aAttack = a.getActiveBodyparts(ATTACK);
                         const bAttack = b.getActiveBodyparts(ATTACK);
                         if (aAttack !== bAttack) return bAttack - aAttack;
-                        
+
                         // 4. 最后按生命值排序（优先攻击低血量的）
                         return a.hits - b.hits;
                     });
-                    
+
                     // 选择最高优先级目标
                     const selectedTarget = prioritizedTargets[0];
-                    
+
                     // 检查当前目标是否仍然有效
                     const currentTarget = Game.getObjectById(room.memory.attack_target);
                     if (!currentTarget || !filteredEnemies.includes(currentTarget as Creep)) {
