@@ -233,6 +233,48 @@ function roomDefence(room: Room): void {
                 console.log(`[Defence] PixelManager disabled due to danger in room ${room.name}`);
             }
 
+            // ── 智能攻击目标选择 ───────────────────────────────────────
+            // 每10tick重新评估目标，避免频繁切换
+            if (Game.time % 10 === 0) {
+                const filteredEnemies = hostileCreeps.filter(c => !isAlly(c.owner.username));
+                
+                if (filteredEnemies.length > 0) {
+                    // 按优先级排序敌人
+                    const prioritizedTargets = filteredEnemies.sort((a, b) => {
+                        // 1. 优先攻击有治疗能力的敌人
+                        const aHeal = a.getActiveBodyparts(HEAL);
+                        const bHeal = b.getActiveBodyparts(HEAL);
+                        if (aHeal !== bHeal) return bHeal - aHeal;
+                        
+                        // 2. 然后是远程攻击能力
+                        const aRanged = a.getActiveBodyparts(RANGED_ATTACK);
+                        const bRanged = b.getActiveBodyparts(RANGED_ATTACK);
+                        if (aRanged !== bRanged) return bRanged - aRanged;
+                        
+                        // 3. 然后是近战攻击能力
+                        const aAttack = a.getActiveBodyparts(ATTACK);
+                        const bAttack = b.getActiveBodyparts(ATTACK);
+                        if (aAttack !== bAttack) return bAttack - aAttack;
+                        
+                        // 4. 最后按生命值排序（优先攻击低血量的）
+                        return a.hits - b.hits;
+                    });
+                    
+                    // 选择最高优先级目标
+                    const selectedTarget = prioritizedTargets[0];
+                    
+                    // 检查当前目标是否仍然有效
+                    const currentTarget = Game.getObjectById(room.memory.attack_target);
+                    if (!currentTarget || !filteredEnemies.includes(currentTarget as Creep)) {
+                        room.memory.attack_target = selectedTarget.id;
+                        console.log(`[Defence] New attack target selected: ${selectedTarget.owner.username} at ${selectedTarget.pos}`);
+                    }
+                } else {
+                    // 没有有效敌人时清除目标
+                    room.memory.attack_target = null;
+                }
+            }
+
             // Hostile power creeps get tower-attacked directly
             const hostilePowerCreeps = room.find(FIND_HOSTILE_POWER_CREEPS);
             if (hostilePowerCreeps.length) {
@@ -328,6 +370,7 @@ function roomDefence(room: Room): void {
         } else {
             room.memory.danger      = false;
             room.memory.rampartToMan = false;
+            room.memory.attack_target = null;  // 清除攻击目标
 
             // 从 Memory 恢复 pixelManager 状态
             if (Memory.pixelManager?.wasEnabledBeforeDanger !== undefined) {
