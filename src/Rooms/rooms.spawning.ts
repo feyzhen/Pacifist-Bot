@@ -1871,8 +1871,12 @@ class SpecialDefenseGenerator {
             let rampartsInDangerOfDying = false;
             let rampartsInDangerOfDying4Mil = false;
             if (rampartsInRoomBelowTwelveMil && rampartsInRoomBelowTwelveMil.length > 0 && storage) {
-                rampartsInRoomBelowTwelveMil = rampartsInRoomBelowTwelveMil.filter(function(r: any) {return storage.pos.getRangeTo(r) >= 8 && storage.pos.getRangeTo(r) <= 10;});
-                const rampartsInRoomBelow6Mil = rampartsInRoomBelowTwelveMil.filter(function(r: any) {return r.hits <= 8050000;});
+                rampartsInRoomBelowTwelveMil = rampartsInRoomBelowTwelveMil.filter(function (r: any) {
+                    return storage.pos.getRangeTo(r) >= 8 && storage.pos.getRangeTo(r) <= 10;
+                });
+                const rampartsInRoomBelow6Mil = rampartsInRoomBelowTwelveMil.filter(function (r: any) {
+                    return r.hits <= 8050000;
+                });
                 const rampartsInRoomBelow4Mil = rampartsInRoomBelow6Mil.filter(function(r: any) {return r.hits <= 7050000;});
                 if (rampartsInRoomBelow4Mil.length > 0) {
                     rampartsInDangerOfDying4Mil = true;
@@ -1887,30 +1891,30 @@ class SpecialDefenseGenerator {
                 }
             }
             if (room.memory.danger_timer > 200 && SpecialRepairers < 1 || rampartsInDangerOfDying && SpecialRepairers < 1 || rampartsInDangerOfDying4Mil && SpecialRepairers < 4 && room.energyCapacityAvailable >= 4000) {
-                const newName = 'SpecialRepair-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                console.log('Adding SpecialRepair to Spawn List: ' + newName);
+                const newName = "SpecialRepair-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                console.log("Adding SpecialRepair to Spawn List: " + newName);
                 if (room.controller.level >= 7) {
                     if (storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 1080 && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
                         this.handleBoostAllocation(room, storage, 'lab1', 1080);
-                        room.memory.spawn_list.push([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
+                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], room) , newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
                     }
                     else {
-                        room.memory.spawn_list.push([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], newName, {memory: {role: 'SpecialRepair'}});
+                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], room), newName, {memory: {role: 'SpecialRepair'}});
                     }
                     const newName2 = 'SpecialCarry-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    room.memory.spawn_list.push([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY], newName2, {memory: {role: 'SpecialCarry'}});
+                    room.memory.spawn_list.push(getBody([CARRY, MOVE], room), newName2, {memory: {role: 'SpecialCarry'}});
                     console.log('Adding SpecialCarry to Spawn List: ' + newName);
                 }
                 else if (room.controller.level == 6) {
                     if (storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 540 && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
                         this.handleBoostAllocation(room, storage, 'lab1', 540);
-                        room.memory.spawn_list.push([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
+                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, CARRY, MOVE], room), newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
                     }
                     else {
-                        room.memory.spawn_list.push([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], newName, {memory: {role: 'SpecialRepair'}});
+                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, CARRY, MOVE], room), newName, {memory: {role: 'SpecialRepair'}});
                     }
                     const newName2 = 'SpecialCarry-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    room.memory.spawn_list.push([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY], newName2, {memory: {role: 'SpecialCarry'}});
+                    room.memory.spawn_list.push(getBody([MOVE, CARRY], room), newName2, {memory: {role: 'SpecialCarry'}});
                     console.log('Adding SpecialCarry to Spawn List: ' + newName);
                 }
             }
