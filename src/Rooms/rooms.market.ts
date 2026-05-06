@@ -1,6 +1,17 @@
+import { 
+    CREDIT_REQUIREMENTS, 
+    STORAGE_THRESHOLDS, 
+    PURCHASE_CONFIG, 
+    SALES_CONFIG, 
+    RESOURCE_LISTS,
+    getSellThreshold,
+    getSpecialPrice,
+    hasSpecialPrice 
+} from '../constants/constants.market';
+
 function market(room):any {
     if(room.terminal && room.terminal.cooldown == 0 && room.storage && room.memory.Structures.spawn && Game.getObjectById(room.memory.Structures.spawn) && Game.time % 10 == 0 && (Game.cpu.bucket > 1000 || Memory.pixelManager?.enabled)) {
-        const BaseResources = [RESOURCE_HYDROGEN, RESOURCE_OXYGEN, RESOURCE_UTRIUM, RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_CATALYST];
+        const BaseResources = RESOURCE_LISTS.BASE_RESOURCES;
         const Mineral:any = Game.getObjectById(room.memory.mineral) || room.findMineral();
 
 
@@ -31,7 +42,7 @@ function market(room):any {
         //     resourceToSell = false;
         // }
 
-        if(room.terminal.store.getUsedCapacity() > 280000 && room.terminal.store[resourceToSell] > 100000) {
+        if(room.terminal.store.getUsedCapacity() > STORAGE_THRESHOLDS.BASE_RESOURCES.TERMINAL_CAPACITY && room.terminal.store[resourceToSell] > STORAGE_THRESHOLDS.SELL_THRESHOLDS.ROOM_MINERAL_AMOUNT) {
             const orders = Game.market.getAllOrders(order => order.resourceType == resourceToSell &&
                 order.type == ORDER_BUY);
 
@@ -58,7 +69,7 @@ function market(room):any {
             room.memory.market.sellOrders.roomMineral = {};
         }
 
-        if(room.terminal.store[resourceToSell] >= 30000) {
+        if(room.terminal.store[resourceToSell] >= STORAGE_THRESHOLDS.SELL_THRESHOLDS.ROOM_MINERAL) {
             if(room.memory.market.sellOrders.roomMineral.ID && Game.market.orders[room.memory.market.sellOrders.roomMineral.ID]) {
                 const order = Game.market.orders[room.memory.market.sellOrders.roomMineral.ID];
                 if(order.remainingAmount <= 1000)  {
@@ -248,51 +259,30 @@ function market(room):any {
             //     }
             // }
 
-            if(Game.market.credits > 1000000 && Game.shard.name == "shard3" || Game.shard.name !== "shard3" && Game.market.credits >= 10000) {
+            if(Game.market.credits > CREDIT_REQUIREMENTS.BASE_RESOURCE_PURCHASE.SHARD3 && Game.shard.name == "shard3" || Game.shard.name !== "shard3" && Game.market.credits >= CREDIT_REQUIREMENTS.BASE_RESOURCE_PURCHASE.OTHER) {
                 if(room.terminal.store.getFreeCapacity() > 1000) {
-                    for(const resource of BaseResources) {
-                        if(room.terminal.store[resource] < 8000 && resource != Mineral.mineralType || room.terminal.store[resource] < 1000 && resource == Mineral.mineralType) {
-                            const result = buy_resource(resource, 2);
-                            if(result == 0) {
-                                return;
+                    // 使用常量定义的分层购买策略
+                    for(const tier of PURCHASE_CONFIG.BASE_RESOURCES.PRICE_TIERS) {
+                        for(const resource of BaseResources) {
+                            const threshold = tier.price === 2 ? STORAGE_THRESHOLDS.RESOURCE_STOCK.BASE_MAX : 
+                                             tier.price === 50 ? 7000 :
+                                             tier.price === 100 ? 6000 : 5000;
+                            
+                            if(room.terminal.store[resource] < threshold && resource != Mineral.mineralType || 
+                               room.terminal.store[resource] < STORAGE_THRESHOLDS.RESOURCE_STOCK.LOCAL_MIN && resource == Mineral.mineralType) {
+                                const result = buy_resource(resource, tier.price);
+                                if(result == 0) {
+                                    return;
+                                }
                             }
                         }
                     }
 
-
-                    for(const resource of BaseResources) {
-                        if(room.terminal.store[resource] < 7000 && resource != Mineral.mineralType || room.terminal.store[resource] < 1000 && resource == Mineral.mineralType) {
-                            const result = buy_resource(resource, 50);
-                            if(result == 0) {
-                                return;
-                            }
-                        }
-                    }
-
-
-                    for(const resource of BaseResources) {
-                        if(room.terminal.store[resource] < 6000 && resource != Mineral.mineralType || room.terminal.store[resource] < 1000 && resource == Mineral.mineralType) {
-                            const result = buy_resource(resource, 100);
-                            if(result == 0) {
-                                return;
-                            }
-                        }
-                    }
-
-                    for(const resource of BaseResources) {
-                        if(room.terminal.store[resource] < 5000 && resource != Mineral.mineralType || room.terminal.store[resource] < 1000 && resource == Mineral.mineralType) {
-                            const result = buy_resource(resource, 500);
-                            if(result == 0) {
-                                return;
-                            }
-                        }
-                    }
-
-                    if(Game.market.credits > 100000000) {
-                        // check if terminal + storage have less than 5000 power
-                        // if so, buy 5000 power
-                        if(room.terminal.store[RESOURCE_POWER] + room.storage.store[RESOURCE_POWER] < 5000) {
-                            const result = buy_resource(RESOURCE_POWER, 5000, 5000);
+                    if(Game.market.credits > CREDIT_REQUIREMENTS.POWER_PURCHASE) {
+                        // check if terminal + storage have less than power threshold
+                        // if so, buy power
+                        if(room.terminal.store[RESOURCE_POWER] + room.storage.store[RESOURCE_POWER] < STORAGE_THRESHOLDS.RESOURCE_STOCK.POWER_TOTAL) {
+                            const result = buy_resource(RESOURCE_POWER, PURCHASE_CONFIG.SPECIAL_RESOURCES.POWER.price, PURCHASE_CONFIG.SPECIAL_RESOURCES.POWER.amount);
                             if(result == 0) {
                                 return;
                             }
@@ -314,40 +304,29 @@ function market(room):any {
             // }
 
 
-            const SellResources = [RESOURCE_MIST, RESOURCE_GHODIUM_MELT, RESOURCE_COMPOSITE, RESOURCE_CRYSTAL, RESOURCE_LIQUID,
-            RESOURCE_OXIDANT, RESOURCE_REDUCTANT, RESOURCE_ZYNTHIUM_BAR, RESOURCE_LEMERGIUM_BAR, RESOURCE_UTRIUM_BAR, RESOURCE_KEANIUM_BAR, RESOURCE_PURIFIER,
-            RESOURCE_METAL, RESOURCE_BIOMASS, RESOURCE_SILICON,RESOURCE_KEANIUM_ACID,RESOURCE_GHODIUM_HYDRIDE,RESOURCE_GHODIUM_ACID,RESOURCE_OPS];
+            const SellResources = RESOURCE_LISTS.SELL_RESOURCES;
 
 
 
             for(const resource of SellResources) {
 
-                if(resource === RESOURCE_OPS && room.terminal.store[resource] < 35000) {
+                if(resource === RESOURCE_OPS && room.terminal.store[resource] < STORAGE_THRESHOLDS.RESOURCE_STOCK.OPS_MIN) {
                     continue;
                 }
 
-                if(room.terminal.store[resource] >= 1000) {
-                    const result = sell_resource(resource, undefined, 1000);
-                    if(result == 0) {
-                        return;
-                    }
-                }
-                if(room.terminal.store[resource] >= 100 && Game.time % 100 == 0) {
-                    const result = sell_resource(resource, undefined, 100);
-                    if(result == 0) {
-                        return;
-                    }
-                }
-                if(room.terminal.store[resource] >= 1 && Game.time % 1000 == 0) {
-                    const result = sell_resource(resource, undefined, 10);
-                    if(result == 0) {
-                        return;
-                    }
-                }
-                if(room.terminal.store[resource] >= 1 && Game.time % 10000 == 0) {
-                    const result = sell_resource(resource, undefined, 1);
-                    if(result == 0) {
-                        return;
+                // 使用常量定义的销售阈值，避免与生产阈值冲突
+                const sellThreshold = getSellThreshold(resource);
+
+                // 使用常量定义的分层销售策略
+                for(const tier of SALES_CONFIG.BASE_SALES.TIERS) {
+                    if(room.terminal.store[resource] >= tier.threshold) {
+                        const shouldExecute = tier.frequency === null || Game.time % tier.frequency === 0;
+                        if(shouldExecute) {
+                            const result = sell_resource(resource, undefined, tier.amount);
+                            if(result == 0) {
+                                return;
+                            }
+                        }
                     }
                 }
             }
@@ -375,7 +354,7 @@ function market(room):any {
         }
 
         function buy_resource(resource:ResourceConstant, OrderPrice:number=5, OrderAmount=1000):any | void {
-            const OrderMaxEnergy = OrderAmount * 4;
+            const OrderMaxEnergy = OrderAmount * PURCHASE_CONFIG.BASE_RESOURCES.ENERGY_COST_MULTIPLIER;
             let orders = Game.market.getAllOrders({type: ORDER_SELL, resourceType: resource});
             orders = _.filter(orders, (order) => Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price <= OrderPrice);
             if(orders.length > 0) {
@@ -410,7 +389,7 @@ function market(room):any {
             // 如果没有指定最低价格，使用动态价格计算
             const dynamicPrice = minPrice || CalcPriceForSale(resource, room.terminal.store[resource]);
 
-            const OrderMaxEnergy = OrderAmount * 8;
+            const OrderMaxEnergy = OrderAmount * SALES_CONFIG.BASE_SALES.ENERGY_COST_MULTIPLIER;
             let orders = Game.market.getAllOrders({type: ORDER_BUY, resourceType: resource});
             orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price >= dynamicPrice );
             if(orders.length > 0) {
@@ -441,11 +420,13 @@ function market(room):any {
 
 
         const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
-        if(room.terminal.store[RESOURCE_ENERGY] > 500 && room.terminal.store[RESOURCE_ENERGY] < 10000 && storage && storage.store[RESOURCE_ENERGY] < 40000) {
+        if(room.terminal.store[RESOURCE_ENERGY] > STORAGE_THRESHOLDS.BASE_RESOURCES.TERMINAL_ENERGY_MIN && 
+           room.terminal.store[RESOURCE_ENERGY] < STORAGE_THRESHOLDS.BASE_RESOURCES.TERMINAL_ENERGY_MAX && 
+           storage && storage.store[RESOURCE_ENERGY] < STORAGE_THRESHOLDS.BASE_RESOURCES.STORAGE_ENERGY_LOW) {
 
-            const OrderPrice = 20;
-            const OrderAmount = 5000;
-            const OrderMaxEnergy = OrderAmount / 2;
+            const OrderPrice = PURCHASE_CONFIG.SPECIAL_RESOURCES.ENERGY.price;
+            const OrderAmount = PURCHASE_CONFIG.SPECIAL_RESOURCES.ENERGY.amount;
+            const OrderMaxEnergy = OrderAmount * PURCHASE_CONFIG.SPECIAL_RESOURCES.ENERGY.energyCostMultiplier;
             let orders = Game.market.getAllOrders({type: ORDER_SELL, resourceType: RESOURCE_ENERGY});
             orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price <= OrderPrice);
             if(orders.length > 0) {
@@ -532,244 +513,65 @@ function market(room):any {
 
 
 
-        if(room.terminal.store[RESOURCE_CONDENSATE] >= 10) {
-            const result = sell_resource(RESOURCE_CONDENSATE, 999, 10);
-            if(result == 0) {
-                return;
+        // 使用常量定义的特殊资源销售逻辑
+        const specialResources = [
+            { resource: RESOURCE_CONDENSATE, threshold: 10, amount: 10 },
+            { resource: RESOURCE_CONCENTRATE, threshold: 10, amount: 10 },
+            { resource: RESOURCE_CONCENTRATE, threshold: 2, amount: 2 },
+            { resource: RESOURCE_EXTRACT, threshold: 5, amount: 5 },
+            { resource: RESOURCE_EXTRACT, threshold: 1, amount: 1 },
+            { resource: RESOURCE_SPIRIT, threshold: 1, amount: 1 },
+            { resource: RESOURCE_EMANATION, threshold: 1, amount: 1 },
+            { resource: RESOURCE_ESSENCE, threshold: 1, amount: 1 },
+            { resource: RESOURCE_WIRE, threshold: 10, amount: 10 },
+            { resource: RESOURCE_SWITCH, threshold: 10, amount: 10 },
+            { resource: RESOURCE_SWITCH, threshold: 2, amount: 2 },
+            { resource: RESOURCE_TRANSISTOR, threshold: 5, amount: 5 },
+            { resource: RESOURCE_TRANSISTOR, threshold: 1, amount: 1 },
+            { resource: RESOURCE_MICROCHIP, threshold: 1, amount: 1 },
+            { resource: RESOURCE_CIRCUIT, threshold: 1, amount: 1 },
+            { resource: RESOURCE_DEVICE, threshold: 1, amount: 1 },
+            { resource: RESOURCE_CELL, threshold: 10, amount: 10 },
+            { resource: RESOURCE_PHLEGM, threshold: 10, amount: 10 },
+            { resource: RESOURCE_PHLEGM, threshold: 2, amount: 2 },
+            { resource: RESOURCE_TISSUE, threshold: 5, amount: 5 },
+            { resource: RESOURCE_TISSUE, threshold: 1, amount: 1 },
+            { resource: RESOURCE_MUSCLE, threshold: 1, amount: 1 },
+            { resource: RESOURCE_ORGANOID, threshold: 1, amount: 1 },
+            { resource: RESOURCE_ORGANISM, threshold: 1, amount: 1 },
+            { resource: RESOURCE_ALLOY, threshold: 10, amount: 10 },
+            { resource: RESOURCE_TUBE, threshold: 10, amount: 10 },
+            { resource: RESOURCE_TUBE, threshold: 2, amount: 2 },
+            { resource: RESOURCE_FIXTURES, threshold: 5, amount: 5 },
+            { resource: RESOURCE_FIXTURES, threshold: 1, amount: 1 },
+            { resource: RESOURCE_FRAME, threshold: 1, amount: 1 },
+            { resource: RESOURCE_HYDRAULICS, threshold: 1, amount: 1 },
+            { resource: RESOURCE_MACHINE, threshold: 1, amount: 1 }
+        ];
+
+        for(const item of specialResources) {
+            if(room.terminal.store[item.resource] >= item.threshold) {
+                const price = getSpecialPrice(item.resource);
+                if(price) {
+                    const result = sell_resource(item.resource, price, item.amount);
+                    if(result == 0) {
+                        return;
+                    }
+                }
             }
         }
-        if(room.terminal.store[RESOURCE_CONCENTRATE] >= 10) {
-            const result = sell_resource(RESOURCE_CONCENTRATE, 9999, 10);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_CONCENTRATE] >= 2) {
-            const result = sell_resource(RESOURCE_CONCENTRATE, 9999, 2);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_EXTRACT] >= 5) {
-            const result = sell_resource(RESOURCE_EXTRACT, 80000, 5);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_EXTRACT] >= 1) {
-            const result = sell_resource(RESOURCE_EXTRACT, 80000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_SPIRIT] >= 1) {
-            const result = sell_resource(RESOURCE_SPIRIT, 199999, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_EMANATION] >= 1) {
-            const result = sell_resource(RESOURCE_EMANATION, 800000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_ESSENCE] >= 1) {
-            const result = sell_resource(RESOURCE_ESSENCE, 2000000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_CONDENSATE] > 0) {
-            const result = sell_resource(RESOURCE_CONDENSATE, 999, room.terminal.store[RESOURCE_CONDENSATE]);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_CONCENTRATE] > 0) {
-            const result = sell_resource(RESOURCE_CONCENTRATE, 9999, room.terminal.store[RESOURCE_CONCENTRATE]);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_WIRE] >= 10) {
-            const result = sell_resource(RESOURCE_WIRE, 999, 10);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_SWITCH] >= 10) {
-            const result = sell_resource(RESOURCE_SWITCH, 9999, 10);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_SWITCH] >= 2) {
-            const result = sell_resource(RESOURCE_SWITCH, 9999, 2);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_TRANSISTOR] >= 5) {
-            const result = sell_resource(RESOURCE_TRANSISTOR, 80000, 5);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_TRANSISTOR] >= 1) {
-            const result = sell_resource(RESOURCE_TRANSISTOR, 80000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_MICROCHIP] >= 1) {
-            const result = sell_resource(RESOURCE_MICROCHIP, 199999, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_CIRCUIT] >= 1) {
-            const result = sell_resource(RESOURCE_CIRCUIT, 800000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_DEVICE] >= 1) {
-            const result = sell_resource(RESOURCE_DEVICE, 2000000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_WIRE] > 0) {
-            const result = sell_resource(RESOURCE_WIRE, 999, room.terminal.store[RESOURCE_WIRE]);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_SWITCH] > 0) {
-            const result = sell_resource(RESOURCE_SWITCH, 9999, room.terminal.store[RESOURCE_SWITCH]);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_CELL] >= 10) {
-            const result = sell_resource(RESOURCE_CELL, 999, 10);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_PHLEGM] >= 10) {
-            const result = sell_resource(RESOURCE_PHLEGM, 9999, 10);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_PHLEGM] >= 2) {
-            const result = sell_resource(RESOURCE_PHLEGM, 9999, 2);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_TISSUE] >= 5) {
-            const result = sell_resource(RESOURCE_TISSUE, 80000, 5);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_TISSUE] >= 1) {
-            const result = sell_resource(RESOURCE_TISSUE, 80000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_MUSCLE] >= 1) {
-            const result = sell_resource(RESOURCE_MUSCLE, 199999, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_ORGANOID] >= 1) {
-            const result = sell_resource(RESOURCE_ORGANOID, 800000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_ORGANISM] >= 1) {
-            const result = sell_resource(RESOURCE_ORGANISM, 2000000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_CELL] > 0) {
-            const result = sell_resource(RESOURCE_CELL, 999, room.terminal.store[RESOURCE_CELL]);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_PHLEGM] > 0) {
-            const result = sell_resource(RESOURCE_PHLEGM, 9999, room.terminal.store[RESOURCE_PHLEGM]);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_ALLOY] >= 10) {
-            const result = sell_resource(RESOURCE_ALLOY, 999, 10);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_TUBE] >= 10) {
-            const result = sell_resource(RESOURCE_TUBE, 9999, 10);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_TUBE] >= 2) {
-            const result = sell_resource(RESOURCE_TUBE, 9999, 2);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_FIXTURES] >= 5) {
-            const result = sell_resource(RESOURCE_FIXTURES, 80000, 5);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_FIXTURES] >= 1) {
-            const result = sell_resource(RESOURCE_FIXTURES, 80000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_FRAME] >= 1) {
-            const result = sell_resource(RESOURCE_FRAME, 199999, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_HYDRAULICS] >= 1) {
-            const result = sell_resource(RESOURCE_HYDRAULICS, 800000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_MACHINE] >= 1) {
-            const result = sell_resource(RESOURCE_MACHINE, 2000000, 1);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_ALLOY] > 0) {
-            const result = sell_resource(RESOURCE_ALLOY, 999, room.terminal.store[RESOURCE_ALLOY]);
-            if(result == 0) {
-                return;
-            }
-        }
-        if(room.terminal.store[RESOURCE_TUBE] > 0) {
-            const result = sell_resource(RESOURCE_TUBE, 9999, room.terminal.store[RESOURCE_TUBE]);
-            if(result == 0) {
-                return;
+
+        // 清空库存的特殊资源
+        const clearResources = [RESOURCE_CONDENSATE, RESOURCE_CONCENTRATE, RESOURCE_WIRE, RESOURCE_SWITCH, RESOURCE_CELL, RESOURCE_PHLEGM, RESOURCE_ALLOY, RESOURCE_TUBE];
+        for(const resource of clearResources) {
+            if(room.terminal.store[resource] > 0) {
+                const price = getSpecialPrice(resource);
+                if(price) {
+                    const result = sell_resource(resource, price, room.terminal.store[resource]);
+                    if(result == 0) {
+                        return;
+                    }
+                }
             }
         }
 
@@ -882,32 +684,23 @@ function market(room):any {
         }
     }
     const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
-    if(storage && storage.store[RESOURCE_ENERGY] > 300000 && Game.time % 110 == 0 && (Game.cpu.bucket > 9000 || Memory.pixelManager?.enabled) && room.terminal.cooldown == 0 && room.terminal.store.getFreeCapacity() > 50000) {
-        const crawler_list = [
-            RESOURCE_ENERGY,RESOURCE_POWER,RESOURCE_HYDROGEN,RESOURCE_LEMERGIUM,RESOURCE_GHODIUM,
-            RESOURCE_SILICON,RESOURCE_METAL,RESOURCE_BIOMASS,RESOURCE_MIST,RESOURCE_HYDROXIDE,RESOURCE_ZYNTHIUM_KEANITE,RESOURCE_UTRIUM_LEMERGITE,RESOURCE_UTRIUM_HYDRIDE,
-            RESOURCE_UTRIUM_OXIDE,RESOURCE_KEANIUM_HYDRIDE,RESOURCE_KEANIUM_OXIDE,RESOURCE_LEMERGIUM_HYDRIDE,RESOURCE_LEMERGIUM_OXIDE,RESOURCE_ZYNTHIUM_HYDRIDE,
-            RESOURCE_ZYNTHIUM_OXIDE,RESOURCE_GHODIUM_HYDRIDE,RESOURCE_GHODIUM_OXIDE,RESOURCE_UTRIUM_ACID,RESOURCE_UTRIUM_ALKALIDE,RESOURCE_KEANIUM_ACID,
-            RESOURCE_KEANIUM_ALKALIDE,RESOURCE_LEMERGIUM_ACID,RESOURCE_LEMERGIUM_ALKALIDE,RESOURCE_ZYNTHIUM_ACID,RESOURCE_ZYNTHIUM_ALKALIDE,RESOURCE_GHODIUM_ACID,
-            RESOURCE_GHODIUM_ALKALIDE,RESOURCE_CATALYZED_UTRIUM_ACID,RESOURCE_CATALYZED_UTRIUM_ALKALIDE,RESOURCE_CATALYZED_KEANIUM_ACID,RESOURCE_CATALYZED_KEANIUM_ALKALIDE,
-            RESOURCE_CATALYZED_LEMERGIUM_ACID,RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE,RESOURCE_CATALYZED_ZYNTHIUM_ACID,RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE,
-            RESOURCE_CATALYZED_GHODIUM_ACID,RESOURCE_CATALYZED_GHODIUM_ALKALIDE,RESOURCE_OPS,RESOURCE_UTRIUM_BAR,RESOURCE_LEMERGIUM_BAR,RESOURCE_ZYNTHIUM_BAR,
-            RESOURCE_KEANIUM_BAR,RESOURCE_GHODIUM_MELT,RESOURCE_OXIDANT,RESOURCE_REDUCTANT,RESOURCE_PURIFIER,RESOURCE_BATTERY,RESOURCE_COMPOSITE,RESOURCE_CRYSTAL,
-            RESOURCE_LIQUID,RESOURCE_WIRE,RESOURCE_SWITCH,RESOURCE_TRANSISTOR,RESOURCE_MICROCHIP,RESOURCE_CIRCUIT,RESOURCE_DEVICE,RESOURCE_CELL,RESOURCE_PHLEGM,
-            RESOURCE_TISSUE,RESOURCE_MUSCLE,RESOURCE_ORGANOID,RESOURCE_ORGANISM,RESOURCE_ALLOY,RESOURCE_TUBE,RESOURCE_FIXTURES,RESOURCE_FRAME,RESOURCE_HYDRAULICS,
-            RESOURCE_MACHINE,RESOURCE_CONDENSATE,RESOURCE_CONCENTRATE,RESOURCE_EXTRACT,RESOURCE_SPIRIT,RESOURCE_EMANATION,RESOURCE_ESSENCE
-        ]
+    if(storage && storage.store[RESOURCE_ENERGY] > STORAGE_THRESHOLDS.BASE_RESOURCES.STORAGE_ENERGY_HIGH && 
+       Game.time % 110 == 0 && (Game.cpu.bucket > CREDIT_REQUIREMENTS.MARKET_CRAWLER || Memory.pixelManager?.enabled) && 
+       room.terminal.cooldown == 0 && room.terminal.store.getFreeCapacity() > 50000) {
+        
+        let crawler_list = RESOURCE_LISTS.CRAWLER_RESOURCES;
+        
+        if(PURCHASE_CONFIG.MARKET_CRAWLER.shuffleList) {
+            crawler_list = crawler_list
+                .map(value => ({ value, sort: Math.random() }))
+                .sort((a, b) => a.sort - b.sort)
+                .map(({ value }) => value);
+        }
 
-        const shuffled_crawler_list = crawler_list
-            .map(value => ({ value, sort: Math.random() }))
-            .sort((a, b) => a.sort - b.sort)
-            .map(({ value }) => value);
-
-        if(room.terminal.store[RESOURCE_ENERGY] >= 2000) {
+        if(room.terminal.store[RESOURCE_ENERGY] >= STORAGE_THRESHOLDS.BASE_RESOURCES.TERMINAL_ENERGY_MIN) {
             let count = 0;
-            const price = 3;
-            for(const resource of shuffled_crawler_list) {
-                const result = buy_resource_crawler(resource, price);
+            for(const resource of crawler_list) {
+                const result = buy_resource_crawler(resource, PURCHASE_CONFIG.MARKET_CRAWLER.price);
                 if(result == 0) {
                     return;
                 }
@@ -915,12 +708,12 @@ function market(room):any {
                     count += 1
                 }
             }
-            console.log(count, "items not found by the market crawler below price of", price, room.name);
+            console.log(count, "items not found by the market crawler below price of", PURCHASE_CONFIG.MARKET_CRAWLER.price, room.name);
         }
 
         function buy_resource_crawler(resource:ResourceConstant, OrderPrice:number=5):any | void {
-            const OrderAmount = 50;
-            const OrderMaxEnergy = OrderAmount * 8;
+            const OrderAmount = PURCHASE_CONFIG.MARKET_CRAWLER.amount;
+            const OrderMaxEnergy = OrderAmount * PURCHASE_CONFIG.MARKET_CRAWLER.energyCostMultiplier;
             let orders = Game.market.getAllOrders({type: ORDER_SELL, resourceType: resource});
             orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price <= OrderPrice);
             if(orders.length > 0) {
@@ -1086,26 +879,10 @@ function market(room):any {
 export default market;
 
 
-function price_checker(price, resource) {
-    if(resource == RESOURCE_CONDENSATE && price < 999) {
-        return false;
+function price_checker(price, resource): boolean {
+    if(hasSpecialPrice(resource)) {
+        const minPrice = getSpecialPrice(resource);
+        return minPrice ? price >= minPrice : true;
     }
-    else if(resource == RESOURCE_CONCENTRATE && price < 9999) {
-        return false;
-    }
-    else if(resource == RESOURCE_EXTRACT && price < 80000) {
-        return false;
-    }
-    else if(resource == RESOURCE_SPIRIT && price < 199999) {
-        return false;
-    }
-    else if(resource == RESOURCE_EMANATION && price < 800000) {
-        return false;
-    }
-    else if(resource == RESOURCE_ESSENCE && price < 2000000) {
-        return false;
-    }
-
-
     return true;
 }
