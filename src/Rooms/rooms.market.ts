@@ -160,6 +160,38 @@ function market(room):any {
 
         }
 
+        function CalcPriceForSale(resource: ResourceConstant, resourceStored: number): number {
+            const resourceData = Game.market.getHistory(resource);
+            if (!resourceData || resourceData.length === 0) {
+                return 2; // 默认最低价格
+            }
+
+            // 计算加权平均价格
+            let totalAverage = 0;
+            let totalStDev = 0;
+            let weight = 1;
+
+            for (const day of resourceData) {
+                totalAverage += day.avgPrice * weight;
+                totalStDev += day.stddevPrice * weight;
+                weight++;
+            }
+
+            const average = totalAverage / ((resourceData.length * (resourceData.length + 1)) / 2);
+            const stDev = totalStDev / ((resourceData.length * (resourceData.length + 1)) / 2);
+
+            // 根据库存量调整价格策略
+            if (resourceStored >= 5000) {
+                // 高库存：积极销售，价格略低于市场均价
+                return Math.max(2, average - stDev);
+            } else if (resourceStored >= 2000) {
+                // 中等库存：正常销售，按市场均价
+                return Math.max(2, average);
+            } else {
+                // 低库存：保守销售，价格略高于市场均价
+                return Math.max(2, average + stDev);
+            }
+        }
 //------------------------------------------------------------------------------------------------------------------------------------------------
 
         // buy section
@@ -295,25 +327,25 @@ function market(room):any {
                 }
 
                 if(room.terminal.store[resource] >= 1000) {
-                    const result = sell_resource(resource, 2, 1000);
+                    const result = sell_resource(resource, undefined, 1000);
                     if(result == 0) {
                         return;
                     }
                 }
                 if(room.terminal.store[resource] >= 100 && Game.time % 100 == 0) {
-                    const result = sell_resource(resource, 2, 100);
+                    const result = sell_resource(resource, undefined, 100);
                     if(result == 0) {
                         return;
                     }
                 }
                 if(room.terminal.store[resource] >= 1 && Game.time % 1000 == 0) {
-                    const result = sell_resource(resource, 2, 10);
+                    const result = sell_resource(resource, undefined, 10);
                     if(result == 0) {
                         return;
                     }
                 }
                 if(room.terminal.store[resource] >= 1 && Game.time % 10000 == 0) {
-                    const result = sell_resource(resource, 2, 1);
+                    const result = sell_resource(resource, undefined, 1);
                     if(result == 0) {
                         return;
                     }
@@ -356,12 +388,12 @@ function market(room):any {
                 const result = Game.market.deal(orderID, newOrderAmount, room.name);
                 if(result == 0) {
                     console.log(
-                      newOrderAmount,
-                      resource,
-                      "Bought at Price:",
-                      orders[0].price,
-                      "=",
-                      newOrderAmount * orders[0].price
+                        newOrderAmount,
+                        resource,
+                        "Bought at Price:",
+                        orders[0].price,
+                        "=",
+                        newOrderAmount * orders[0].price
                     );
                     return result;
                 }
@@ -374,10 +406,13 @@ function market(room):any {
             }
         }
 
-        function sell_resource(resource:ResourceConstant, OrderPrice:number=5, OrderAmount=100):any | void {
+        function sell_resource(resource:ResourceConstant, minPrice:number=5, OrderAmount=100):any | void {
+            // 如果没有指定最低价格，使用动态价格计算
+            const dynamicPrice = minPrice || CalcPriceForSale(resource, room.terminal.store[resource]);
+
             const OrderMaxEnergy = OrderAmount * 8;
             let orders = Game.market.getAllOrders({type: ORDER_BUY, resourceType: resource});
-            orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price >= OrderPrice);
+            orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price >= dynamicPrice );
             if(orders.length > 0) {
                 orders.sort((a,b) => b.price - a.price);
 
@@ -400,7 +435,7 @@ function market(room):any {
                 }
             }
             else {
-                console.log("no order found above price of", OrderPrice, "for", resource, room.name)
+                console.log("no order found above price of", minPrice, "for", resource, room.name)
             }
         }
 
