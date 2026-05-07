@@ -198,9 +198,12 @@ function market(room):any {
             } else if (resourceStored >= 2000) {
                 // 中等库存：正常销售，按市场均价
                 return Math.max(2, average);
-            } else {
+            } else if (resourceStored >= 100) {
                 // 低库存：保守销售，价格略高于市场均价
                 return Math.max(2, average + stDev);
+            } else {
+                // 极低库存：保守销售，价格更高
+                return Math.max(2, average + (stDev * 1.5));
             }
         }
 //------------------------------------------------------------------------------------------------------------------------------------------------
@@ -317,16 +320,19 @@ function market(room):any {
                 // 使用常量定义的销售阈值，避免与生产阈值冲突
                 const sellThreshold = getSellThreshold(resource);
 
-                // 使用常量定义的分层销售策略
-                for(const tier of SALES_CONFIG.BASE_SALES.TIERS) {
-                    if(room.terminal.store[resource] >= tier.threshold) {
-                        const shouldExecute = tier.frequency === null || Game.time % tier.frequency === 0;
-                        if(shouldExecute) {
-                            const result = sell_resource(resource, undefined, tier.amount);
-                            if(result == 0) {
-                                return;
-                            }
-                        }
+                // 优雅的销售逻辑：只使用该资源的销售阈值
+                if(room.terminal.store[resource] >= sellThreshold) {
+                    const result = sell_resource(resource, undefined, 1000);
+                    if(result == 0) {
+                        return;
+                    }
+                }
+                
+                // 小额清理销售（可选）
+                if(room.terminal.store[resource] >= 100 && Game.time % 100 === 0) {
+                    const result = sell_resource(resource, undefined, 100);
+                    if(result == 0) {
+                        return;
                     }
                 }
             }
