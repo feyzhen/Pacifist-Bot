@@ -1839,7 +1839,10 @@ class MilitaryRoleGenerator {
             const required = room.controller.level == 7 ? 3 : 2;
             if (RangedRampartDefenders < required) {
                 const newName = 'RangedRampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                const body = [RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+                const body = getBodyByRatioWithLimits([
+                    {part: RANGED_ATTACK, count: 1},
+                    {part: MOVE, count: 1}
+                ], room, 50);
 
                 if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
                     room.memory.labs.status.boost = {};
@@ -1930,25 +1933,38 @@ class SpecialDefenseGenerator {
                         else if (room.controller.level == 7) {
                             // 使用新的body生成函数，确保不超过50个部件
                             // 原始比例: 5 TOUGH : 32 RANGED_ATTACK : 13 MOVE
-                            const body = getBodyByRatio([
-                                {part: TOUGH, count: 1},
-                                {part: RANGED_ATTACK, count: 6},
-                                {part: MOVE, count: 3}
-                            ], room, 50);
-                            const newName = 'RRD-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                            const body = getBodyByRatio(
+                                [
+                                    { part: TOUGH, count: 1 },
+                                    { part: RANGED_ATTACK, count: 6 },
+                                    { part: MOVE, count: 3 }
+                                ],
+                                room,
+                                50
+                            );
+                            const newName = "RRD-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
                             // 先分配boost
-                            this.handleBoostAllocation(room, storage, 'lab2', 240);
-                            this.handleBoostAllocation(room, storage, 'lab4', 960);
+                            this.handleBoostAllocation(room, storage, "lab2", 240);
+                            this.handleBoostAllocation(room, storage, "lab4", 960);
 
                             // 检查是否有足够的能量生成creep
                             const spawn = room.find(FIND_MY_SPAWNS)[0];
-                            if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                                room.memory.spawn_list.push(body, newName, {memory: {role: 'RRD', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab4, room.memory.labs.outputLab2]}});
-                                console.log('Adding RangedRampartDefender to Spawn List: ' + newName);
+                            if (
+                                spawn &&
+                                spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)
+                            ) {
+                                room.memory.spawn_list.push(body, newName, {
+                                    memory: {
+                                        role: "RRD",
+                                        homeRoom: room.name,
+                                        boostlabs: [room.memory.labs.outputLab4, room.memory.labs.outputLab2]
+                                    }
+                                });
+                                console.log("Adding RangedRampartDefender to Spawn List: " + newName);
                             } else {
                                 // 能量不足，回滚boost分配
-                                this.rollbackBoostAllocation(room, 'lab2', 240);
-                                this.rollbackBoostAllocation(room, 'lab4', 960);
+                                this.rollbackBoostAllocation(room, "lab2", 240);
+                                this.rollbackBoostAllocation(room, "lab4", 960);
                                 console.log(`[RangedRampartDefender] 能量不足，回滚boost分配: ${newName}`);
                             }
                         }
@@ -1974,31 +1990,37 @@ class SpecialDefenseGenerator {
                     if (room.controller.level >= 7) {
                         let body;
                         if (found == false) {
-                            if (room.controller.level === 7) {
-                                body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                            }
-                            else {
-                                body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                            }
-                        }
-                        if (found == true) {
-                            if (room.controller.level === 7) {
-                                body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                            }
-                            else {
-                                body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                            }
+                            body = getBodyByRatio([
+                                {part: ATTACK, count: 3},
+                                {part: MOVE, count: 1}
+                            ], room);
+                        } else {
+                             body = getBodyByRatio([
+                                {part: ATTACK, count: 2},
+                                {part: MOVE, count: 1}
+                            ], room);
                         }
                         if (storage && (storage as any).store[RESOURCE_CATALYZED_UTRIUM_ACID] >= 990 && room.controller.level >= 7 && room.memory.labs && room.memory.labs.outputLab3 && (HostileCreeps.length > 1 || HostileCreeps.length == 1 && room.controller.level == 7 && HostileCreeps[0].getActiveBodyparts(HEAL) >= 16)) {
                             if (HostileCreeps.length > 2) {
                                 // 分配boost，让系统自然处理能量不足的情况
-                                this.handleBoostAllocation(room, storage, 'lab3', 990);
-                                room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3]}});
-                            }
-                            else if (HostileCreeps.length == 1) {
+                                this.handleBoostAllocation(room, storage, "lab3", 990);
+                                room.memory.spawn_list.push(body, newName, {
+                                    memory: {
+                                        role: "RampartDefender",
+                                        homeRoom: room.name,
+                                        boostlabs: [room.memory.labs.outputLab3]
+                                    }
+                                });
+                            } else if (HostileCreeps.length == 1) {
                                 // 分配boost，让系统自然处理能量不足的情况
-                                this.handleBoostAllocation(room, storage, 'lab3', 630);
-                                room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3]}});
+                                this.handleBoostAllocation(room, storage, "lab3", 630);
+                                room.memory.spawn_list.push(body, newName, {
+                                    memory: {
+                                        role: "RampartDefender",
+                                        homeRoom: room.name,
+                                        boostlabs: [room.memory.labs.outputLab3]
+                                    }
+                                });
                             }
                         }
                         else {
@@ -2025,7 +2047,11 @@ class SpecialDefenseGenerator {
                 if (attackCreeps.length > 0 || rangedAttackCreeps.length > 0) {
                     if (attackCreeps.length) {
                         const newName = 'Clearer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                        const body = [TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK];
+                        const body = getBodyByRatio([
+                            {part: TOUGH, count: 1},
+                            {part: MOVE, count: 1},
+                            {part: ATTACK, count: 3}
+                        ], room);
                         const memory = {role: 'clearer', boostlabs: [room.memory.labs.outputLab2, room.memory.labs.outputLab3, room.memory.labs.outputLab7], boosted: true};
 
                         const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
@@ -2059,7 +2085,10 @@ class SpecialDefenseGenerator {
                 else {
                     const newName = 'Clearer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(
-                        [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK],
+                        getBodyByRatio([
+                            {part: MOVE, count: 1},
+                            {part: ATTACK, count: 2}
+                        ], room),
                         newName,
                         {memory: {role: 'clearer'}}
                     );
@@ -2097,26 +2126,30 @@ class SpecialDefenseGenerator {
                 const newName = "SpecialRepair-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
                 console.log("Adding SpecialRepair to Spawn List: " + newName);
                 if (room.controller.level >= 7) {
+                    let body;
+                    body = getBodyByRatio([{part: WORK, count: 7},{part: CARRY, count: 1}, {part: MOVE, count: 3}], room);
                     if (storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 1080 && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
                         // 分配boost，让系统自然处理能量不足的情况
                         this.handleBoostAllocation(room, storage, 'lab1', 1080);
-                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], room), newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
+                        room.memory.spawn_list.push(body, newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
                     }
                     else {
-                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], room), newName, {memory: {role: 'SpecialRepair'}});
+                        room.memory.spawn_list.push(body, newName, {memory: {role: 'SpecialRepair'}});
                     }
-                    const newName2 = 'SpecialCarry-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    const newName2 = "SpecialCarry-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(getBody([CARRY, MOVE], room), newName2, {memory: {role: 'SpecialCarry'}});
                     console.log('Adding SpecialCarry to Spawn List: ' + newName);
                 }
                 else if (room.controller.level == 6) {
+                    let body;
+                    body = getBodyByRatio([{part: WORK, count: 4},{part: CARRY, count: 1}, {part: MOVE, count: 1}], room);
                     if (storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 540 && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
                         // 分配boost，让系统自然处理能量不足的情况
                         this.handleBoostAllocation(room, storage, 'lab1', 540);
-                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, CARRY, MOVE], room), newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
+                        room.memory.spawn_list.push(body, newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
                     }
                     else {
-                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, CARRY, MOVE], room), newName, {memory: {role: 'SpecialRepair'}});
+                        room.memory.spawn_list.push(body, newName, {memory: {role: 'SpecialRepair'}});
                     }
                     const newName2 = 'SpecialCarry-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(getBody([MOVE, CARRY], room), newName2, {memory: {role: 'SpecialCarry'}});
@@ -2129,17 +2162,19 @@ class SpecialDefenseGenerator {
     static generateNukeRepair(room: Room, repairers: number, storage: any) {
         if ((room.memory.NukeRepair && repairers < 4 && !room.memory.danger || room.memory.defence && room.memory.defence.nuke && repairers < 1) && (Game.cpu.bucket > 150 || Memory.pixelManager?.enabled) && storage && (storage as any).store[RESOURCE_ENERGY] > 75000) {
             const name = 'Repair-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            let body;
+            body = getBodyByRatio([
+              {part: WORK, count: 11},
+              {part: CARRY, count: 5},
+              {part: MOVE, count: 8},
+            ], room)
             if (room.controller.level >= 7 && room.find(FIND_NUKES).length > 2 && storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 1980 && room.memory.labs && room.memory.labs.outputLab1) {
                 // 分配boost，让系统自然处理能量不足的情况
                 this.handleBoostAllocation(room, storage, 'lab1', 660);
-                room.memory.spawn_list.push([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK,
-                    CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                    MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], name, {memory: {role: 'repair', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab1]}});
+                room.memory.spawn_list.push(body, name, {memory: {role: 'repair', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab1]}});
             }
             else {
-                room.memory.spawn_list.push([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK,
-                    CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                    MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], name, {memory: {role: 'repair', homeRoom: room.name}});
+                room.memory.spawn_list.push(body, name, {memory: {role: 'repair', homeRoom: room.name}});
             }
             console.log('Adding Repair to Spawn List: ' + name);
         }
@@ -2327,7 +2362,11 @@ class RemoteDefenseGenerator {
                         }
                         let body = [];
                         if (hostileCreeps.length) {
-                            body = [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, MOVE, WORK, CARRY, MOVE];
+                            body = getBodyByRatioWithLimits([
+                                {part: MOVE, count: 1},
+                                {part: CARRY, count: 1},
+                                {part: WORK, count: 1, max: 1}
+                            ], room)
                         }
                         else {
                             body = [CARRY, MOVE, MOVE, WORK, CARRY, MOVE];
@@ -2389,9 +2428,11 @@ class RemoteDefenseGenerator {
             }
             if (closestRoom && closestRoom.name == room.name) {
                 if (target_colonise && remoteBuilders < 2 && !room.memory.danger && room.controller.level >= 3 && storage && (storage as any).store[RESOURCE_ENERGY] > 10000 && Game.cpu.bucket > 7750 && distance_to_target_room <= 7 && Game.rooms[target_colonise] && (Game.rooms[target_colonise].find(FIND_MY_SPAWNS).length == 0 || Game.rooms[target_colonise].controller.level <= 1 || (Game.rooms[target_colonise].controller.level >= 4 && (!Game.rooms[target_colonise].storage && remoteBuilders < 1 || Game.rooms[target_colonise].energyCapacityAvailable <= 500)) || (Game.rooms[target_colonise].find(FIND_MY_SPAWNS).length == 0 && remoteBuilders < 1)) && Game.rooms[target_colonise].controller.level >= 1 && Game.rooms[target_colonise].controller.my) {
-                    const newName = 'remoteBuilder-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    room.memory.spawn_list.push(getBody([WORK, CARRY, CARRY, CARRY, MOVE], room, 50), newName, {memory: {role: 'remoteBuilder', targetRoom: target_colonise, homeRoom: room.name}});
-                    console.log('Adding remoteBuilder to Spawn List: ' + newName);
+                    const newName = "remoteBuilder-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.push(getBody([WORK, CARRY, CARRY, CARRY, MOVE], room, 50), newName, {
+                        memory: { role: "remoteBuilder", targetRoom: target_colonise, homeRoom: room.name }
+                    });
+                    console.log("Adding remoteBuilder to Spawn List: " + newName);
                 }
             }
         }
@@ -2425,9 +2466,15 @@ class RemoteDefenseGenerator {
             }
             if (closestRoom && closestRoom.name == room.name) {
                 if (target_colonise && RangedAttackers < 2 && room.controller.level >= 7 && storage && (storage as any).store[RESOURCE_ENERGY] > 180000 && distance_to_target_room <= 7 && Game.rooms[target_colonise] && (Game.rooms[target_colonise].find(FIND_MY_SPAWNS).length == 0 || Game.rooms[target_colonise].controller.level <= 3) && Game.rooms[target_colonise].controller.level >= 1 && (Game.rooms[target_colonise].controller.my || !Game.rooms[target_colonise].controller.my && !Game.rooms[target_colonise].find(FIND_MY_STRUCTURES, {filter: (s: any) => s.structureType == STRUCTURE_TOWER}).length) && Game.time - Memory.target_colonise.lastSpawnRanger > 1500 && !Game.rooms[target_colonise].controller.safeMode) {
+                    let body;
+                     body = getBodyByRatioWithLimits([
+                        {part: MOVE, count: 5, max: 25},
+                        {part: RANGED_ATTACK, count: 4},
+                        {part: HEAL, count: 1, max: 5}
+                     ], room)
                     if (storage && (storage as any).store[RESOURCE_CATALYZED_KEANIUM_ALKALIDE] >= 45000 && Game.rooms[target_colonise].controller.level < 3) {
                         const newName = 'RangedAttacker-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                        room.memory.spawn_list.push([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, HEAL, HEAL, HEAL, HEAL, HEAL], newName, {memory: {role: 'RangedAttacker', targetRoom: target_colonise, homeRoom: room.name, sticky: true, boostlabs: [room.memory.labs.outputLab4], ignore: true}});
+                        room.memory.spawn_list.push(body, newName, {memory: {role: 'RangedAttacker', targetRoom: target_colonise, homeRoom: room.name, sticky: true, boostlabs: [room.memory.labs.outputLab4], ignore: true}});
                         console.log('Adding Defending-Ranged-Attacker to Spawn List: ' + newName);
                         Memory.target_colonise.lastSpawnRanger = Game.time - (distance_to_target_room * 100);
                         if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
@@ -2445,7 +2492,7 @@ class RemoteDefenseGenerator {
                     }
                     else {
                         const newName = 'RangedAttacker-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                        room.memory.spawn_list.push([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, HEAL, HEAL, HEAL, HEAL, HEAL], newName, {memory: {role: 'RangedAttacker', targetRoom: target_colonise, homeRoom: room.name, sticky: true, ignore: true}});
+                        room.memory.spawn_list.push(body, newName, {memory: {role: 'RangedAttacker', targetRoom: target_colonise, homeRoom: room.name, sticky: true, ignore: true}});
                         console.log('Adding Defending-Ranged-Attacker to Spawn List: ' + newName);
                         Memory.target_colonise.lastSpawnRanger = Game.time - (distance_to_target_room * 100);
                     }
