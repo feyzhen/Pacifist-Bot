@@ -268,6 +268,27 @@ function labs(room: Room): void {
         }
     }
 
+    // Clean up expired boost allocations (timeout mechanism)
+    if (Game.time % 100 === 0 && labMem.status?.boost) {
+        const boost = labMem.status.boost;
+        const labNums = ["lab1","lab2","lab3","lab4","lab5","lab6","lab7","lab8"];
+        
+        for (const labNum of labNums) {
+            if (boost[labNum] && boost[labNum].timestamp) {
+                // Remove boost allocations older than 1000 ticks (about 17 minutes)
+                if (Game.time - boost[labNum].timestamp > 1000) {
+                    console.log(`[Labs] 清理过期boost状态: ${labNum}, 时间戳: ${boost[labNum].timestamp}, 当前时间: ${Game.time}`);
+                    delete boost[labNum];
+                }
+            }
+        }
+        
+        // If no boost allocations remain, clean up the boost object
+        if (Object.keys(boost).length === 0) {
+            labMem.status.boost = {};
+        }
+    }
+
     if (!labMem.status)                       labMem.status = {};
     if (!labMem.status.currentOutput)         labMem.status.currentOutput = false;
     if (labMem.status.lab1Input === undefined) labMem.status.lab1Input = false;
