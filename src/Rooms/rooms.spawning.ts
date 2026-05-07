@@ -409,15 +409,21 @@ function getBody(segment:string[], room, bodyMaxLength=50) {
  * @param maxLength 最大body长度
  * @param useEnergyCapacity 是否使用房间能量容量而非当前可用能量
  */
-function getBodyByRatio(parts: Array<{part: BodyPartConstant, count: number}>, room: Room, maxLength = 50, useEnergyCapacity = false): BodyPartConstant[] {
+function getBodyByRatio(parts: Array<{part: BodyPartConstant, count?: number}>, room: Room, maxLength = 50, useEnergyCapacity = false): BodyPartConstant[] {
     const body: BodyPartConstant[] = [];
     const energyAvailable = useEnergyCapacity ? room.energyCapacityAvailable : room.energyAvailable;
     
+    // 为没有count的部件设置默认值1
+    const partsWithDefaultCount = parts.map(p => ({
+        part: p.part,
+        count: p.count || 1
+    }));
+    
     // 计算总比例数
-    const totalRatio = _.sum(parts, p => p.count);
+    const totalRatio = _.sum(partsWithDefaultCount, p => p.count);
 
     // 计算每个比例单位对应的能量
-    const unitCost = _.sum(parts, p => BODYPART_COST[p.part] * p.count) / totalRatio;
+    const unitCost = _.sum(partsWithDefaultCount, p => BODYPART_COST[p.part] * p.count) / totalRatio;
 
     // 计算可以负担多少个比例单位
     const maxUnits = Math.min(
@@ -428,7 +434,7 @@ function getBodyByRatio(parts: Array<{part: BodyPartConstant, count: number}>, r
     if (maxUnits <= 0) return body;
 
     // 按比例添加部件
-    for (const config of parts) {
+    for (const config of partsWithDefaultCount) {
         const partCount = Math.min(config.count * maxUnits, maxLength - body.length);
         for (let i = 0; i < partCount; i++) {
             body.push(config.part);
