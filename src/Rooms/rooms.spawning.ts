@@ -1933,30 +1933,14 @@ class SpecialDefenseGenerator {
                         }
                         if (storage && (storage as any).store[RESOURCE_CATALYZED_UTRIUM_ACID] >= 990 && room.controller.level >= 7 && room.memory.labs && room.memory.labs.outputLab3 && (HostileCreeps.length > 1 || HostileCreeps.length == 1 && room.controller.level == 7 && HostileCreeps[0].getActiveBodyparts(HEAL) >= 16)) {
                             if (HostileCreeps.length > 2) {
-                                // 先分配boost
+                                // 分配boost，让系统自然处理能量不足的情况
                                 this.handleBoostAllocation(room, storage, 'lab3', 990);
-                                // 检查是否有足够的能量生成creep
-                                const spawn = room.find(FIND_MY_SPAWNS)[0];
-                                if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                                    room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3]}});
-                                } else {
-                                    // 能量不足，回滚boost分配
-                                    this.rollbackBoostAllocation(room, 'lab3', 990);
-                                    console.log(`[RampartDefender] 能量不足，回滚boost分配: ${newName}`);
-                                }
+                                room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3]}});
                             }
                             else if (HostileCreeps.length == 1) {
-                                // 先分配boost
+                                // 分配boost，让系统自然处理能量不足的情况
                                 this.handleBoostAllocation(room, storage, 'lab3', 630);
-                                // 检查是否有足够的能量生成creep
-                                const spawn = room.find(FIND_MY_SPAWNS)[0];
-                                if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                                    room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3]}});
-                                } else {
-                                    // 能量不足，回滚boost分配
-                                    this.rollbackBoostAllocation(room, 'lab3', 630);
-                                    console.log(`[RampartDefender] 能量不足，回滚boost分配: ${newName}`);
-                                }
+                                room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3]}});
                             }
                         }
                         else {
@@ -2056,21 +2040,9 @@ class SpecialDefenseGenerator {
                 console.log("Adding SpecialRepair to Spawn List: " + newName);
                 if (room.controller.level >= 7) {
                     if (storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 1080 && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
-                        // 先分配boost
+                        // 分配boost，让系统自然处理能量不足的情况
                         this.handleBoostAllocation(room, storage, 'lab1', 1080);
-                        // 尝试生成creep，如果失败则回滚boost
-                        const body = getBody([WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], room);
-                        const memory = {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]};
-
-                        // 检查是否有足够的能量生成creep
-                        const spawn = room.find(FIND_MY_SPAWNS)[0];
-                        if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                            room.memory.spawn_list.push(body, newName, {memory: memory});
-                        } else {
-                            // 能量不足，回滚boost分配
-                            this.rollbackBoostAllocation(room, 'lab1', 1080);
-                            console.log(`[SpecialRepair] 能量不足，回滚boost分配: ${newName}`);
-                        }
+                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], room), newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
                     }
                     else {
                         room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], room), newName, {memory: {role: 'SpecialRepair'}});
@@ -2081,21 +2053,9 @@ class SpecialDefenseGenerator {
                 }
                 else if (room.controller.level == 6) {
                     if (storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 540 && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
-                        // 先分配boost
+                        // 分配boost，让系统自然处理能量不足的情况
                         this.handleBoostAllocation(room, storage, 'lab1', 540);
-                        // 尝试生成creep，如果失败则回滚boost
-                        const body = getBody([WORK, WORK, WORK, WORK, CARRY, MOVE], room);
-                        const memory = {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]};
-
-                        // 检查是否有足够的能量生成creep
-                        const spawn = room.find(FIND_MY_SPAWNS)[0];
-                        if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                            room.memory.spawn_list.push(body, newName, {memory: memory});
-                        } else {
-                            // 能量不足，回滚boost分配
-                            this.rollbackBoostAllocation(room, 'lab1', 540);
-                            console.log(`[SpecialRepair] 能量不足，回滚boost分配: ${newName}`);
-                        }
+                        room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, CARRY, MOVE], room), newName, {memory: {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1]}});
                     }
                     else {
                         room.memory.spawn_list.push(getBody([WORK, WORK, WORK, WORK, CARRY, MOVE], room), newName, {memory: {role: 'SpecialRepair'}});
@@ -2112,22 +2072,11 @@ class SpecialDefenseGenerator {
         if ((room.memory.NukeRepair && repairers < 4 && !room.memory.danger || room.memory.defence && room.memory.defence.nuke && repairers < 1) && (Game.cpu.bucket > 150 || Memory.pixelManager?.enabled) && storage && (storage as any).store[RESOURCE_ENERGY] > 75000) {
             const name = 'Repair-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
             if (room.controller.level >= 7 && room.find(FIND_NUKES).length > 2 && storage && (storage as any).store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= 1980 && room.memory.labs && room.memory.labs.outputLab1) {
-                // 先分配boost
+                // 分配boost，让系统自然处理能量不足的情况
                 this.handleBoostAllocation(room, storage, 'lab1', 660);
-                const body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK,
+                room.memory.spawn_list.push([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK,
                     CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                    MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                const memory = {role: 'repair', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab1]};
-
-                // 检查是否有足够的能量生成creep
-                const spawn = room.find(FIND_MY_SPAWNS)[0];
-                if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                    room.memory.spawn_list.push(body, name, {memory: memory});
-                } else {
-                    // 能量不足，回滚boost分配
-                    this.rollbackBoostAllocation(room, 'lab1', 660);
-                    console.log(`[NukeRepair] 能量不足，回滚boost分配: ${name}`);
-                }
+                    MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], name, {memory: {role: 'repair', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab1]}});
             }
             else {
                 room.memory.spawn_list.push([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK,
@@ -2170,6 +2119,24 @@ class SpecialDefenseGenerator {
             }
         }
     }
+
+    /**
+     * 能量检查策略说明：
+     * 
+     * 已移除能量检查的场景（依赖系统自然处理）：
+     * - SpecialRepair (单boost)
+     * - NukeRepair (单boost)  
+     * - RampartDefender (单boost)
+     * 
+     * 保留能量检查的场景（多boost，资源昂贵）：
+     * - RRD (lab2 + lab4)
+     * - Clearer (lab3 + lab2 + lab7)
+     * 
+     * 清理保障机制：
+     * 1. handleNotEnoughEnergyError 处理 spawn 失败
+     * 2. 超时清理机制清理过期boost状态
+     * 3. clearSpawnQueueItem 清理异常情况
+     */
 
     static generateAll(room: Room, healers: number, fillers: number, RampartDefenders: number, RangedRampartDefenders: number, SpecialRepairers: number, repairers: number, clearers: number, storage: any, rampartsInRoomBelowTwelveMil: any[], roomState: any) {
         this.generateHealer(room, healers, roomState);
