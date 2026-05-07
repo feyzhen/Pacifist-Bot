@@ -402,6 +402,119 @@ function getBody(segment:string[], room, bodyMaxLength=50) {
     return body;
 }
 
+/**
+ * 生成按比例分配的body
+ * @param parts 部件配置数组，格式: [{part: WORK, count: 5}, {part: CARRY, count: 3}]
+ * @param room 房间对象
+ * @param maxLength 最大body长度
+ * @param useEnergyCapacity 是否使用房间能量容量而非当前可用能量
+ */
+function getBodyByRatio(parts: Array<{part: BodyPartConstant, count: number}>, room: Room, maxLength = 50, useEnergyCapacity = false): BodyPartConstant[] {
+    const body: BodyPartConstant[] = [];
+    const energyAvailable = useEnergyCapacity ? room.energyCapacityAvailable : room.energyAvailable;
+    
+    // 计算总比例数
+    const totalRatio = _.sum(parts, p => p.count);
+
+    // 计算每个比例单位对应的能量
+    const unitCost = _.sum(parts, p => BODYPART_COST[p.part] * p.count) / totalRatio;
+
+    // 计算可以负担多少个比例单位
+    const maxUnits = Math.min(
+        Math.floor(energyAvailable / unitCost),
+        Math.floor(maxLength / totalRatio)
+    );
+
+    if (maxUnits <= 0) return body;
+
+    // 按比例添加部件
+    for (const config of parts) {
+        const partCount = Math.min(config.count * maxUnits, maxLength - body.length);
+        for (let i = 0; i < partCount; i++) {
+            body.push(config.part);
+        }
+    }
+
+    return body;
+}
+
+/**
+ * 生成带最大部件数限制的body
+ * @param parts 部件配置数组，格式: [{part: WORK, max: 10}, {part: CARRY, max: 5}]
+ * @param room 房间对象
+ * @param maxLength 最大body长度
+ */
+function getBodyWithLimits(parts: Array<{part: BodyPartConstant, max: number}>, room: Room, maxLength = 50): BodyPartConstant[] {
+    const body: BodyPartConstant[] = [];
+    const energyAvailable = room.energyAvailable;
+
+    // 按优先级排序（成本低的优先）
+    const sortedParts = _.sortBy(parts, p => BODYPART_COST[p.part]);
+
+    for (const config of sortedParts) {
+        const maxToAdd = Math.min(config.max, maxLength - body.length);
+        const costPerPart = BODYPART_COST[config.part];
+        const canAfford = Math.floor(energyAvailable / costPerPart);
+        const actualCount = Math.min(maxToAdd, canAfford);
+
+        for (let i = 0; i < actualCount; i++) {
+            body.push(config.part);
+        }
+    }
+
+    return body;
+}
+
+/**
+ * 生成平衡型body（自动调整比例以适应能量限制）
+ * @param baseParts 基础部件类型
+ * @param room 房间对象
+ * @param maxLength 最大body长度
+ * @param balance 平衡权重，格式: {WORK: 2, CARRY: 1, MOVE: 1}
+ */
+function getBalancedBody(baseParts: BodyPartConstant[], room: Room, maxLength = 50, balance: Record<string, number> = {}): BodyPartConstant[] {
+    const body: BodyPartConstant[] = [];
+    const energyAvailable = room.energyAvailable;
+
+    // 设置默认权重
+    const defaultBalance: Record<string, number> = {};
+    for (const part of baseParts) {
+        defaultBalance[part] = (defaultBalance[part] || 0) + 1;
+    }
+
+    // 合并用户权重
+    const finalBalance = {...defaultBalance, ...balance};
+
+    // 计算总权重
+    const totalWeight = _.sum(finalBalance);
+
+    // 计算平均每个权重单位的能量成本
+    const avgCostPerWeight = _.sum(baseParts, part => BODYPART_COST[part]) / baseParts.length;
+
+    // 计算可以负担的权重单位数
+    const maxWeightUnits = Math.min(
+        Math.floor(energyAvailable / avgCostPerWeight),
+        Math.floor(maxLength / baseParts.length)
+    );
+
+    if (maxWeightUnits <= 0) return body;
+
+    // 按权重分配部件
+    for (const part of baseParts) {
+        const weight = finalBalance[part] || 1;
+        const count = Math.min(
+            Math.floor(weight * maxWeightUnits / totalWeight),
+            maxLength - body.length
+        );
+
+        for (let i = 0; i < count; i++) {
+            body.push(part);
+        }
+    }
+
+    return body;
+}
+
 function getCarrierBody(sourceId, values, storage, spawn, room) {
 
     const targetSource:any = Game.getObjectById(sourceId);
@@ -1733,16 +1846,12 @@ class SpecialDefenseGenerator {
                         (storage as any).store[RESOURCE_CATALYZED_KEANIUM_ALKALIDE] >= 1200 &&
                         (RangedRampartDefenders < 3 && room.controller.level == 7 || RangedRampartDefenders < 2 && room.controller.level == 8)) {
                         if (room.controller.level == 8) {
-                            const body = [RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        MOVE, MOVE, MOVE, MOVE, MOVE,
-                                        MOVE, MOVE, MOVE, MOVE, MOVE];
+                            // 使用新的body生成函数，确保不超过50个部件
+                            // 原始比例: 40 RANGED_ATTACK : 10 MOVE = 4:1
+                            const body = getBodyByRatio([
+                                {part: RANGED_ATTACK, count: 4},
+                                {part: MOVE, count: 1}
+                            ], room, 50);
                             const newName = 'RRD-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                             // 先分配boost
                             this.handleBoostAllocation(room, storage, 'lab2', 300);
@@ -1761,16 +1870,13 @@ class SpecialDefenseGenerator {
                             }
                         }
                         else if (room.controller.level == 7) {
-                            const body = [TOUGH, TOUGH, TOUGH, TOUGH, TOUGH,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                                        RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, MOVE,
-                                        MOVE, MOVE, MOVE, MOVE, MOVE,
-                                        MOVE, MOVE, MOVE, MOVE, MOVE];
+                            // 使用新的body生成函数，确保不超过50个部件
+                            // 原始比例: 5 TOUGH : 32 RANGED_ATTACK : 13 MOVE
+                            const body = getBodyByRatio([
+                                {part: TOUGH, count: 1},
+                                {part: RANGED_ATTACK, count: 6},
+                                {part: MOVE, count: 3}
+                            ], room, 50);
                             const newName = 'RRD-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                             // 先分配boost
                             this.handleBoostAllocation(room, storage, 'lab2', 240);
