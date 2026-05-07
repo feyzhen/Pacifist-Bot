@@ -412,13 +412,13 @@ function getBody(segment:string[], room, bodyMaxLength=50) {
 function getBodyByRatio(parts: Array<{part: BodyPartConstant, count?: number}>, room: Room, maxLength = 50, useEnergyCapacity = false): BodyPartConstant[] {
     const body: BodyPartConstant[] = [];
     const energyAvailable = useEnergyCapacity ? room.energyCapacityAvailable : room.energyAvailable;
-    
+
     // 为没有count的部件设置默认值1
     const partsWithDefaultCount = parts.map(p => ({
         part: p.part,
         count: p.count || 1
     }));
-    
+
     // 计算总比例数
     const totalRatio = _.sum(partsWithDefaultCount, p => p.count);
 
@@ -444,82 +444,6 @@ function getBodyByRatio(parts: Array<{part: BodyPartConstant, count?: number}>, 
     return body;
 }
 
-/**
- * 生成带最大部件数限制的body
- * @param parts 部件配置数组，格式: [{part: WORK, max: 10}, {part: CARRY, max: 5}]
- * @param room 房间对象
- * @param maxLength 最大body长度
- */
-function getBodyWithLimits(parts: Array<{part: BodyPartConstant, max: number}>, room: Room, maxLength = 50): BodyPartConstant[] {
-    const body: BodyPartConstant[] = [];
-    const energyAvailable = room.energyAvailable;
-
-    // 按优先级排序（成本低的优先）
-    const sortedParts = _.sortBy(parts, p => BODYPART_COST[p.part]);
-
-    for (const config of sortedParts) {
-        const maxToAdd = Math.min(config.max, maxLength - body.length);
-        const costPerPart = BODYPART_COST[config.part];
-        const canAfford = Math.floor(energyAvailable / costPerPart);
-        const actualCount = Math.min(maxToAdd, canAfford);
-
-        for (let i = 0; i < actualCount; i++) {
-            body.push(config.part);
-        }
-    }
-
-    return body;
-}
-
-/**
- * 生成平衡型body（自动调整比例以适应能量限制）
- * @param baseParts 基础部件类型
- * @param room 房间对象
- * @param maxLength 最大body长度
- * @param balance 平衡权重，格式: {WORK: 2, CARRY: 1, MOVE: 1}
- */
-function getBalancedBody(baseParts: BodyPartConstant[], room: Room, maxLength = 50, balance: Record<string, number> = {}): BodyPartConstant[] {
-    const body: BodyPartConstant[] = [];
-    const energyAvailable = room.energyAvailable;
-
-    // 设置默认权重
-    const defaultBalance: Record<string, number> = {};
-    for (const part of baseParts) {
-        defaultBalance[part] = (defaultBalance[part] || 0) + 1;
-    }
-
-    // 合并用户权重
-    const finalBalance = {...defaultBalance, ...balance};
-
-    // 计算总权重
-    const totalWeight = _.sum(finalBalance);
-
-    // 计算平均每个权重单位的能量成本
-    const avgCostPerWeight = _.sum(baseParts, part => BODYPART_COST[part]) / baseParts.length;
-
-    // 计算可以负担的权重单位数
-    const maxWeightUnits = Math.min(
-        Math.floor(energyAvailable / avgCostPerWeight),
-        Math.floor(maxLength / baseParts.length)
-    );
-
-    if (maxWeightUnits <= 0) return body;
-
-    // 按权重分配部件
-    for (const part of baseParts) {
-        const weight = finalBalance[part] || 1;
-        const count = Math.min(
-            Math.floor(weight * maxWeightUnits / totalWeight),
-            maxLength - body.length
-        );
-
-        for (let i = 0; i < count; i++) {
-            body.push(part);
-        }
-    }
-
-    return body;
-}
 
 /**
  * 生成按比例分配且带上限的body
@@ -529,72 +453,79 @@ function getBalancedBody(baseParts: BodyPartConstant[], room: Room, maxLength = 
  * @param useEnergyCapacity 是否使用房间能量容量而非当前可用能量
  */
 function getBodyByRatioWithLimits(
-    parts: Array<{part: BodyPartConstant, count: number, max?: number}>, 
-    room: Room, 
-    maxLength = 50, 
+    parts: Array<{part: BodyPartConstant, count?: number, max?: number}>,
+    room: Room,
+    maxLength = 50,
     useEnergyCapacity = false
 ): BodyPartConstant[] {
     const body: BodyPartConstant[] = [];
     const energyAvailable = useEnergyCapacity ? room.energyCapacityAvailable : room.energyAvailable;
-    
+
+    // 为没有count的部件设置默认值1
+    const partsWithDefaultCount = parts.map(p => ({
+        part: p.part,
+        count: p.count || 1,
+        max: p.max
+    }));
+
     // 分离有上限和无上限的部件
-    const partsWithLimits = parts.filter(p => p.max !== undefined);
-    const partsWithoutLimits = parts.filter(p => p.max === undefined);
-    
+    const partsWithLimits = partsWithDefaultCount.filter(p => p.max !== undefined);
+    const partsWithoutLimits = partsWithDefaultCount.filter(p => p.max === undefined);
+
     // 计算基础比例（所有部件的比例）
-    const totalRatio = _.sum(parts, p => p.count);
-    const unitCost = _.sum(parts, p => BODYPART_COST[p.part] * p.count) / totalRatio;
-    
+    const totalRatio = _.sum(partsWithDefaultCount, p => p.count);
+    const unitCost = _.sum(partsWithDefaultCount, p => BODYPART_COST[p.part] * p.count) / totalRatio;
+
     // 计算可以负担多少个比例单位
     const maxUnits = Math.floor(energyAvailable / unitCost);
     const maxUnitsByLength = Math.floor(maxLength / totalRatio);
-    
+
     if (maxUnits <= 0) return body;
-    
+
     // 第一阶段：生成基础比例的body
     let basicUnits = Math.min(maxUnits, maxUnitsByLength);
     let currentLength = 0;
     let usedEnergy = 0;
-    
+
     // 先添加有上限的部件（按比例）
     for (const config of partsWithLimits) {
         const desiredCount = config.count * basicUnits;
         const partCount = Math.min(desiredCount, config.max || Infinity, maxLength - currentLength);
-        
+
         for (let i = 0; i < partCount; i++) {
             body.push(config.part);
         }
         currentLength += partCount;
         usedEnergy += partCount * BODYPART_COST[config.part];
     }
-    
+
     // 再添加无上限的部件（按比例）
     for (const config of partsWithoutLimits) {
         const desiredCount = config.count * basicUnits;
         const partCount = Math.min(desiredCount, maxLength - currentLength);
-        
+
         for (let i = 0; i < partCount; i++) {
             body.push(config.part);
         }
         currentLength += partCount;
         usedEnergy += partCount * BODYPART_COST[config.part];
     }
-    
+
     // 第二阶段：如果有剩余能量和空间，继续添加无上限的部件
     if (currentLength < maxLength && basicUnits < maxUnits) {
         const remainingEnergy = energyAvailable - _.sum(body, p => BODYPART_COST[p]);
         const remainingSpace = maxLength - currentLength;
-        
+
         // 计算无上限部件的平均成本
-        const avgCostWithoutLimits = _.sum(partsWithoutLimits, p => BODYPART_COST[p.part] * p.count) / 
+        const avgCostWithoutLimits = _.sum(partsWithoutLimits, p => BODYPART_COST[p.part] * p.count) /
                                      _.sum(partsWithoutLimits, p => p.count);
-        
+
         if (avgCostWithoutLimits > 0) {
             const additionalUnits = Math.min(
                 Math.floor(remainingEnergy / avgCostWithoutLimits),
                 Math.floor(remainingSpace / partsWithoutLimits.length)
             );
-            
+
             // 添加额外的无上限部件
             for (let i = 0; i < additionalUnits; i++) {
                 for (const config of partsWithoutLimits) {
@@ -604,41 +535,41 @@ function getBodyByRatioWithLimits(
             }
         }
     }
-    
+
     return body;
 }
 
 /**
  * getBodyByRatioWithLimits 使用示例和说明
- * 
+ *
  * 示例1：低能量场景（1000能量）
  * const body = getBodyByRatioWithLimits([
  *     {part: TOUGH, count: 1, max: 5},
  *     {part: ATTACK, count: 7},
  *     {part: MOVE, count: 1}
  * ], room, 50);
- * 
+ *
  * 预期结果：[TOUGH×1, ATTACK×7, MOVE×1] = 9个部件，成本：850
  * 保持基础比例1:7:1，确保低能量时也能生成
- * 
+ *
  * 示例2：高能量场景（5000能量）
  * const body = getBodyByRatioWithLimits([
  *     {part: TOUGH, count: 1, max: 5},
  *     {part: ATTACK, count: 7},
  *     {part: MOVE, count: 1}
  * ], room, 50);
- * 
+ *
  * 预期结果：[TOUGH×5, ATTACK×35, MOVE×15] = 55个部件 → 限制为50
  * 实际：[TOUGH×5, ATTACK×32, MOVE×13] = 50个部件，成本：4150
  * TOUGH达到上限5，其他按比例分配剩余空间
- * 
+ *
  * 示例3：无上限场景
  * const body = getBodyByRatioWithLimits([
  *     {part: WORK, count: 2},
  *     {part: CARRY, count: 1},
  *     {part: MOVE, count: 1}
  * ], room, 50);
- * 
+ *
  * 预期结果：等同于getBodyByRatio，严格保持2:1:1比例
  */
 
@@ -2249,16 +2180,16 @@ class SpecialDefenseGenerator {
 
     /**
      * 能量检查策略说明：
-     * 
+     *
      * 已移除能量检查的场景（依赖系统自然处理）：
      * - SpecialRepair (单boost)
-     * - NukeRepair (单boost)  
+     * - NukeRepair (单boost)
      * - RampartDefender (单boost)
-     * 
+     *
      * 保留能量检查的场景（多boost，资源昂贵）：
      * - RRD (lab2 + lab4)
      * - Clearer (lab3 + lab2 + lab7)
-     * 
+     *
      * 清理保障机制：
      * 1. handleNotEnoughEnergyError 处理 spawn 失败
      * 2. 超时清理机制清理过期boost状态
