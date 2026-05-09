@@ -1001,7 +1001,7 @@ const SPAWN_RULES_CONFIG = {
         },
         filler_creep: {
             amount: 2,
-            bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+            bodyPattern: [CARRY, MOVE]
         },
         repair_creep: {
             amount: 1,
@@ -1023,7 +1023,7 @@ const SPAWN_RULES_CONFIG = {
         },
         filler_creep: {
             amount: 1,
-            bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+            bodyPattern: [CARRY, MOVE]
         },
         energy_manager_creep: {
             amount: 1,
@@ -1049,7 +1049,7 @@ const SPAWN_RULES_CONFIG = {
         },
         filler_creep: {
             amount: 2,
-            bodyPattern: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+            bodyPattern: [CARRY, MOVE]
         },
         energy_manager_creep: {
             amount: 1,
@@ -1079,7 +1079,7 @@ const SPAWN_RULES_CONFIG = {
         },
         filler_creep: {
             amount: 1,
-            bodyPattern: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
+            bodyPattern: [CARRY, MOVE]
         },
         energy_manager_creep: {
             amount: 1,
@@ -1105,7 +1105,7 @@ const SPAWN_RULES_CONFIG = {
         },
         filler_creep: {
             amount: 1,
-            bodyPattern: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
+            bodyPattern: [CARRY, MOVE]
         },
         energy_manager_creep: {
             amount: 1,
@@ -1598,7 +1598,7 @@ class EnergyRoleGenerator {
 
         if (shouldSpawn) {
             const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-            room.memory.spawn_list.unshift(rule.filler_creep.body, name, {memory: {role: 'filler'}});
+            room.memory.spawn_list.unshift(getBody(rule.filler_creep.body, room, 30), name, {memory: {role: 'filler'}});
             console.log('Adding filler to Spawn List: ' + name);
         }
     }
