@@ -1838,679 +1838,160 @@ class MilitaryRoleGenerator {
         }
     }
 
-    static generateRampartDefenders(room: Room, RampartDefenders: number, storage: any, roomState: any) {
+    static generateRampartDefenders(room: Room, RampartDefenders: number, RangedRampartDefenders: number, storage: any, roomState: any) {
         const HostileCreeps = roomState.hostileCreeps;
 
         if (HostileCreeps.length === 0) return;
 
-        // let inRangeFourteen = false;
-        let addtolist = true;
+        // 分析敌人类型，决定生成什么类型的防御单位
+        let hasRangedAttack = false;
+        let hasPlayerCreeps = false;
 
-        // for (const hostile of HostileCreeps) {
-        //     const distance = hostile.pos.getRangeTo(room.controller.pos);
-        //     if (distance <= 14) {
-        //         inRangeFourteen = true;
-        //         break;
-        //     }
-        // }
-
-        // if (inRangeFourteen && RampartDefenders < 1) {
-        if (RampartDefenders < 1) {
-            let found = false;
-            for (const enemyCreep of HostileCreeps) {
-                for (const part of enemyCreep.body) {
-                    if (part.type == ATTACK || part.type == WORK) {
-                        found = true;
-                    }
-                }
+        for (const enemyCreep of HostileCreeps) {
+            // 检查是否有远程攻击部件
+            if (enemyCreep.getActiveBodyparts(RANGED_ATTACK) > 0) {
+                hasRangedAttack = true;
             }
-            if (found == false && RampartDefenders == 1) {
-                addtolist = false;
+            // 检查是否是玩家creep（非官方入侵者）
+            const isNPC = enemyCreep.owner.username === "Invader" || enemyCreep.owner.username === "Source Keeper";
+            if (!isNPC) {
+                hasPlayerCreeps = true;
             }
-            if (addtolist) {
-                const newName = 'RampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+        }
 
-                if (room.controller.level >= 7) {
-                    let body;
-                    if (found == false) {
-                        if (room.controller.level === 7) {
-                            body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                        } else {
-                            body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                        }
-                    }
-                    if (found == true) {
-                        if (room.controller.level === 7) {
-                            body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                        } else {
-                            body = [ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                        }
-                    }
+        // 如果有远程攻击敌人，优先生成RRD，否则生成RD
+        if (hasRangedAttack) {
+            this.generateRangedRampartDefenders(room, RangedRampartDefenders, storage, roomState, hasPlayerCreeps);
+        } else {
+            this.generateMeleeRampartDefenders(room, storage, roomState, hasPlayerCreeps);
+        }
+    }
 
-                    // Boost logic
-                    if (storage && storage.store[RESOURCE_CATALYZED_UTRIUM_ACID] >= 990 && room.controller.level >= 7 && room.memory.labs && room.memory.labs.outputLab3 && (HostileCreeps.length > 1 || HostileCreeps.length == 1 && room.controller.level == 7 && HostileCreeps[0].getActiveBodyparts(HEAL) >= 16)) {
-                        if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
-                            room.memory.labs.status.boost = {};
-                        }
-                        if (room.memory.labs.status.boost) {
-                            if (room.memory.labs.status.boost.lab3) {
-                                room.memory.labs.status.boost.lab3.amount += HostileCreeps.length > 2 ? 990 : 630;
-                                room.memory.labs.status.boost.lab3.use += 1;
-                            } else {
-                                room.memory.labs.status.boost.lab3 = {};
-                                room.memory.labs.status.boost.lab3.amount = HostileCreeps.length > 2 ? 990 : 630;
-                                room.memory.labs.status.boost.lab3.use = 1;
-                            }
-                        }
-                        room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3]}});
-                    } else {
-                        room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name}});
-                    }
-                } else {
-                    const body = getBody([ATTACK, ATTACK, ATTACK, ATTACK, MOVE], room, 50);
-                    room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name}});
-                }
-                console.log('Adding RampartDefender to Spawn List: ' + newName);
+    static generateMeleeRampartDefenders(room: Room, storage: any, roomState: any, hasPlayerCreeps: boolean) {
+        const newName = 'RampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+
+        // 使用动态body生成，根据RCL调整比例
+        const body = getBodyByRatio([
+            {part: ATTACK, count: 4},
+            {part: MOVE, count: 1}
+        ], room, 50);
+
+        // 定义boost类型映射
+        const boostType = {
+            'lab3': ATTACK  // UTRIUM_ACID for ATTACK
+        };
+
+        let canBoost = false;
+        let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
+
+        // 强化逻辑：只有玩家creep才强化
+        if (hasPlayerCreeps && storage && room.memory.labs && room.memory.labs.outputLab3) {
+            // 动态计算boost需求（支持降级）
+            boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
+
+            if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                canBoost = true;
+                // 按实际需求分配boost
+                BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
+                const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
+                const amountMap: {[key: string]: number} = {};
+                Object.entries(boostRequirements).forEach(([k, v]) => {
+                    amountMap[k] = v.amount;
+                });
+                console.log(`[RD] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+            } else {
+                console.log(`[RD] boost资源不足，跳过boost: ${newName}`);
+            }
+        }
+
+        // 检查是否有足够的能量生成creep
+        const spawn = room.find(FIND_MY_SPAWNS)[0];
+        if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
+            const memory: any = canBoost ?
+                {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3], boosted: true} :
+                {role: 'RampartDefender', homeRoom: room.name};
+
+            room.memory.spawn_list.push(body, newName, {memory: memory});
+            console.log('Adding RampartDefender to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
+        } else {
+            // 能量不足，回滚boost分配
+            if (canBoost && boostRequirements) {
+                BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
+                console.log(`[RampartDefender] 能量不足，回滚boost分配: ${newName}`);
             }
         }
     }
 
-    static generateRangedRampartDefenders(room: Room, RangedRampartDefenders: number, storage: any, roomState: any) {
+    static generateRangedRampartDefenders(room: Room, RangedRampartDefenders: number, storage: any, roomState: any, hasPlayerCreeps?: boolean) {
         const HostileCreeps = roomState.hostileCreeps;
 
-        if (HostileCreeps.length > 4 && storage && storage.store[RESOURCE_CATALYZED_KEANIUM_ALKALIDE] >= 45000) {
-            const required = room.controller.level == 7 ? 3 : 2;
-            if (RangedRampartDefenders < required) {
+        // 根据敌人数量动态计算所需RRD数量
+        const required = HostileCreeps.length
+        if (RangedRampartDefenders < required) {
                 const newName = 'RangedRampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                 const body = getBodyByRatioWithLimits([
-                    {part: RANGED_ATTACK, count: 1},
+                    {part: TOUGH, count: 1, max: 5},
+                    {part: RANGED_ATTACK, count: 2},
                     {part: MOVE, count: 1}
                 ], room, 50);
 
-                if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
-                    room.memory.labs.status.boost = {};
-                }
-                if (room.memory.labs.status.boost) {
-                    if (room.memory.labs.status.boost.lab4) {
-                        room.memory.labs.status.boost.lab4.amount += 45000;
-                        room.memory.labs.status.boost.lab4.use += 1;
+                // 定义boost类型映射
+                const boostType = {
+                    'lab2': TOUGH,
+                    'lab4': RANGED_ATTACK   // KEANIUM_ALKALIDE for RANGED_ATTACK
+                };
+
+                let canBoost = false;
+                let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
+
+                // 强化逻辑：只有玩家creep才强化
+                if (hasPlayerCreeps && storage && room.memory.labs && room.memory.labs.outputLab4) {
+                    // 动态计算boost需求（支持降级）
+                    boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
+
+                    if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                        canBoost = true;
+                        // 按实际需求分配boost
+                        BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
+                        const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
+                        const amountMap: {[key: string]: number} = {};
+                        Object.entries(boostRequirements).forEach(([k, v]) => {
+                            amountMap[k] = v.amount;
+                        });
+                        console.log(`[RRD] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
                     } else {
-                        room.memory.labs.status.boost.lab4 = {};
-                        room.memory.labs.status.boost.lab4.amount = 45000;
-                        room.memory.labs.status.boost.lab4.use = 1;
+                        console.log(`[RRD] boost资源不足，跳过boost: ${newName}`);
                     }
                 }
 
-                room.memory.spawn_list.push(body, newName, {memory: {role: 'RRD', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab4]}});
-                console.log('Adding RangedRampartDefender to Spawn List: ' + newName);
+                // 检查是否有足够的能量生成creep
+                const spawn = room.find(FIND_MY_SPAWNS)[0];
+                if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
+                    const memory: any = canBoost ?
+                        {role: 'RRD', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab4], boosted: true} :
+                        {role: 'RRD', homeRoom: room.name};
+
+                    room.memory.spawn_list.push(body, newName, {memory: memory});
+                    console.log('Adding RangedRampartDefender to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
+                } else {
+                    // 能量不足，回滚boost分配
+                    if (canBoost && boostRequirements) {
+                        BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
+                        console.log(`[RangedRampartDefender] 能量不足，回滚boost分配: ${newName}`);
+                    }
+                }
             }
         }
-    }
+
 
     static generateAll(room: Room, attackers: number, RampartDefenders: number, RangedRampartDefenders: number, storage: any, roomState: any) {
         this.generateEmergencyAttackers(room, attackers, roomState);
-        this.generateRampartDefenders(room, RampartDefenders, storage, roomState);
-        this.generateRangedRampartDefenders(room, RangedRampartDefenders, storage, roomState);
+        this.generateRampartDefenders(room, RampartDefenders, RangedRampartDefenders, storage, roomState);
     }
 }
 
-// Special role generator - encapsulates Scout, Claimer, MineralMiner, Reserver, RemoteRepairer generation logic
-// Special defense role generator - handles healer, danger filler, RampartDefender, RangedRampartDefender, Clearer, SpecialRepair, SpecialCarry, NukeRepair
-class SpecialDefenseGenerator {
-    static generateHealer(room: Room, healers: number, roomState: any) {
-        if (healers < 1 && room.memory.Structures.towers.length === 0) {
-            const myCreeps = roomState.myCreeps;
-            const woundedCreeps = _.filter(myCreeps, (c: any) => c.hits < c.hitsMax);
-            if (woundedCreeps.length > 0) {
-                const newName = 'Healer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(getBody([HEAL, MOVE], room, 4), newName, {memory: {role: 'healer'}});
-                console.log('Adding Healer to Spawn List: ' + newName);
-            }
-        }
-    }
-
-    static generateDangerFiller(room: Room, fillers: number) {
-        if (room.memory.danger && room.memory.danger_timer > 35 && fillers < 2) {
-            const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-            room.memory.spawn_list.unshift(getBody([CARRY, CARRY, MOVE], room, 12), name, {memory: {role: 'filler'}});
-            console.log('Adding filler to Spawn List: ' + name);
-        }
-    }
-
-    static generateRampartDefenders(room: Room, fillers: number, RampartDefenders: number, RangedRampartDefenders: number, storage: any, roomState: any) {
-        if (room.memory.danger == true && room.memory.danger_timer >= 35 && fillers >= 2 && storage && (storage as any).store[RESOURCE_ENERGY] > 10000) {
-            let addtolist = true;
-            let HostileCreeps = roomState.hostileCreeps;
-            HostileCreeps = HostileCreeps.filter(function(c: any) {return c.owner.username !== "Invader" && c.ticksToLive > 350;});
-            // let inRangeFourteen = false;
-            if (HostileCreeps.length > 0) {
-                if (storage && storage.pos.getRangeTo(storage.pos.findClosestByRange(HostileCreeps)) <= 14) {
-                    if (HostileCreeps.length > 4 && RampartDefenders <= 1 && storage &&
-                        (storage as any).store[RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE] >= 300 &&
-                        (storage as any).store[RESOURCE_CATALYZED_KEANIUM_ALKALIDE] >= 1200 &&
-                        (RangedRampartDefenders < 3 && room.controller.level == 7 || RangedRampartDefenders < 2 && room.controller.level == 8)) {
-                        if (room.controller.level == 8) {
-                            // 使用新的body生成函数，确保不超过50个部件
-                            // 原始比例: 40 RANGED_ATTACK : 10 MOVE = 4:1
-                            const body = getBodyByRatio([
-                                {part: RANGED_ATTACK, count: 4},
-                                {part: MOVE, count: 1}
-                            ], room, 50);
-                            const newName = 'RRD-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-
-                            // 定义boost类型映射
-                            const boostType = {
-                                'lab2': TOUGH,          // ZYNTHIUM_ALKALIDE for TOUGH (虽然body中没有TOUGH，但为保持一致性)
-                                'lab4': RANGED_ATTACK   // KEANIUM_ALKALIDE for RANGED_ATTACK
-                            };
-
-                            // 定义资源到lab的映射
-                            const resourceLabMap = {
-                                'lab2': RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE,
-                                'lab4': RESOURCE_CATALYZED_KEANIUM_ALKALIDE
-                            };
-
-                            let canBoost = false;
-                            let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
-
-                            // 动态计算boost需求（支持降级）
-                            boostRequirements = this.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
-
-                            if (boostRequirements && this.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
-                                canBoost = true;
-                                // 按实际需求分配boost
-                                this.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
-                                const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
-                                const amountMap: {[key: string]: number} = {};
-                                Object.entries(boostRequirements).forEach(([k, v]) => {
-                                    amountMap[k] = v.amount;
-                                });
-                                console.log(`[RRD-8] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
-                            } else {
-                                console.log(`[RRD-8] boost资源不足，跳过boost: ${newName}`);
-                            }
-
-                            // 检查是否有足够的能量生成creep
-                            const spawn = room.find(FIND_MY_SPAWNS)[0];
-                            if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                                const memory: any = canBoost ?
-                                    {role: 'RRD', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab4, room.memory.labs.outputLab2], boosted: true} :
-                                    {role: 'RRD', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab4, room.memory.labs.outputLab2]};
-
-                                room.memory.spawn_list.push(body, newName, {memory: memory});
-                                console.log('Adding RangedRampartDefender to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                            } else {
-                                // 能量不足，回滚boost分配
-                                if (canBoost && boostRequirements) {
-                                    this.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                                    console.log(`[RangedRampartDefender] 能量不足，回滚boost分配: ${newName}`);
-                                }
-                            }
-                        }
-                        else if (room.controller.level == 7) {
-                            // 使用新的body生成函数，确保不超过50个部件
-                            // 原始比例: 5 TOUGH : 32 RANGED_ATTACK : 13 MOVE
-                            const body = getBodyByRatio(
-                                [
-                                    { part: TOUGH, count: 1 },
-                                    { part: RANGED_ATTACK, count: 6 },
-                                    { part: MOVE, count: 3 }
-                                ],
-                                room,
-                                50
-                            );
-                            const newName = "RRD-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
-
-                            // 定义boost类型映射
-                            const boostType = {
-                                'lab2': TOUGH,          // ZYNTHIUM_ALKALIDE for TOUGH
-                                'lab4': RANGED_ATTACK   // KEANIUM_ALKALIDE for RANGED_ATTACK
-                            };
-
-                            // 定义资源到lab的映射
-                            const resourceLabMap = {
-                                'lab2': RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE,
-                                'lab4': RESOURCE_CATALYZED_KEANIUM_ALKALIDE
-                            };
-
-                            let canBoost = false;
-                            let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
-
-                            // 动态计算boost需求（支持降级）
-                            boostRequirements = this.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
-
-                            if (boostRequirements && this.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
-                                canBoost = true;
-                                // 按实际需求分配boost
-                                this.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
-                                const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
-                                const amountMap: {[key: string]: number} = {};
-                                Object.entries(boostRequirements).forEach(([k, v]) => {
-                                    amountMap[k] = v.amount;
-                                });
-                                console.log(`[RRD-7] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
-                            } else {
-                                console.log(`[RRD-7] boost资源不足，跳过boost: ${newName}`);
-                            }
-
-                            // 检查是否有足够的能量生成creep
-                            const spawn = room.find(FIND_MY_SPAWNS)[0];
-                            if (
-                                spawn &&
-                                spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)
-                            ) {
-                                const memory: any = canBoost ?
-                                    {
-                                        role: "RRD",
-                                        homeRoom: room.name,
-                                        boostlabs: [room.memory.labs.outputLab4, room.memory.labs.outputLab2],
-                                        boosted: true
-                                    } : {
-                                        role: "RRD",
-                                        homeRoom: room.name,
-                                        boostlabs: [room.memory.labs.outputLab4, room.memory.labs.outputLab2]
-                                    };
-
-                                room.memory.spawn_list.push(body, newName, {memory: memory});
-                                console.log("Adding RangedRampartDefender to Spawn List: " + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                            } else {
-                                // 能量不足，回滚boost分配
-                                if (canBoost && boostRequirements) {
-                                    this.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                                    console.log(`[RangedRampartDefender] 能量不足，回滚boost分配: ${newName}`);
-                                }
-                            }
-                        }
-                    }
-                    // inRangeFourteen = true;
-                }
-            }
-            // if (inRangeFourteen && RampartDefenders < 1) {
-            if (RampartDefenders < 1) {
-                let found = false;
-                for (const enemyCreep of HostileCreeps) {
-                    for (const part of enemyCreep.body) {
-                        if (part.type == ATTACK || part.type == WORK) {
-                            found = true;
-                        }
-                    }
-                }
-                if (found == false && RampartDefenders == 1) {
-                    addtolist = false;
-                }
-                if (addtolist) {
-                    const newName = 'RampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    if (room.controller.level >= 7) {
-                        let body;
-                        if (found == false) {
-                            body = getBodyByRatio([
-                                {part: ATTACK, count: 3},
-                                {part: MOVE, count: 1}
-                            ], room);
-                        } else {
-                             body = getBodyByRatio([
-                                {part: ATTACK, count: 2},
-                                {part: MOVE, count: 1}
-                            ], room);
-                        }
-                        // 定义boost类型映射
-                        const boostType = {
-                            'lab3': ATTACK  // UTRIUM_ACID for ATTACK
-                        };
-
-                        // 定义资源到lab的映射
-                        const resourceLabMap = {
-                            'lab3': RESOURCE_CATALYZED_UTRIUM_ACID
-                        };
-
-                        let canBoost = false;
-                        let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
-
-                        if (storage && room.controller.level >= 7 && room.memory.labs && room.memory.labs.outputLab3 && (HostileCreeps.length > 1 || HostileCreeps.length == 1 && room.controller.level == 7 && HostileCreeps[0].getActiveBodyparts(HEAL) >= 16)) {
-                            // 动态计算boost需求（支持降级）
-                            boostRequirements = this.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
-
-                            if (boostRequirements && this.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
-                                canBoost = true;
-                                // 按实际需求分配boost
-                                this.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
-                                const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
-                                const amountMap: {[key: string]: number} = {};
-                                Object.entries(boostRequirements).forEach(([k, v]) => {
-                                    amountMap[k] = v.amount;
-                                });
-                                console.log(`[RampartDefender] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
-                            } else {
-                                console.log(`[RampartDefender] boost资源不足，跳过boost: ${newName}`);
-                            }
-                        }
-
-                        // 检查是否有足够的能量生成creep
-                        const spawn = room.find(FIND_MY_SPAWNS)[0];
-                        if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                            const memory: any = canBoost ?
-                                {
-                                    role: "RampartDefender",
-                                    homeRoom: room.name,
-                                    boostlabs: [room.memory.labs.outputLab3],
-                                    boosted: true
-                                } : {
-                                    role: "RampartDefender",
-                                    homeRoom: room.name
-                                };
-
-                            room.memory.spawn_list.push(body, newName, {memory: memory});
-                            console.log('Adding RampartDefender to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                        } else {
-                            // 能量不足，回滚boost分配
-                            if (canBoost && boostRequirements) {
-                                this.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                                console.log(`[RampartDefender] 能量不足，回滚boost分配: ${newName}`);
-                            }
-                        }
-                    } else {
-                        const body = getBody([ATTACK, ATTACK, ATTACK, ATTACK, MOVE], room, 50);
-                        room.memory.spawn_list.push(body, newName, {memory: {role: 'RampartDefender', homeRoom: room.name}});
-                    }
-                    console.log('Adding RampartDefender to Spawn List: ' + newName);
-                }
-            }
-        }
-    }
-
-    static generateClearer(room: Room, clearers: number, RampartDefenders: number, roomState: any) {
-        if (room.controller.level === 8 && clearers < 1 && room.memory.danger && room.memory.danger_timer > 300 && RampartDefenders === 0) {
-            let hostileCreeps = roomState.hostileCreeps;
-            hostileCreeps = _.filter(hostileCreeps, (c: any) => c.owner.username !== "Invader");
-            if (hostileCreeps.length) {
-                const attackCreeps = _.filter(hostileCreeps, (c: any) => c.getActiveBodyparts(ATTACK) > 0);
-                const rangedAttackCreeps = _.filter(hostileCreeps, (c: any) => c.getActiveBodyparts(RANGED_ATTACK) > 0);
-                if (attackCreeps.length > 0 || rangedAttackCreeps.length > 0) {
-                    if (attackCreeps.length) {
-                        const newName = 'Clearer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                        const body = getBodyByRatio([
-                            {part: TOUGH, count: 1},
-                            {part: MOVE, count: 1},
-                            {part: ATTACK, count: 3}
-                        ], room);
-
-                        const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
-                        let canBoost = false;
-                        let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
-
-                        // 定义boost类型映射
-                        const boostType = {
-                            'lab2': TOUGH,      // ZYNTHIUM_ALKALIDE for TOUGH
-                            'lab3': ATTACK,     // UTRIUM_ACID for ATTACK
-                            'lab7': TOUGH       // GHODIUM_ALKALIDE for TOUGH
-                        };
-
-                        // 定义资源到lab的映射
-                        const resourceLabMap = {
-                            'lab2': RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE,
-                            'lab3': RESOURCE_CATALYZED_UTRIUM_ACID,
-                            'lab7': RESOURCE_CATALYZED_GHODIUM_ALKALIDE
-                        };
-
-                        if (storage && room.memory.labs && room.memory.labs.outputLab2 &&
-                            room.memory.labs.outputLab3 && room.memory.labs.outputLab7) {
-
-                            // 动态计算boost需求（支持降级）
-                            boostRequirements = this.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
-
-                            if (boostRequirements && this.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
-                                canBoost = true;
-                                // 按实际需求分配boost
-                                this.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
-                                const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
-                                const amountMap: {[key: string]: number} = {};
-                                Object.entries(boostRequirements).forEach(([k, v]) => {
-                                    amountMap[k] = v.amount;
-                                });
-                                console.log(`[Clearer] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
-                            } else {
-                                console.log(`[Clearer] boost资源不足，跳过boost: ${newName}`);
-                            }
-                        }
-
-                        // 检查是否有足够的能量生成creep
-                        const spawn = room.find(FIND_MY_SPAWNS)[0];
-                        if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                            const memory: any = canBoost ?
-                                {role: 'clearer', boostlabs: [room.memory.labs.outputLab2, room.memory.labs.outputLab3, room.memory.labs.outputLab7], boosted: true} :
-                                {role: 'clearer'};
-
-                            room.memory.spawn_list.push(body, newName, {memory: memory});
-                            console.log('Adding Clearer to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                        } else {
-                            // 能量不足，回滚boost分配
-                            if (canBoost && boostRequirements) {
-                                this.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                                console.log(`[Clearer] 能量不足，回滚boost分配: ${newName}`);
-                            }
-                        }
-                    }
-                }
-                else {
-                    const newName = 'Clearer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    room.memory.spawn_list.push(
-                        getBodyByRatio([
-                            {part: MOVE, count: 1},
-                            {part: ATTACK, count: 2}
-                        ], room),
-                        newName,
-                        {memory: {role: 'clearer'}}
-                    );
-                    console.log('Adding Clearer to Spawn List: ' + newName);
-                }
-            }
-        }
-    }
-
-    static generateSpecialRepairAndCarry(room: Room, SpecialRepairers: number, storage: any, rampartsInRoomBelowTwelveMil: any[]) {
-        if (SpecialRepairers < 4 && storage && (storage as any).store[RESOURCE_ENERGY] > 25000 && room.memory.danger && room.controller.level >= 7 && (room.memory.danger || room.memory.danger_timer > 0)) {
-            let rampartsInDangerOfDying = false;
-            let rampartsInDangerOfDying4Mil = false;
-            if (rampartsInRoomBelowTwelveMil && rampartsInRoomBelowTwelveMil.length > 0 && storage) {
-                rampartsInRoomBelowTwelveMil = rampartsInRoomBelowTwelveMil.filter(function (r: any) {
-                    return storage.pos.getRangeTo(r) >= 8 && storage.pos.getRangeTo(r) <= 10;
-                });
-                const rampartsInRoomBelow6Mil = rampartsInRoomBelowTwelveMil.filter(function (r: any) {
-                    return r.hits <= 8050000;
-                });
-                const rampartsInRoomBelow4Mil = rampartsInRoomBelow6Mil.filter(function(r: any) {return r.hits <= 7050000;});
-                if (rampartsInRoomBelow4Mil.length > 0) {
-                    rampartsInDangerOfDying4Mil = true;
-                }
-                else {
-                    if (room.controller.level == 8 && rampartsInRoomBelowTwelveMil.length > 0) {
-                        rampartsInDangerOfDying = true;
-                    }
-                    else if (room.controller.level == 7 && rampartsInRoomBelow6Mil.length > 0) {
-                        rampartsInDangerOfDying = true;
-                    }
-                }
-            }
-            if (room.memory.danger_timer > 200 && SpecialRepairers < 1 || rampartsInDangerOfDying && SpecialRepairers < 1 || rampartsInDangerOfDying4Mil && SpecialRepairers < 4 && room.energyCapacityAvailable >= 4000) {
-                const newName = "SpecialRepair-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                console.log("Adding SpecialRepair to Spawn List: " + newName);
-                if (room.controller.level >= 7) {
-                    let body;
-                    body = getBodyByRatio([{part: WORK, count: 7},{part: CARRY, count: 1}, {part: MOVE, count: 3}], room);
-
-                    // 定义boost类型映射
-                    const boostType = {
-                        'lab1': WORK  // LEMERGIUM_ACID for WORK
-                    };
-
-                    // 定义资源到lab的映射
-                    const resourceLabMap = {
-                        'lab1': RESOURCE_CATALYZED_LEMERGIUM_ACID
-                    };
-
-                    let canBoost = false;
-                    let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
-
-                    if (storage && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
-                        // 动态计算boost需求（支持降级）
-                        boostRequirements = this.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
-
-                        if (boostRequirements && this.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
-                            canBoost = true;
-                            // 按实际需求分配boost
-                            this.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
-                            const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
-                            const amountMap: {[key: string]: number} = {};
-                            Object.entries(boostRequirements).forEach(([k, v]) => {
-                                amountMap[k] = v.amount;
-                            });
-                            console.log(`[SpecialRepair-7] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
-                        } else {
-                            console.log(`[SpecialRepair-7] boost资源不足，跳过boost: ${newName}`);
-                        }
-                    }
-
-                    // 检查是否有足够的能量生成creep
-                    const spawn = room.find(FIND_MY_SPAWNS)[0];
-                    if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                        const memory: any = canBoost ?
-                            {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1], boosted: true} :
-                            {role: 'SpecialRepair'};
-
-                        room.memory.spawn_list.push(body, newName, {memory: memory});
-                        console.log('Adding SpecialRepair to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                    } else {
-                        // 能量不足，回滚boost分配
-                        if (canBoost && boostRequirements) {
-                            this.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                            console.log(`[SpecialRepair-7] 能量不足，回滚boost分配: ${newName}`);
-                        }
-                    }
-                    const newName2 = "SpecialCarry-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    room.memory.spawn_list.push(getBody([CARRY, MOVE], room), newName2, {memory: {role: 'SpecialCarry'}});
-                    console.log('Adding SpecialCarry to Spawn List: ' + newName);
-                }
-                else if (room.controller.level == 6) {
-                    let body;
-                    body = getBodyByRatio([{part: WORK, count: 4},{part: CARRY, count: 1}, {part: MOVE, count: 1}], room);
-
-                    // 定义boost类型映射
-                    const boostType = {
-                        'lab1': WORK  // LEMERGIUM_ACID for WORK
-                    };
-
-                    // 定义资源到lab的映射
-                    const resourceLabMap = {
-                        'lab1': RESOURCE_CATALYZED_LEMERGIUM_ACID
-                    };
-
-                    let canBoost = false;
-                    let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
-
-                    if (storage && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
-                        // 动态计算boost需求（支持降级）
-                        boostRequirements = this.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
-
-                        if (boostRequirements && this.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
-                            canBoost = true;
-                            // 按实际需求分配boost
-                            this.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
-                            const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
-                            const amountMap: {[key: string]: number} = {};
-                            Object.entries(boostRequirements).forEach(([k, v]) => {
-                                amountMap[k] = v.amount;
-                            });
-                            console.log(`[SpecialRepair-6] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
-                        } else {
-                            console.log(`[SpecialRepair-6] boost资源不足，跳过boost: ${newName}`);
-                        }
-                    }
-
-                    // 检查是否有足够的能量生成creep
-                    const spawn = room.find(FIND_MY_SPAWNS)[0];
-                    if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                        const memory: any = canBoost ?
-                            {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1], boosted: true} :
-                            {role: 'SpecialRepair'};
-
-                        room.memory.spawn_list.push(body, newName, {memory: memory});
-                        console.log('Adding SpecialRepair to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                    } else {
-                        // 能量不足，回滚boost分配
-                        if (canBoost && boostRequirements) {
-                            this.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                            console.log(`[SpecialRepair-6] 能量不足，回滚boost分配: ${newName}`);
-                        }
-                    }
-                    const newName2 = 'SpecialCarry-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    room.memory.spawn_list.push(getBody([MOVE, CARRY], room), newName2, {memory: {role: 'SpecialCarry'}});
-                    console.log('Adding SpecialCarry to Spawn List: ' + newName);
-                }
-            }
-        }
-    }
-
-    static generateNukeRepair(room: Room, repairers: number, storage: any) {
-        if ((room.memory.NukeRepair && repairers < 4 && !room.memory.danger || room.memory.defence && room.memory.defence.nuke && repairers < 1) && (Game.cpu.bucket > 150 || Memory.pixelManager?.enabled) && storage && (storage as any).store[RESOURCE_ENERGY] > 75000) {
-            const name = 'Repair-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-            let body;
-            body = getBodyByRatio([
-              {part: WORK, count: 11},
-              {part: CARRY, count: 5},
-              {part: MOVE, count: 8},
-            ], room)
-            // 定义boost类型映射
-            const boostType = {
-                'lab1': WORK  // LEMERGIUM_ACID for WORK
-            };
-
-            // 定义资源到lab的映射
-            const resourceLabMap = {
-                'lab1': RESOURCE_CATALYZED_LEMERGIUM_ACID
-            };
-
-            let canBoost = false;
-            let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
-
-            if (room.controller.level >= 7 && room.find(FIND_NUKES).length > 2 && storage && room.memory.labs && room.memory.labs.outputLab1) {
-                // 动态计算boost需求（支持降级）
-                boostRequirements = this.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
-
-                if (boostRequirements && this.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
-                    canBoost = true;
-                    // 按实际需求分配boost
-                    this.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
-                    const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
-                    const amountMap: {[key: string]: number} = {};
-                    Object.entries(boostRequirements).forEach(([k, v]) => {
-                        amountMap[k] = v.amount;
-                    });
-                    console.log(`[NukeRepair] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
-                } else {
-                    console.log(`[NukeRepair] boost资源不足，跳过boost: ${name}`);
-                }
-            }
-
-            // 检查是否有足够的能量生成creep
-            const spawn = room.find(FIND_MY_SPAWNS)[0];
-            if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                const memory: any = canBoost ?
-                    {role: 'repair', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab1], boosted: true} :
-                    {role: 'repair', homeRoom: room.name};
-
-                room.memory.spawn_list.push(body, name, {memory: memory});
-                console.log('Adding Repair to Spawn List: ' + name + (canBoost ? ' (boosted)' : ' (normal)'));
-            } else {
-                // 能量不足，回滚boost分配
-                if (canBoost && boostRequirements) {
-                    this.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                    console.log(`[NukeRepair] 能量不足，回滚boost分配: ${name}`);
-                }
-            }
-            console.log('Adding Repair to Spawn List: ' + name);
-        }
-    }
-
+// Boost utility class - handles boost resource management with downgrade support
+class BoostUtils {
     /**
      * 计算body所需的boost资源（支持降级）
      * @param body 生成的body数组
@@ -2518,7 +1999,7 @@ class SpecialDefenseGenerator {
      * @param storage 存储对象，用于检查可用资源并决定使用哪个等级的化合物
      * @returns boost需求对象 {labName: {resourceType, tier, amount}}，如果资源不足返回null
      */
-    private static calculateBoostRequirementsWithDowngrade(
+    static calculateBoostRequirementsWithDowngrade(
         body: BodyPartConstant[],
         boostType: {[key: string]: BodyPartConstant},
         storage: any
@@ -2554,7 +2035,7 @@ class SpecialDefenseGenerator {
      * @param requirements boost需求 {labName: {resourceType, tier, amount}}
      * @returns 是否有足够资源
      */
-    private static hasEnoughBoostResourcesWithDowngrade(
+    static hasEnoughBoostResourcesWithDowngrade(
         storage: any,
         requirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null
     ): boolean {
@@ -2574,7 +2055,7 @@ class SpecialDefenseGenerator {
      * @param storage 存储对象
      * @param requirements boost需求 {labName: {resourceType, tier, amount}}
      */
-    private static allocateBoostResourcesWithDowngrade(
+    static allocateBoostResourcesWithDowngrade(
         room: Room,
         storage: any,
         requirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}}
@@ -2589,46 +2070,13 @@ class SpecialDefenseGenerator {
      * @param room 房间对象
      * @param requirements boost需求 {labName: {resourceType, tier, amount}}
      */
-    private static rollbackBoostResourcesWithDowngrade(
+    static rollbackBoostResourcesWithDowngrade(
         room: Room,
         requirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}}
     ): void {
         Object.entries(requirements).forEach(([labName, info]) => {
             this.rollbackBoostAllocationWithDowngrade(room, labName, info.resourceType, info.amount, info.tier);
         });
-    }
-
-    private static handleBoostAllocation(room: Room, storage: any, labName: string, amount: number) {
-        if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
-            room.memory.labs.status.boost = {};
-        }
-        if (room.memory.labs.status.boost) {
-            if (room.memory.labs.status.boost[labName]) {
-                room.memory.labs.status.boost[labName].amount += amount;
-                room.memory.labs.status.boost[labName].use += 1;
-                room.memory.labs.status.boost[labName].timestamp = Game.time;
-            }
-            else {
-                room.memory.labs.status.boost[labName] = {
-                    amount: amount,
-                    use: 1,
-                    timestamp: Game.time
-                };
-            }
-        }
-    }
-
-    private static rollbackBoostAllocation(room: Room, labName: string, amount: number) {
-        if (room.memory.labs?.status?.boost?.[labName]) {
-            const boost = room.memory.labs.status.boost[labName];
-            boost.amount -= amount;
-            boost.use -= 1;
-
-            // 如果amount和use都为0，则删除该boost记录
-            if (boost.amount <= 0 && boost.use <= 0) {
-                delete room.memory.labs.status.boost[labName];
-            }
-        }
     }
 
     /**
@@ -2697,6 +2145,325 @@ class SpecialDefenseGenerator {
             }
         }
     }
+}
+
+// Special role generator - encapsulates Scout, Claimer, MineralMiner, Reserver, RemoteRepairer generation logic
+// Special defense role generator - handles healer, danger filler, RampartDefender, RangedRampartDefender, Clearer, SpecialRepair, SpecialCarry, NukeRepair
+class SpecialDefenseGenerator {
+    static generateHealer(room: Room, healers: number, roomState: any) {
+        if (healers < 1 && room.memory.Structures.towers.length === 0) {
+            const myCreeps = roomState.myCreeps;
+            const woundedCreeps = _.filter(myCreeps, (c: any) => c.hits < c.hitsMax);
+            if (woundedCreeps.length > 0) {
+                const newName = 'Healer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                room.memory.spawn_list.push(getBody([HEAL, MOVE], room, 4), newName, {memory: {role: 'healer'}});
+                console.log('Adding Healer to Spawn List: ' + newName);
+            }
+        }
+    }
+
+    static generateDangerFiller(room: Room, fillers: number) {
+        if (room.memory.danger && room.memory.danger_timer > 35 && fillers < 2) {
+            const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            room.memory.spawn_list.unshift(getBody([CARRY, CARRY, MOVE], room, 12), name, {memory: {role: 'filler'}});
+            console.log('Adding filler to Spawn List: ' + name);
+        }
+    }
+
+
+    static generateClearer(room: Room, clearers: number, RampartDefenders: number, roomState: any) {
+        if (room.controller.level === 8 && clearers < 1 && room.memory.danger && room.memory.danger_timer > 300 && RampartDefenders === 0) {
+            let hostileCreeps = roomState.hostileCreeps;
+            hostileCreeps = _.filter(hostileCreeps, (c: any) => c.owner.username !== "Invader");
+            if (hostileCreeps.length) {
+                const attackCreeps = _.filter(hostileCreeps, (c: any) => c.getActiveBodyparts(ATTACK) > 0);
+                const rangedAttackCreeps = _.filter(hostileCreeps, (c: any) => c.getActiveBodyparts(RANGED_ATTACK) > 0);
+                if (attackCreeps.length > 0 || rangedAttackCreeps.length > 0) {
+                    if (attackCreeps.length) {
+                        const newName = 'Clearer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                        const body = getBodyByRatio([
+                            {part: TOUGH, count: 1},
+                            {part: MOVE, count: 1},
+                            {part: ATTACK, count: 3}
+                        ], room);
+
+                        const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+                        let canBoost = false;
+                        let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
+
+                        // 定义boost类型映射
+                        const boostType = {
+                            'lab2': TOUGH,      // ZYNTHIUM_ALKALIDE for TOUGH
+                            'lab3': ATTACK,     // UTRIUM_ACID for ATTACK
+                            'lab7': TOUGH       // GHODIUM_ALKALIDE for TOUGH
+                        };
+
+                        // 定义资源到lab的映射
+                        const resourceLabMap = {
+                            'lab2': RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE,
+                            'lab3': RESOURCE_CATALYZED_UTRIUM_ACID,
+                            'lab7': RESOURCE_CATALYZED_GHODIUM_ALKALIDE
+                        };
+
+                        if (storage && room.memory.labs && room.memory.labs.outputLab2 &&
+                            room.memory.labs.outputLab3 && room.memory.labs.outputLab7) {
+
+                            // 动态计算boost需求（支持降级）
+                            boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
+
+                            if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                                canBoost = true;
+                                // 按实际需求分配boost
+                                BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
+                                const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
+                                const amountMap: {[key: string]: number} = {};
+                                Object.entries(boostRequirements).forEach(([k, v]) => {
+                                    amountMap[k] = v.amount;
+                                });
+                                console.log(`[Clearer] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                            } else {
+                                console.log(`[Clearer] boost资源不足，跳过boost: ${newName}`);
+                            }
+                        }
+
+                        // 检查是否有足够的能量生成creep
+                        const spawn = room.find(FIND_MY_SPAWNS)[0];
+                        if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
+                            const memory: any = canBoost ?
+                                {role: 'clearer', boostlabs: [room.memory.labs.outputLab2, room.memory.labs.outputLab3, room.memory.labs.outputLab7], boosted: true} :
+                                {role: 'clearer'};
+
+                            room.memory.spawn_list.push(body, newName, {memory: memory});
+                            console.log('Adding Clearer to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
+                        } else {
+                            // 能量不足，回滚boost分配
+                            if (canBoost && boostRequirements) {
+                                BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
+                                console.log(`[Clearer] 能量不足，回滚boost分配: ${newName}`);
+                            }
+                        }
+                    }
+                }
+                else {
+                    const newName = 'Clearer-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.push(
+                        getBodyByRatio([
+                            {part: MOVE, count: 1},
+                            {part: ATTACK, count: 2}
+                        ], room),
+                        newName,
+                        {memory: {role: 'clearer'}}
+                    );
+                    console.log('Adding Clearer to Spawn List: ' + newName);
+                }
+            }
+        }
+    }
+
+    static generateSpecialRepairAndCarry(room: Room, SpecialRepairers: number, storage: any, rampartsInRoomBelowTwelveMil: any[]) {
+        if (SpecialRepairers < 4 && storage && (storage as any).store[RESOURCE_ENERGY] > 25000 && room.memory.danger && room.controller.level >= 7 && (room.memory.danger || room.memory.danger_timer > 0)) {
+            let rampartsInDangerOfDying = false;
+            let rampartsInDangerOfDying4Mil = false;
+            if (rampartsInRoomBelowTwelveMil && rampartsInRoomBelowTwelveMil.length > 0 && storage) {
+                rampartsInRoomBelowTwelveMil = rampartsInRoomBelowTwelveMil.filter(function (r: any) {
+                    return storage.pos.getRangeTo(r) >= 8 && storage.pos.getRangeTo(r) <= 10;
+                });
+                const rampartsInRoomBelow6Mil = rampartsInRoomBelowTwelveMil.filter(function (r: any) {
+                    return r.hits <= 8050000;
+                });
+                const rampartsInRoomBelow4Mil = rampartsInRoomBelow6Mil.filter(function(r: any) {return r.hits <= 7050000;});
+                if (rampartsInRoomBelow4Mil.length > 0) {
+                    rampartsInDangerOfDying4Mil = true;
+                }
+                else {
+                    if (room.controller.level == 8 && rampartsInRoomBelowTwelveMil.length > 0) {
+                        rampartsInDangerOfDying = true;
+                    }
+                    else if (room.controller.level == 7 && rampartsInRoomBelow6Mil.length > 0) {
+                        rampartsInDangerOfDying = true;
+                    }
+                }
+            }
+            if (room.memory.danger_timer > 200 && SpecialRepairers < 1 || rampartsInDangerOfDying && SpecialRepairers < 1 || rampartsInDangerOfDying4Mil && SpecialRepairers < 4 && room.energyCapacityAvailable >= 4000) {
+                const newName = "SpecialRepair-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                console.log("Adding SpecialRepair to Spawn List: " + newName);
+                if (room.controller.level >= 7) {
+                    let body;
+                    body = getBodyByRatio([{part: WORK, count: 7},{part: CARRY, count: 1}, {part: MOVE, count: 3}], room);
+
+                    // 定义boost类型映射
+                    const boostType = {
+                        'lab1': WORK  // LEMERGIUM_ACID for WORK
+                    };
+
+                    // 定义资源到lab的映射
+                    const resourceLabMap = {
+                        'lab1': RESOURCE_CATALYZED_LEMERGIUM_ACID
+                    };
+
+                    let canBoost = false;
+                    let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
+
+                    if (storage && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
+                        // 动态计算boost需求（支持降级）
+                        boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
+
+                        if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                            canBoost = true;
+                            // 按实际需求分配boost
+                            BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
+                            const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
+                            const amountMap: {[key: string]: number} = {};
+                            Object.entries(boostRequirements).forEach(([k, v]) => {
+                                amountMap[k] = v.amount;
+                            });
+                            console.log(`[SpecialRepair-7] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                        } else {
+                            console.log(`[SpecialRepair-7] boost资源不足，跳过boost: ${newName}`);
+                        }
+                    }
+
+                    // 检查是否有足够的能量生成creep
+                    const spawn = room.find(FIND_MY_SPAWNS)[0];
+                    if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
+                        const memory: any = canBoost ?
+                            {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1], boosted: true} :
+                            {role: 'SpecialRepair'};
+
+                        room.memory.spawn_list.push(body, newName, {memory: memory});
+                        console.log('Adding SpecialRepair to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
+                    } else {
+                        // 能量不足，回滚boost分配
+                        if (canBoost && boostRequirements) {
+                            BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
+                            console.log(`[SpecialRepair-7] 能量不足，回滚boost分配: ${newName}`);
+                        }
+                    }
+                    const newName2 = "SpecialCarry-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.push(getBody([CARRY, MOVE], room), newName2, {memory: {role: 'SpecialCarry'}});
+                    console.log('Adding SpecialCarry to Spawn List: ' + newName);
+                }
+                else if (room.controller.level == 6) {
+                    let body;
+                    body = getBodyByRatio([{part: WORK, count: 4},{part: CARRY, count: 1}, {part: MOVE, count: 1}], room);
+
+                    // 定义boost类型映射
+                    const boostType = {
+                        'lab1': WORK  // LEMERGIUM_ACID for WORK
+                    };
+
+                    // 定义资源到lab的映射
+                    const resourceLabMap = {
+                        'lab1': RESOURCE_CATALYZED_LEMERGIUM_ACID
+                    };
+
+                    let canBoost = false;
+                    let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
+
+                    if (storage && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
+                        // 动态计算boost需求（支持降级）
+                        boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
+
+                        if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                            canBoost = true;
+                            // 按实际需求分配boost
+                            BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
+                            const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
+                            const amountMap: {[key: string]: number} = {};
+                            Object.entries(boostRequirements).forEach(([k, v]) => {
+                                amountMap[k] = v.amount;
+                            });
+                            console.log(`[SpecialRepair-6] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                        } else {
+                            console.log(`[SpecialRepair-6] boost资源不足，跳过boost: ${newName}`);
+                        }
+                    }
+
+                    // 检查是否有足够的能量生成creep
+                    const spawn = room.find(FIND_MY_SPAWNS)[0];
+                    if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
+                        const memory: any = canBoost ?
+                            {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1], boosted: true} :
+                            {role: 'SpecialRepair'};
+
+                        room.memory.spawn_list.push(body, newName, {memory: memory});
+                        console.log('Adding SpecialRepair to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
+                    } else {
+                        // 能量不足，回滚boost分配
+                        if (canBoost && boostRequirements) {
+                            BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
+                            console.log(`[SpecialRepair-6] 能量不足，回滚boost分配: ${newName}`);
+                        }
+                    }
+                    const newName2 = 'SpecialCarry-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.push(getBody([MOVE, CARRY], room), newName2, {memory: {role: 'SpecialCarry'}});
+                    console.log('Adding SpecialCarry to Spawn List: ' + newName);
+                }
+            }
+        }
+    }
+
+    static generateNukeRepair(room: Room, repairers: number, storage: any) {
+        if ((room.memory.NukeRepair && repairers < 4 && !room.memory.danger || room.memory.defence && room.memory.defence.nuke && repairers < 1) && (Game.cpu.bucket > 150 || Memory.pixelManager?.enabled) && storage && (storage as any).store[RESOURCE_ENERGY] > 75000) {
+            const name = 'Repair-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            let body;
+            body = getBodyByRatio([
+              {part: WORK, count: 11},
+              {part: CARRY, count: 5},
+              {part: MOVE, count: 8},
+            ], room)
+            // 定义boost类型映射
+            const boostType = {
+                'lab1': WORK  // LEMERGIUM_ACID for WORK
+            };
+
+            // 定义资源到lab的映射
+            const resourceLabMap = {
+                'lab1': RESOURCE_CATALYZED_LEMERGIUM_ACID
+            };
+
+            let canBoost = false;
+            let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
+
+            if (room.controller.level >= 7 && room.find(FIND_NUKES).length > 2 && storage && room.memory.labs && room.memory.labs.outputLab1) {
+                // 动态计算boost需求（支持降级）
+                boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
+
+                if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                    canBoost = true;
+                    // 按实际需求分配boost
+                    BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
+                    const tierInfo = Object.values(boostRequirements).map(r => `T${r.tier}`).join(',');
+                    const amountMap: {[key: string]: number} = {};
+                    Object.entries(boostRequirements).forEach(([k, v]) => {
+                        amountMap[k] = v.amount;
+                    });
+                    console.log(`[NukeRepair] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                } else {
+                    console.log(`[NukeRepair] boost资源不足，跳过boost: ${name}`);
+                }
+            }
+
+            // 检查是否有足够的能量生成creep
+            const spawn = room.find(FIND_MY_SPAWNS)[0];
+            if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
+                const memory: any = canBoost ?
+                    {role: 'repair', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab1], boosted: true} :
+                    {role: 'repair', homeRoom: room.name};
+
+                room.memory.spawn_list.push(body, name, {memory: memory});
+                console.log('Adding Repair to Spawn List: ' + name + (canBoost ? ' (boosted)' : ' (normal)'));
+            } else {
+                // 能量不足，回滚boost分配
+                if (canBoost && boostRequirements) {
+                    BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
+                    console.log(`[NukeRepair] 能量不足，回滚boost分配: ${name}`);
+                }
+            }
+            console.log('Adding Repair to Spawn List: ' + name);
+        }
+    }
+
 
     /**
      * 能量检查策略说明：
@@ -2719,7 +2486,6 @@ class SpecialDefenseGenerator {
     static generateAll(room: Room, healers: number, fillers: number, RampartDefenders: number, RangedRampartDefenders: number, SpecialRepairers: number, repairers: number, clearers: number, storage: any, rampartsInRoomBelowTwelveMil: any[], roomState: any) {
         this.generateHealer(room, healers, roomState);
         this.generateDangerFiller(room, fillers);
-        this.generateRampartDefenders(room, fillers, RampartDefenders, RangedRampartDefenders, storage, roomState);
         this.generateClearer(room, clearers, RampartDefenders, roomState);
         this.generateSpecialRepairAndCarry(room, SpecialRepairers, storage, rampartsInRoomBelowTwelveMil);
         this.generateNukeRepair(room, repairers, storage);
