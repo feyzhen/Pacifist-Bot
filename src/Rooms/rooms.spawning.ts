@@ -250,6 +250,11 @@ function add_creeps_to_spawn_list_refactored(room: Room, spawn: StructureSpawn) 
     const annoyers = roleCount.annoy.total;
     const upgraders = roleCount.upgrader.inRoom;
 
+    // 调试信息：输出关键角色计数
+    if (roomState.hostileCreeps.length > 0) {
+        console.log(`[DEBUG] ${room.name} 角色统计: RD=${RampartDefenders}, RRD=${RangedRampartDefenders}, healers=${healers}, 敌人数量=${roomState.hostileCreeps.length}`);
+    }
+
     // 6. 使用新的生成器类生成角色
     // 能量相关角色
     EnergyRoleGenerator.generateAll(resourceData, room, spawn, storage, activeRemotes, EnergyManagers, upgraders, fillers, EnergyMinersInRoom, sites.length, spawnrules, rampartsInRoom, roomState, repairers);
@@ -1841,28 +1846,46 @@ class MilitaryRoleGenerator {
     static generateRampartDefenders(room: Room, RampartDefenders: number, RangedRampartDefenders: number, storage: any, roomState: any) {
         const HostileCreeps = roomState.hostileCreeps;
 
-        if (HostileCreeps.length === 0) return;
-
+        if (HostileCreeps.length === 0 || room.memory.danger_timer <= 35) return;
         // 分析敌人类型，决定生成什么类型的防御单位
         let hasRangedAttack = false;
+        let hasMeleeAttack = false;
         let hasPlayerCreeps = false;
 
+        console.log(`[DEBUG] ${room.name} 敌人分析开始，敌人数量: ${HostileCreeps.length}`);
+
         for (const enemyCreep of HostileCreeps) {
+            const rangedParts = enemyCreep.getActiveBodyparts(RANGED_ATTACK);
+            const attackParts = enemyCreep.getActiveBodyparts(ATTACK);
+            const workParts = enemyCreep.getActiveBodyparts(WORK);
+            const healParts = enemyCreep.getActiveBodyparts(HEAL);
+
             // 检查是否有远程攻击部件
-            if (enemyCreep.getActiveBodyparts(RANGED_ATTACK) > 0) {
+            if (rangedParts > 0) {
                 hasRangedAttack = true;
+            }
+            // 检查是否有近战攻击部件
+            if (attackParts > 0 || workParts > 0) {
+                hasMeleeAttack = true;
             }
             // 检查是否是玩家creep（非官方入侵者）
             const isNPC = enemyCreep.owner.username === "Invader" || enemyCreep.owner.username === "Source Keeper";
             if (!isNPC) {
                 hasPlayerCreeps = true;
             }
+
+            console.log(`[DEBUG] 敌人 ${enemyCreep.owner.username}: RANGED_ATTACK=${rangedParts}, ATTACK=${attackParts}, WORK=${workParts}, HEAL=${healParts}, isNPC=${isNPC}`);
         }
 
-        // 如果有远程攻击敌人，优先生成RRD，否则生成RD
+        console.log(`[DEBUG] ${room.name} 威胁分析: hasRangedAttack=${hasRangedAttack}, hasMeleeAttack=${hasMeleeAttack}, hasPlayerCreeps=${hasPlayerCreeps}`);
+        console.log(`[DEBUG] ${room.name} 当前防御数量: RD=${RampartDefenders}, RRD=${RangedRampartDefenders}`);
+
+        // 根据敌人威胁类型决定防御策略
         if (hasRangedAttack) {
+            console.log(`[DEBUG] ${room.name} 决定生成RRD（远程防御者）`);
             this.generateRangedRampartDefenders(room, RangedRampartDefenders, storage, roomState, hasPlayerCreeps);
-        } else {
+        } else{
+            console.log(`[DEBUG] ${room.name} 决定生成RD（近战防御者）`);
             this.generateMeleeRampartDefenders(room, RampartDefenders, storage, roomState, hasPlayerCreeps);
         }
     }
@@ -1872,7 +1895,12 @@ class MilitaryRoleGenerator {
 
         // 根据敌人数量动态计算所需RD数量
         const required = HostileCreeps.length
-        if (RampartDefenders >= required) {return;}
+        console.log(`[DEBUG] ${room.name} RD生成检查: required=${required}, current=${RampartDefenders}`);
+        if (RampartDefenders >= required) {
+            console.log(`[DEBUG] ${room.name} RD数量已满足，跳过生成`);
+            return;
+        }
+        console.log(`[DEBUG] ${room.name} 开始生成RD`);
         const newName = 'RampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
 
         // 使用动态body生成，根据RCL调整比例
@@ -1909,22 +1937,13 @@ class MilitaryRoleGenerator {
             }
         }
 
-        // 检查是否有足够的能量生成creep
-        const spawn = room.find(FIND_MY_SPAWNS)[0];
-        if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-            const memory: any = canBoost ?
-                {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3], boosted: true} :
-                {role: 'RampartDefender', homeRoom: room.name};
+        // 直接添加到spawn_list，getBodyByRatio已经基于可用能量计算了合适的body
+        const memory: any = canBoost ?
+            {role: 'RampartDefender', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab3], boosted: true} :
+            {role: 'RampartDefender', homeRoom: room.name};
 
-            room.memory.spawn_list.push(body, newName, {memory: memory});
-            console.log('Adding RampartDefender to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-        } else {
-            // 能量不足，回滚boost分配
-            if (canBoost && boostRequirements) {
-                BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                console.log(`[RampartDefender] 能量不足，回滚boost分配: ${newName}`);
-            }
-        }
+        room.memory.spawn_list.push(body, newName, {memory: memory});
+        console.log('Adding RampartDefender to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
     }
 
     static generateRangedRampartDefenders(room: Room, RangedRampartDefenders: number, storage: any, roomState: any, hasPlayerCreeps?: boolean) {
@@ -1932,7 +1951,9 @@ class MilitaryRoleGenerator {
 
         // 根据敌人数量动态计算所需RRD数量
         const required = HostileCreeps.length
+        console.log(`[DEBUG] ${room.name} RRD生成检查: required=${required}, current=${RangedRampartDefenders}`);
         if (RangedRampartDefenders < required) {
+                console.log(`[DEBUG] ${room.name} 开始生成RRD`);
                 const newName = 'RangedRampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                 const body = getBodyByRatioWithLimits([
                     {part: TOUGH, count: 1, max: 5},
@@ -1969,24 +1990,17 @@ class MilitaryRoleGenerator {
                     }
                 }
 
-                // 检查是否有足够的能量生成creep
-                const spawn = room.find(FIND_MY_SPAWNS)[0];
-                if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                    const memory: any = canBoost ?
-                        {role: 'RRD', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab4], boosted: true} :
-                        {role: 'RRD', homeRoom: room.name};
+                // 直接添加到spawn_list，getBodyByRatioWithLimits已经基于可用能量计算了合适的body
+                const memory: any = canBoost ?
+                    {role: 'RRD', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab2, room.memory.labs.outputLab4], boosted: true} :
+                    {role: 'RRD', homeRoom: room.name};
 
-                    room.memory.spawn_list.push(body, newName, {memory: memory});
-                    console.log('Adding RangedRampartDefender to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                } else {
-                    // 能量不足，回滚boost分配
-                    if (canBoost && boostRequirements) {
-                        BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                        console.log(`[RangedRampartDefender] 能量不足，回滚boost分配: ${newName}`);
-                    }
-                }
-            }
+                room.memory.spawn_list.push(body, newName, {memory: memory});
+                console.log('Adding RangedRampartDefender to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
+            } else {
+            console.log(`[DEBUG] ${room.name} RRD数量已满足，跳过生成: required=${required}, current=${RangedRampartDefenders}`);
         }
+    }
 
 
     static generateAll(room: Room, attackers: number, RampartDefenders: number, RangedRampartDefenders: number, storage: any, roomState: any) {
@@ -2232,22 +2246,13 @@ class SpecialDefenseGenerator {
                             }
                         }
 
-                        // 检查是否有足够的能量生成creep
-                        const spawn = room.find(FIND_MY_SPAWNS)[0];
-                        if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                            const memory: any = canBoost ?
-                                {role: 'clearer', boostlabs: [room.memory.labs.outputLab2, room.memory.labs.outputLab3, room.memory.labs.outputLab7], boosted: true} :
-                                {role: 'clearer'};
+                        // 直接添加到spawn_list，getBodyByRatio已经基于可用能量计算了合适的body
+                        const memory: any = canBoost ?
+                            {role: 'clearer', boostlabs: [room.memory.labs.outputLab2, room.memory.labs.outputLab3, room.memory.labs.outputLab7], boosted: true} :
+                            {role: 'clearer'};
 
-                            room.memory.spawn_list.push(body, newName, {memory: memory});
-                            console.log('Adding Clearer to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                        } else {
-                            // 能量不足，回滚boost分配
-                            if (canBoost && boostRequirements) {
-                                BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                                console.log(`[Clearer] 能量不足，回滚boost分配: ${newName}`);
-                            }
-                        }
+                        room.memory.spawn_list.push(body, newName, {memory: memory});
+                        console.log('Adding Clearer to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
                     }
                 }
                 else {
@@ -2329,22 +2334,13 @@ class SpecialDefenseGenerator {
                         }
                     }
 
-                    // 检查是否有足够的能量生成creep
-                    const spawn = room.find(FIND_MY_SPAWNS)[0];
-                    if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                        const memory: any = canBoost ?
-                            {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1], boosted: true} :
-                            {role: 'SpecialRepair'};
+                    // 直接添加到spawn_list，getBodyByRatio已经基于可用能量计算了合适的body
+                    const memory: any = canBoost ?
+                        {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1], boosted: true} :
+                        {role: 'SpecialRepair'};
 
-                        room.memory.spawn_list.push(body, newName, {memory: memory});
-                        console.log('Adding SpecialRepair to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                    } else {
-                        // 能量不足，回滚boost分配
-                        if (canBoost && boostRequirements) {
-                            BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                            console.log(`[SpecialRepair-7] 能量不足，回滚boost分配: ${newName}`);
-                        }
-                    }
+                    room.memory.spawn_list.push(body, newName, {memory: memory});
+                    console.log('Adding SpecialRepair to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
                     const newName2 = "SpecialCarry-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(getBody([CARRY, MOVE], room), newName2, {memory: {role: 'SpecialCarry'}});
                     console.log('Adding SpecialCarry to Spawn List: ' + newName);
@@ -2385,22 +2381,13 @@ class SpecialDefenseGenerator {
                         }
                     }
 
-                    // 检查是否有足够的能量生成creep
-                    const spawn = room.find(FIND_MY_SPAWNS)[0];
-                    if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                        const memory: any = canBoost ?
-                            {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1], boosted: true} :
-                            {role: 'SpecialRepair'};
+                    // 直接添加到spawn_list，getBodyByRatio已经基于可用能量计算了合适的body
+                    const memory: any = canBoost ?
+                        {role: 'SpecialRepair', boostlabs: [room.memory.labs.outputLab1], boosted: true} :
+                        {role: 'SpecialRepair'};
 
-                        room.memory.spawn_list.push(body, newName, {memory: memory});
-                        console.log('Adding SpecialRepair to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
-                    } else {
-                        // 能量不足，回滚boost分配
-                        if (canBoost && boostRequirements) {
-                            BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                            console.log(`[SpecialRepair-6] 能量不足，回滚boost分配: ${newName}`);
-                        }
-                    }
+                    room.memory.spawn_list.push(body, newName, {memory: memory});
+                    console.log('Adding SpecialRepair to Spawn List: ' + newName + (canBoost ? ' (boosted)' : ' (normal)'));
                     const newName2 = 'SpecialCarry-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                     room.memory.spawn_list.push(getBody([MOVE, CARRY], room), newName2, {memory: {role: 'SpecialCarry'}});
                     console.log('Adding SpecialCarry to Spawn List: ' + newName);
@@ -2450,22 +2437,13 @@ class SpecialDefenseGenerator {
                 }
             }
 
-            // 检查是否有足够的能量生成creep
-            const spawn = room.find(FIND_MY_SPAWNS)[0];
-            if (spawn && spawn.store.energy >= body.reduce((sum, part) => sum + BODYPART_COST[part], 0)) {
-                const memory: any = canBoost ?
-                    {role: 'repair', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab1], boosted: true} :
-                    {role: 'repair', homeRoom: room.name};
+            // 直接添加到spawn_list，getBodyByRatio已经基于可用能量计算了合适的body
+            const memory: any = canBoost ?
+                {role: 'repair', homeRoom: room.name, boostlabs: [room.memory.labs.outputLab1], boosted: true} :
+                {role: 'repair', homeRoom: room.name};
 
-                room.memory.spawn_list.push(body, name, {memory: memory});
-                console.log('Adding Repair to Spawn List: ' + name + (canBoost ? ' (boosted)' : ' (normal)'));
-            } else {
-                // 能量不足，回滚boost分配
-                if (canBoost && boostRequirements) {
-                    BoostUtils.rollbackBoostResourcesWithDowngrade(room, boostRequirements);
-                    console.log(`[NukeRepair] 能量不足，回滚boost分配: ${name}`);
-                }
-            }
+            room.memory.spawn_list.push(body, name, {memory: memory});
+            console.log('Adding Repair to Spawn List: ' + name + (canBoost ? ' (boosted)' : ' (normal)'));
             console.log('Adding Repair to Spawn List: ' + name);
         }
     }
