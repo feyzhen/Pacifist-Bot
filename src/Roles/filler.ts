@@ -3,6 +3,8 @@
  * @param {Creep} creep
  **/
 
+import { getBody} from "Rooms/rooms.spawning";
+
 const run = function (creep) {
     creep.memory.moving = false;
     if(creep.ticksToLive == 1499 || Game.time % 40 == 0) {
@@ -11,21 +13,21 @@ const run = function (creep) {
     if(creep.evacuate()) {
 		return;
 	}
-    if(creep.ticksToLive == 22 && creep.memory.storage && creep.room.find(FIND_MY_CREEPS, {filter: (c) => {return (c.memory.role == "filler")}}).length == 1) {
+    // 根据creep的body大小计算合适的重生触发时间
+    const bodySize = creep.body.length;
+    const respawnTriggerTime = bodySize * 3 + 6;
+
+    if(creep.ticksToLive <= respawnTriggerTime && creep.memory.storage && creep.room.find(FIND_MY_CREEPS, {filter: (c) => {return (c.memory.role == "filler")}}).length == 1) {
         const newName = 'filler-'+ Math.floor(Math.random() * Game.time) + "-" + creep.room.name;
-        if(creep.room.controller.level <= 3 && creep.room.memory.spawn_list) {
-            creep.room.memory.spawn_list.unshift([CARRY,MOVE], newName, {memory: {role: 'filler'}});
+
+        // 获取与spawning.ts一致的spawn规则
+
+        if(creep.room.memory.spawn_list) {
+            // 使用与spawning.ts相同的逻辑生成body
+            const body = getBody([CARRY, MOVE], creep.room, 30);
+            creep.room.memory.spawn_list.unshift(body, newName, {memory: {role: 'filler'}});
+            console.log("added filler to spawn queue", creep.room.name);
         }
-        else if(creep.room.controller.level >= 4 && creep.room.controller.level <= 6 && creep.room.memory.spawn_list) {
-            creep.room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,MOVE,MOVE], newName, {memory: {role: 'filler'}});
-        }
-        else if(creep.room.controller.level == 7 && creep.room.memory.spawn_list) {
-            creep.room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE], newName, {memory: {role: 'filler'}});
-        }
-        else if(creep.room.controller.level == 8 && creep.room.memory.spawn_list) {
-            creep.room.memory.spawn_list.unshift([CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,MOVE,MOVE,MOVE,MOVE], newName, {memory: {role: 'filler'}});
-        }
-        console.log("added filler to spawn queue", creep.room.name)
     }
 	if(creep.ticksToLive <= 14 && !creep.memory.full) {
 		creep.memory.suicide = true;
