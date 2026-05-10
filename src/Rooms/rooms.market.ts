@@ -1,12 +1,12 @@
-import { 
-    CREDIT_REQUIREMENTS, 
-    STORAGE_THRESHOLDS, 
-    PURCHASE_CONFIG, 
-    SALES_CONFIG, 
+import {
+    CREDIT_REQUIREMENTS,
+    STORAGE_THRESHOLDS,
+    PURCHASE_CONFIG,
+    SALES_CONFIG,
     RESOURCE_LISTS,
     getSellThreshold,
     getSpecialPrice,
-    hasSpecialPrice 
+    hasSpecialPrice
 } from '../constants/constants.market';
 
 function market(room):any {
@@ -267,11 +267,11 @@ function market(room):any {
                     // 使用常量定义的分层购买策略
                     for(const tier of PURCHASE_CONFIG.BASE_RESOURCES.PRICE_TIERS) {
                         for(const resource of BaseResources) {
-                            const threshold = tier.price === 2 ? STORAGE_THRESHOLDS.RESOURCE_STOCK.BASE_MAX : 
+                            const threshold = tier.price === 2 ? STORAGE_THRESHOLDS.RESOURCE_STOCK.BASE_MAX :
                                              tier.price === 50 ? 7000 :
                                              tier.price === 100 ? 6000 : 5000;
-                            
-                            if(room.terminal.store[resource] < threshold && resource != Mineral.mineralType || 
+
+                            if(room.terminal.store[resource] < threshold && resource != Mineral.mineralType ||
                                room.terminal.store[resource] < STORAGE_THRESHOLDS.RESOURCE_STOCK.LOCAL_MIN && resource == Mineral.mineralType) {
                                 const result = buy_resource(resource, tier.price);
                                 if(result == 0) {
@@ -327,14 +327,14 @@ function market(room):any {
                         return;
                     }
                 }
-                
+
                 // 小额清理销售（可选）
-                if(room.terminal.store[resource] >= 100 && Game.time % 100 === 0) {
-                    const result = sell_resource(resource, undefined, 100);
-                    if(result == 0) {
-                        return;
-                    }
-                }
+                // if(room.terminal.store[resource] >= 100 && Game.time % 100 === 0) {
+                //     const result = sell_resource(resource, undefined, 100);
+                //     if(result == 0) {
+                //         return;
+                //     }
+                // }
             }
 
 
@@ -426,8 +426,8 @@ function market(room):any {
 
 
         const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
-        if(room.terminal.store[RESOURCE_ENERGY] > STORAGE_THRESHOLDS.BASE_RESOURCES.TERMINAL_ENERGY_MIN && 
-           room.terminal.store[RESOURCE_ENERGY] < STORAGE_THRESHOLDS.BASE_RESOURCES.TERMINAL_ENERGY_MAX && 
+        if(room.terminal.store[RESOURCE_ENERGY] > STORAGE_THRESHOLDS.BASE_RESOURCES.TERMINAL_ENERGY_MIN &&
+           room.terminal.store[RESOURCE_ENERGY] < STORAGE_THRESHOLDS.BASE_RESOURCES.TERMINAL_ENERGY_MAX &&
            storage && storage.store[RESOURCE_ENERGY] < STORAGE_THRESHOLDS.BASE_RESOURCES.STORAGE_ENERGY_LOW) {
 
             const OrderPrice = PURCHASE_CONFIG.SPECIAL_RESOURCES.ENERGY.price;
@@ -690,12 +690,12 @@ function market(room):any {
         }
     }
     const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
-    if(storage && storage.store[RESOURCE_ENERGY] > STORAGE_THRESHOLDS.BASE_RESOURCES.STORAGE_ENERGY_HIGH && 
-       Game.time % 110 == 0 && (Game.cpu.bucket > CREDIT_REQUIREMENTS.MARKET_CRAWLER || Memory.pixelManager?.enabled) && 
+    if(storage && storage.store[RESOURCE_ENERGY] > STORAGE_THRESHOLDS.BASE_RESOURCES.STORAGE_ENERGY_HIGH &&
+       Game.time % 110 == 0 && (Game.cpu.bucket > CREDIT_REQUIREMENTS.MARKET_CRAWLER || Memory.pixelManager?.enabled) &&
        room.terminal.cooldown == 0 && room.terminal.store.getFreeCapacity() > 50000) {
-        
+
         let crawler_list = RESOURCE_LISTS.CRAWLER_RESOURCES;
-        
+
         if(PURCHASE_CONFIG.MARKET_CRAWLER.shuffleList) {
             crawler_list = crawler_list
                 .map(value => ({ value, sort: Math.random() }))
