@@ -17,7 +17,7 @@ const run = function (creep) {
     const bodySize = creep.body.length;
     const respawnTriggerTime = bodySize * 3 + 6;
 
-    if(creep.ticksToLive <= respawnTriggerTime && creep.memory.storage && creep.room.find(FIND_MY_CREEPS, {filter: (c) => {return (c.memory.role == "filler")}}).length == 1) {
+    if(creep.ticksToLive == respawnTriggerTime && creep.memory.storage && creep.room.find(FIND_MY_CREEPS, {filter: (c) => {return (c.memory.role == "filler")}}).length == 1) {
         const newName = 'filler-'+ Math.floor(Math.random() * Game.time) + "-" + creep.room.name;
 
         // 获取与spawning.ts一致的spawn规则
