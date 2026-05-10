@@ -1863,11 +1863,16 @@ class MilitaryRoleGenerator {
         if (hasRangedAttack) {
             this.generateRangedRampartDefenders(room, RangedRampartDefenders, storage, roomState, hasPlayerCreeps);
         } else {
-            this.generateMeleeRampartDefenders(room, storage, roomState, hasPlayerCreeps);
+            this.generateMeleeRampartDefenders(room, RampartDefenders, storage, roomState, hasPlayerCreeps);
         }
     }
 
-    static generateMeleeRampartDefenders(room: Room, storage: any, roomState: any, hasPlayerCreeps: boolean) {
+    static generateMeleeRampartDefenders(room: Room, RampartDefenders: number, storage: any, roomState: any, hasPlayerCreeps: boolean) {
+        const HostileCreeps = roomState.hostileCreeps;
+
+        // 根据敌人数量动态计算所需RD数量
+        const required = HostileCreeps.length
+        if (RampartDefenders >= required) {return;}
         const newName = 'RampartDefender-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
 
         // 使用动态body生成，根据RCL调整比例
@@ -1886,10 +1891,10 @@ class MilitaryRoleGenerator {
 
         // 强化逻辑：只有玩家creep才强化
         if (hasPlayerCreeps && storage && room.memory.labs && room.memory.labs.outputLab3) {
-            // 动态计算boost需求（支持降级）
+            // 动态计算boost需求（支持降级和部分boost）
             boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
 
-            if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+            if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
                 canBoost = true;
                 // 按实际需求分配boost
                 BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
@@ -1898,9 +1903,9 @@ class MilitaryRoleGenerator {
                 Object.entries(boostRequirements).forEach(([k, v]) => {
                     amountMap[k] = v.amount;
                 });
-                console.log(`[RD] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                console.log(`[RD] 部分boost分配: ${tierInfo} ${JSON.stringify(amountMap)}`);
             } else {
-                console.log(`[RD] boost资源不足，跳过boost: ${newName}`);
+                console.log(`[RD] 无可用boost资源，跳过boost: ${newName}`);
             }
         }
 
@@ -1946,10 +1951,10 @@ class MilitaryRoleGenerator {
 
                 // 强化逻辑：只有玩家creep才强化
                 if (hasPlayerCreeps && storage && room.memory.labs && room.memory.labs.outputLab4) {
-                    // 动态计算boost需求（支持降级）
+                    // 动态计算boost需求（支持降级和部分boost）
                     boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
 
-                    if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                    if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
                         canBoost = true;
                         // 按实际需求分配boost
                         BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
@@ -1958,9 +1963,9 @@ class MilitaryRoleGenerator {
                         Object.entries(boostRequirements).forEach(([k, v]) => {
                             amountMap[k] = v.amount;
                         });
-                        console.log(`[RRD] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                        console.log(`[RRD] 部分boost分配: ${tierInfo} ${JSON.stringify(amountMap)}`);
                     } else {
-                        console.log(`[RRD] boost资源不足，跳过boost: ${newName}`);
+                        console.log(`[RRD] 无可用boost资源，跳过boost: ${newName}`);
                     }
                 }
 
@@ -1993,17 +1998,17 @@ class MilitaryRoleGenerator {
 // Boost utility class - handles boost resource management with downgrade support
 class BoostUtils {
     /**
-     * 计算body所需的boost资源（支持降级）
+     * 计算body所需的boost资源（支持降级和部分boost）
      * @param body 生成的body数组
      * @param boostType boost类型映射 {labName: bodyPart}
      * @param storage 存储对象，用于检查可用资源并决定使用哪个等级的化合物
-     * @returns boost需求对象 {labName: {resourceType, tier, amount}}，如果资源不足返回null
+     * @returns boost需求对象 {labName: {resourceType, tier, amount}}，总是返回可boost的部分
      */
     static calculateBoostRequirementsWithDowngrade(
         body: BodyPartConstant[],
         boostType: {[key: string]: BodyPartConstant},
         storage: any
-    ): {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null {
+    ): {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} {
         const requirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} = {};
 
         // 统计各类型部件数量
@@ -2019,34 +2024,35 @@ class BoostUtils {
                 const requiredAmount = count * 30;
                 // 使用全局函数查找最佳可用化合物（支持降级）
                 const bestBoost = findBestAvailableBoost(storage, bodyPart, requiredAmount);
-                if (!bestBoost) {
-                    return null; // 资源不足
+                if (bestBoost) {
+                    requirements[labName] = bestBoost;
                 }
-                requirements[labName] = bestBoost;
+                // 如果没有足够资源，跳过该部位，继续处理其他部位
             }
         }
 
-        return requirements;
+        return requirements; // 总是返回可boost的部分，即使为空
     }
 
     /**
-     * 检查是否有足够的boost资源（支持降级）
+     * 检查是否有boost资源可用（支持部分boost）
      * @param storage 存储对象
      * @param requirements boost需求 {labName: {resourceType, tier, amount}}
-     * @returns 是否有足够资源
+     * @returns 是否有任何可用的boost资源
      */
     static hasEnoughBoostResourcesWithDowngrade(
         storage: any,
         requirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null
     ): boolean {
-        if (!requirements) return false;
+        if (!requirements || Object.keys(requirements).length === 0) return false;
 
+        // 检查是否有任何可用的boost资源
         for (const [labName, info] of Object.entries(requirements)) {
-            if ((storage as any).store[info.resourceType] < info.amount) {
-                return false;
+            if ((storage as any).store[info.resourceType] >= info.amount) {
+                return true; // 只要有任何一种资源足够就可以进行boost
             }
         }
-        return true;
+        return false;
     }
 
     /**
@@ -2208,10 +2214,10 @@ class SpecialDefenseGenerator {
                         if (storage && room.memory.labs && room.memory.labs.outputLab2 &&
                             room.memory.labs.outputLab3 && room.memory.labs.outputLab7) {
 
-                            // 动态计算boost需求（支持降级）
+                            // 动态计算boost需求（支持降级和部分boost）
                             boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
 
-                            if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                            if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
                                 canBoost = true;
                                 // 按实际需求分配boost
                                 BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
@@ -2220,9 +2226,9 @@ class SpecialDefenseGenerator {
                                 Object.entries(boostRequirements).forEach(([k, v]) => {
                                     amountMap[k] = v.amount;
                                 });
-                                console.log(`[Clearer] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                                console.log(`[Clearer] 部分boost分配: ${tierInfo} ${JSON.stringify(amountMap)}`);
                             } else {
-                                console.log(`[Clearer] boost资源不足，跳过boost: ${newName}`);
+                                console.log(`[Clearer] 无可用boost资源，跳过boost: ${newName}`);
                             }
                         }
 
@@ -2305,10 +2311,10 @@ class SpecialDefenseGenerator {
                     let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
 
                     if (storage && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
-                        // 动态计算boost需求（支持降级）
+                        // 动态计算boost需求（支持降级和部分boost）
                         boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
 
-                        if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                        if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
                             canBoost = true;
                             // 按实际需求分配boost
                             BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
@@ -2317,9 +2323,9 @@ class SpecialDefenseGenerator {
                             Object.entries(boostRequirements).forEach(([k, v]) => {
                                 amountMap[k] = v.amount;
                             });
-                            console.log(`[SpecialRepair-7] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                            console.log(`[SpecialRepair-7] 部分boost分配: ${tierInfo} ${JSON.stringify(amountMap)}`);
                         } else {
-                            console.log(`[SpecialRepair-7] boost资源不足，跳过boost: ${newName}`);
+                            console.log(`[SpecialRepair-7] 无可用boost资源，跳过boost: ${newName}`);
                         }
                     }
 
@@ -2361,10 +2367,10 @@ class SpecialDefenseGenerator {
                     let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
 
                     if (storage && room.memory.labs && room.memory.labs.outputLab1 && room.memory.danger && room.memory.danger_timer >= 50) {
-                        // 动态计算boost需求（支持降级）
+                        // 动态计算boost需求（支持降级和部分boost）
                         boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
 
-                        if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                        if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
                             canBoost = true;
                             // 按实际需求分配boost
                             BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
@@ -2373,9 +2379,9 @@ class SpecialDefenseGenerator {
                             Object.entries(boostRequirements).forEach(([k, v]) => {
                                 amountMap[k] = v.amount;
                             });
-                            console.log(`[SpecialRepair-6] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                            console.log(`[SpecialRepair-6] 部分boost分配: ${tierInfo} ${JSON.stringify(amountMap)}`);
                         } else {
-                            console.log(`[SpecialRepair-6] boost资源不足，跳过boost: ${newName}`);
+                            console.log(`[SpecialRepair-6] 无可用boost资源，跳过boost: ${newName}`);
                         }
                     }
 
@@ -2426,10 +2432,10 @@ class SpecialDefenseGenerator {
             let boostRequirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} | null = null;
 
             if (room.controller.level >= 7 && room.find(FIND_NUKES).length > 2 && storage && room.memory.labs && room.memory.labs.outputLab1) {
-                // 动态计算boost需求（支持降级）
+                // 动态计算boost需求（支持降级和部分boost）
                 boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
 
-                if (boostRequirements && BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
                     canBoost = true;
                     // 按实际需求分配boost
                     BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
@@ -2438,9 +2444,9 @@ class SpecialDefenseGenerator {
                     Object.entries(boostRequirements).forEach(([k, v]) => {
                         amountMap[k] = v.amount;
                     });
-                    console.log(`[NukeRepair] 动态分配boost: ${tierInfo} ${JSON.stringify(amountMap)}`);
+                    console.log(`[NukeRepair] 部分boost分配: ${tierInfo} ${JSON.stringify(amountMap)}`);
                 } else {
-                    console.log(`[NukeRepair] boost资源不足，跳过boost: ${name}`);
+                    console.log(`[NukeRepair] 无可用boost资源，跳过boost: ${name}`);
                 }
             }
 
