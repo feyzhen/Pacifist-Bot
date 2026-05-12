@@ -2850,12 +2850,25 @@ class RemoteDefenseGenerator {
 
 class SpecialRoleGenerator {
     static generateMineralMiners(room: Room, MineralMiners: number, storage: any, roomState: any) {
-        if (MineralMiners < 1 && room.controller.level >= 6 && room.memory.Structures && room.memory.Structures.extractor && Game.getObjectById(room.memory.Structures.extractor) && !room.memory.danger && room.memory.danger_timer == 0 && storage && (storage as any).store[RESOURCE_ENERGY] > 50000 && storage.store.getUsedCapacity() < 975000) {
-            const mineral = Game.getObjectById((room.memory as any).mineral) || room.findMineral();
-            if (mineral && (mineral as any).mineralAmount > 0 && (storage as any).store[(mineral as any).mineralType] < 100000) {
-                const newName = 'MineralMiner-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                room.memory.spawn_list.push(getBody([WORK, WORK, CARRY, CARRY, MOVE], room, 50), newName, {memory: {role: 'MineralMiner'}});
-                console.log('Adding MineralMiner to Spawn List: ' + newName);
+        if (MineralMiners < 1 && room.controller.level >= 6 && !room.memory.danger && room.memory.danger_timer == 0 && storage && storage.store[RESOURCE_ENERGY] > 50000 && storage.store.getUsedCapacity() < 975000) {
+            const mineral: any = Game.getObjectById((room.memory as any).mineral) || room.findMineral();
+            if (mineral && mineral.mineralAmount > 0 && storage.store[mineral.mineralType] < 100000) {
+                // 检查并建造extractor
+                let extractor = Game.getObjectById(room.memory.Structures?.extractor) || room.findExtractor();
+                if (!extractor) {
+                    // 尝试在mineral位置建造extractor
+                    const result = room.createConstructionSite(mineral.pos.x, mineral.pos.y, STRUCTURE_EXTRACTOR);
+                    if (result == OK) {
+                        console.log('Building extractor at mineral location in room: ' + room.name);
+                        return; // 等待建造完成后再生成miner
+                    } else if (result != ERR_INVALID_TARGET && result != ERR_FULL) {
+                        console.log('Failed to build extractor in room ' + room.name + ': ' + result);
+                    }
+                } else {
+                    const newName = 'MineralMiner-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+                    room.memory.spawn_list.push(getBody([WORK, WORK, CARRY, CARRY, MOVE], room, 50), newName, {memory: {role: 'MineralMiner'}});
+                    console.log('Adding MineralMiner to Spawn List: ' + newName);
+                }
             }
         }
     }
