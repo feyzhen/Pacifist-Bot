@@ -2879,7 +2879,7 @@ function plan(room, showPlan) {
         return false;
     }
     room.source = room.source || room.find(FIND_SOURCES);   //
-    room.mineral = room.mineral || room.find(FIND_MINERALS)[0];  //
+    room.mineral = room.mineral || room.findMineral();  //
     // showPlan = showPlan === undefined || showPlan;  // 取消此行注释可以将默认值设true
     let terrain = room.getTerrain().getRawBuffer();
     // @ts-ignore
@@ -2895,6 +2895,12 @@ function plan(room, showPlan) {
     if (bestAnchors.bestAnchor3x3 === undefined) {
         console.log('找不到能摆下中央建筑的位置');
         return false;
+    }
+
+    if (room.mineral) {
+        if (!layout) layout = {};
+        layout[STRUCTURE_EXTRACTOR] = layout[STRUCTURE_EXTRACTOR] || []
+        layout[STRUCTURE_EXTRACTOR].push({x: room.mineral.pos.x, y: room.mineral.pos.y})
     }
 
     // getExtentions 不会改变 layout、layoutCost
