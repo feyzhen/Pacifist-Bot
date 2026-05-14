@@ -9,6 +9,10 @@ import {
     hasSpecialPrice
 } from '../constants/constants.market';
 
+import {
+    getLabThreshold
+} from "../constants/constants.labs";
+
 function market(room):any {
     if(room.terminal && room.terminal.cooldown == 0 && room.storage && room.memory.Structures.spawn && Game.getObjectById(room.memory.Structures.spawn) && Game.time % 10 == 0 && (Game.cpu.bucket > 1000 || Memory.pixelManager?.enabled)) {
         const BaseResources = RESOURCE_LISTS.BASE_RESOURCES;
@@ -493,15 +497,21 @@ function market(room):any {
 
 
         for(const boost of boostsToNeed) {
-            if(room.terminal && room.terminal.store[boost] > 500 && storage && storage.store[boost] > 18000) {
+            const threshold = getLabThreshold(boost)
+            if(room.terminal && room.terminal.store[boost] > 500 && storage && storage.store[boost] > threshold.resume) {
                 if(Memory.resource_requests[boost].length > 0) {
                     for(const roomName of Memory.resource_requests[boost]) {
-                        if(roomName !== room.name && Game.rooms[roomName] && Game.rooms[roomName].memory.Structures.spawn && Game.getObjectById(Game.rooms[roomName].memory.Structures.spawn) && Game.rooms[roomName].storage) {
+                        if(roomName !== room.name && Game.rooms[roomName] &&
+                            Game.rooms[roomName].memory.Structures.spawn &&
+                            Game.getObjectById(Game.rooms[roomName].memory.Structures.spawn) &&
+                            Game.rooms[roomName].storage) {
                             const roomObj = Game.rooms[roomName];
                             if(roomObj && roomObj.controller && roomObj.controller.level >= 6) {
                                 const theirTerminal = roomObj.terminal;
                                 const theirStorage:any = Game.getObjectById(roomObj.memory.Structures.storage);
-                                if(theirTerminal && theirStorage && theirTerminal.store.getFreeCapacity() > 10000 && theirStorage.store.getFreeCapacity() > 10000) {
+                                if(theirTerminal && theirStorage &&
+                                    theirTerminal.store.getFreeCapacity() > 10000 &&
+                                    theirStorage.store.getFreeCapacity() > 10000) {
                                     room.terminal.send(boost, 500, roomName, "enjoy this " + boost + " other room!");
                                     console.log("sending", roomName, "500", boost)
                                     return;
