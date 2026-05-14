@@ -1603,7 +1603,7 @@ class EnergyRoleGenerator {
 
         if (shouldSpawn) {
             const name = 'Filler-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-            room.memory.spawn_list.unshift(getBody(rule.filler_creep.body, room, 30), name, {memory: {role: 'filler'}});
+            room.memory.spawn_list.unshift(getBody(rule.filler_creep.body, room, 50), name, {memory: {role: 'filler'}});
             console.log('Adding filler to Spawn List: ' + name);
         }
     }
