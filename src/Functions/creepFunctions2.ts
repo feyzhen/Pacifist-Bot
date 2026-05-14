@@ -985,9 +985,25 @@ Creep.prototype.Sweep = function Sweep(): any {
 
     const target: any = Game.getObjectById(this.memory.lockedDropped);
     if (this.pickup(target) === OK) return "picked up";
-    if (this.pickup(target) === ERR_NOT_IN_RANGE) { this.moveTo(target, { reusePath: 25, ignoreRoads: true, swampCost: 1 }); return false; }
-    if (this.withdraw(target, RESOURCE_ENERGY) === OK) return "picked up";
-    if (this.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) { this.MoveCostMatrixSwampPrio(target, 1); }
+    if (this.pickup(target) === ERR_NOT_IN_RANGE) { this.MoveCostMatrixSwampPrio(target, 1); return false; }
+
+    // 处理tombstone：优先提取化合物（非energy资源）
+    if (target.store) {
+        const resources = _.keys(target.store);
+        // 优先提取化合物（非energy）
+        const compounds = resources.filter((r: string) => r !== RESOURCE_ENERGY);
+        if (compounds.length) {
+            for (const resource of compounds) {
+                if (this.withdraw(target, resource) === OK) return "picked up";
+            }
+        }
+        // 如果没有化合物，提取energy
+        if (this.withdraw(target, RESOURCE_ENERGY) === OK) return "picked up";
+        if (this.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) { this.MoveCostMatrixSwampPrio(target, 1); }
+    } else {
+        if (this.withdraw(target, RESOURCE_ENERGY) === OK) return "picked up";
+        if (this.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) { this.MoveCostMatrixSwampPrio(target, 1); }
+    }
     return false;
 };
 
