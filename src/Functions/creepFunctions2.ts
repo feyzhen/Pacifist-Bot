@@ -399,6 +399,7 @@ function moveWithPath(
     }
 
     const next = creep.memory.path[0];
+    creep.SwapPositionWithCreep(creep.pos.getDirectionTo(next));
     creep.move(creep.pos.getDirectionTo(next));
     creep.memory.moving = true;
     creep.memory.path.shift();
