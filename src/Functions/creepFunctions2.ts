@@ -90,6 +90,7 @@ function applyConstructionSites(costs: CostMatrix, room: Room): void {
 function applyStationaryCreeps(costs: CostMatrix, room: Room, roleName: string | null = null): void {
     const ROLE_COSTS: Record<string, number> = {
       upgrader: 61, // set below per condition
+      mineralMiner:50,
       EnergyMiner: 21,
       builder: 26,
       remoteBuilder: 60,

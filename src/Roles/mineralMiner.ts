@@ -3,7 +3,7 @@
  * @param {Creep} creep
  **/
  const run = function (creep) {
-    
+
     creep.memory.moving = false;
 
 
@@ -22,13 +22,16 @@
     if(!creep.memory.mining && creep.store[deposit.mineralType] == 0) {
         creep.memory.mining = true;
     }
-    else if(creep.memory.mining && creep.store.getFreeCapacity() == 0) {
+    else if(creep.memory.mining && (creep.store.getFreeCapacity() == 0 || deposit.mineralAmount == 0)) {
         creep.memory.mining = false;
     }
 
     if(creep.memory.mining) {
         if(creep.pos.isNearTo(deposit)) {
             creep.harvest(deposit);
+            creep.memory.moving = false;
+            creep.memory.path = false;
+            return; // ← 关键：不执行任何移动，moving=false让SwapPosition跳过它
         }
         else {
             creep.MoveCostMatrixRoadPrio(deposit, 1);
