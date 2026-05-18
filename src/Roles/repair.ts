@@ -275,25 +275,25 @@ function findLocked(creep, storage) {
             const repairTarget = Game.getObjectById(creep.memory.locked);
             const result = creep.repair(repairTarget)
             if(result == ERR_NOT_IN_RANGE) {
-                if(creep.room.memory.danger) {
-                    if(creep.memory.boosted) {
-                        creep.MoveCostMatrixIgnoreRoads(repairTarget, 3)
-                    }
-                    else {
-                        creep.MoveCostMatrixRoadPrio(repairTarget, 3)
-
-                    }
+                // if(creep.room.memory.danger) {
+                //     if(creep.memory.boosted) {
+                //         creep.MoveCostMatrixIgnoreRoads(repairTarget, 3)
+                //     }
+                //     else {
+                //         creep.MoveCostMatrixRoadPrio(repairTarget, 3)
+                //
+                //     }
+                // }
+                // else {
+                if(creep.memory.boosted) {
+                    creep.MoveCostMatrixIgnoreRoads(repairTarget, 3)
                 }
                 else {
-                    if(creep.memory.boosted) {
-                        creep.MoveCostMatrixIgnoreRoads(repairTarget, 3)
-                    }
-                    else {
-                        creep.MoveCostMatrixRoadPrio(repairTarget, 3)
-
-                    }
+                    creep.MoveCostMatrixRoadPrio(repairTarget, 3)
 
                 }
+
+                // }
                 creep.memory.moving = false;
             }
             // else {
