@@ -1126,7 +1126,8 @@ Creep.prototype.SwapPositionWithCreep = function (direction: DirectionConstant):
         const pcs: any[] = pos.lookFor(LOOK_POWER_CREEPS);
         if (pcs.length) targets = pcs;
     }
-    if (targets.length > 0 && targets[0].my && !targets[0].memory.moving) {
+    if (targets.length > 0 && targets[0].my &&
+        (!targets[0].memory.moving || targets[0].memory.role === "EnergyManager")) {
         if (targets[0].ticksToLive % 2 < 1) targets[0].move(opposite);
         else if (targets[0].move(direction) !== OK) targets[0].move(opposite);
     }
