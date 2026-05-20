@@ -1201,7 +1201,7 @@ Creep.prototype.moveAwayIfNeedTo = function (): any {
 
 // ── Sweep ─────────────────────────────────────────────────────────────────────
 Creep.prototype.Sweep = function Sweep(): any {
-    if (!this.memory.lockedDropped || Game.getObjectById(this.memory.lockedDropped) == null) {
+    if (!this.memory.target || Game.getObjectById(this.memory.target) == null) {
         const sources = this.room.find(FIND_SOURCES);
         if (!sources.length) return "nothing to sweep";
 
@@ -1210,26 +1210,32 @@ Creep.prototype.Sweep = function Sweep(): any {
             dropped = dropped.filter((r: any) => r.pos.getRangeTo(r.pos.findClosestByRange(sources)) > 1);
 
         const tombs = this.room.find(FIND_TOMBSTONES, { filter: (t: any) => _.keys(t.store).length > 0 });
-        if (!dropped.length && !tombs.length) return "nothing to sweep";
+        const container = this.room.find(FIND_MY_STRUCTURES, {
+            filter: (c: any) => c.structureType === STRUCTURE_CONTAINER && _.keys(c.store).length > 0
+        });
+        if (!dropped.length && !tombs.length && !container.length) return "nothing to sweep";
 
         const nearbyDropped = dropped.filter((r: any) => r.pos.getRangeTo(this) < 6);
         const nearbyTombs = tombs.filter((t: any) => t.pos.getRangeTo(this) < 6);
-
-        if (nearbyDropped.length) {
-            nearbyDropped.sort((a: any, b: any) => a.amount - b.amount);
-            this.memory.lockedDropped = nearbyDropped[0].id;
-        } else if (nearbyTombs.length) {
-            nearbyTombs.sort((a: any, b: any) => a.amount - b.amount);
-            this.memory.lockedDropped = nearbyTombs[0].id;
-        } else if (dropped.length) {
-            dropped.sort((a: any, b: any) => a.amount - b.amount);
-            this.memory.lockedDropped = dropped[0].id;
-        } else {
-            this.memory.lockedDropped = tombs[tombs.length - 1].id;
-        }
+        const nearbyContainer = container.filter((c: any) => c.pos.getRangeTo(this) < 6);
+        const target_list = [nearbyDropped, nearbyTombs, nearbyContainer].sort((a: any, b: any) => a.amount - b.amount);
+        const target = target_list[0];
+        this.memory.target = target;
+        // if (nearbyDropped.length) {
+        //     nearbyDropped.sort((a: any, b: any) => a.amount - b.amount);
+        //     this.memory.lockedDropped = nearbyDropped[0].id;
+        // } else if (nearbyTombs.length) {
+        //     nearbyTombs.sort((a: any, b: any) => a.amount - b.amount);
+        //     this.memory.lockedDropped = nearbyTombs[0].id;
+        // } else if (nearbyContainer.length) {
+        //     nearbyContainer.sort((a: any, b: any) => a.amount - b.amount);
+        //     this.memory.lockedDropped = nearbyContainer[0].id;
+        // } else {
+        //     this.memory.lockedDropped = tombs[tombs.length - 1].id;
+        // }
     }
 
-    const target: any = Game.getObjectById(this.memory.lockedDropped);
+    const target: any = Game.getObjectById(this.memory.target);
     if (this.pickup(target) === OK) return "picked up";
     if (this.pickup(target) === ERR_NOT_IN_RANGE) {
         this.MoveCostMatrixSwampPrio(target, 1);
