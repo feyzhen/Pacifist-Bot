@@ -1201,68 +1201,105 @@ Creep.prototype.moveAwayIfNeedTo = function (): any {
 
 // ── Sweep ─────────────────────────────────────────────────────────────────────
 Creep.prototype.Sweep = function Sweep(): any {
-    if (!this.memory.target || Game.getObjectById(this.memory.target) == null) {
-        const sources = this.room.find(FIND_SOURCES);
-        if (!sources.length) return "nothing to sweep";
-
-        let dropped = this.room.find(FIND_DROPPED_RESOURCES);
-        if (this.room.controller?.level <= 3)
-            dropped = dropped.filter((r: any) => r.pos.getRangeTo(r.pos.findClosestByRange(sources)) > 1);
-
-        const tombs = this.room.find(FIND_TOMBSTONES, { filter: (t: any) => _.keys(t.store).length > 0 });
-        const container = this.room.find(FIND_MY_STRUCTURES, {
-            filter: (c: any) => c.structureType === STRUCTURE_CONTAINER && _.keys(c.store).length > 0
-        });
-        if (!dropped.length && !tombs.length && !container.length) return "nothing to sweep";
-
-        const nearbyDropped = dropped.filter((r: any) => r.pos.getRangeTo(this) < 6);
-        const nearbyTombs = tombs.filter((t: any) => t.pos.getRangeTo(this) < 6);
-        const nearbyContainer = container.filter((c: any) => c.pos.getRangeTo(this) < 6);
-        const target_list = [nearbyDropped, nearbyTombs, nearbyContainer].sort((a: any, b: any) => a.amount - b.amount);
-        const target = target_list[0];
-        this.memory.target = target;
-        // if (nearbyDropped.length) {
-        //     nearbyDropped.sort((a: any, b: any) => a.amount - b.amount);
-        //     this.memory.lockedDropped = nearbyDropped[0].id;
-        // } else if (nearbyTombs.length) {
-        //     nearbyTombs.sort((a: any, b: any) => a.amount - b.amount);
-        //     this.memory.lockedDropped = nearbyTombs[0].id;
-        // } else if (nearbyContainer.length) {
-        //     nearbyContainer.sort((a: any, b: any) => a.amount - b.amount);
-        //     this.memory.lockedDropped = nearbyContainer[0].id;
-        // } else {
-        //     this.memory.lockedDropped = tombs[tombs.length - 1].id;
-        // }
+    // ========== 1. 验证并清理失效目标 ==========
+    if (this.memory.target) {
+        const targetObj = Game.getObjectById(this.memory.target);
+        if (!targetObj) {
+            delete this.memory.target;
+        }
     }
 
+    // ========== 2. 如果没有目标，选择一个新目标 ==========
+    if (!this.memory.target) {
+        const room = this.room;
+
+        // 收集所有可扫荡的资源
+        let dropped = room.find(FIND_DROPPED_RESOURCES);
+
+        // 原逻辑：controller level <= 3 时过滤掉离source太近的掉落物
+        if (room.controller?.level <= 3) {
+            const sources = room.find(FIND_SOURCES);
+            dropped = dropped.filter((r: any) => r.pos.getRangeTo(r.pos.findClosestByRange(sources)) > 1);
+        }
+
+        const tombs = room.find(FIND_TOMBSTONES, {
+            filter: (t: any) => _.keys(t.store).length > 0
+        });
+        const containers = room.find(FIND_MY_STRUCTURES, {
+            filter: (c: any) => c.structureType === STRUCTURE_CONTAINER && _.keys(c.store).length > 0
+        });
+
+        if (!dropped.length && !tombs.length && !containers.length) {
+            return "nothing to sweep";
+        }
+
+        // 合并所有候选并按距离排序（原逻辑是分开找nearby，这里简化但效果等价）
+        const candidates = [...dropped, ...tombs, ...containers];
+        candidates.sort((a, b) => a.pos.getRangeTo(this) - b.pos.getRangeTo(this));
+
+        this.memory.target = candidates[0].id;
+    }
+
+    // ========== 3. 获取目标并执行操作 ==========
     const target: any = Game.getObjectById(this.memory.target);
-    if (this.pickup(target) === OK) return "picked up";
-    if (this.pickup(target) === ERR_NOT_IN_RANGE) {
+    if (!target) {
+        delete this.memory.target;
+        return false;
+    }
+
+    // 尝试 pickup（掉落物）
+    const pickupResult = this.pickup(target);
+    if (pickupResult === OK) {
+        delete this.memory.target;
+        return "picked up";
+    }
+    if (pickupResult === ERR_NOT_IN_RANGE) {
         this.MoveCostMatrixSwampPrio(target, 1);
         return false;
     }
 
-    // 处理tombstone：优先提取化合物（非energy资源）
+    // 如果不是掉落物或者pickup失败，尝试 withdraw
     if (target.store) {
         const resources = _.keys(target.store);
-        // 优先提取化合物（非energy）
         const compounds = resources.filter((r: string) => r !== RESOURCE_ENERGY);
+
         if (compounds.length) {
             for (const resource of compounds) {
-                if (this.withdraw(target, resource) === OK) return "picked up";
+                const withdrawResult = this.withdraw(target, resource);
+                if (withdrawResult === OK) {
+                    delete this.memory.target;
+                    return "picked up";
+                }
+                if (withdrawResult === ERR_NOT_IN_RANGE) {
+                    this.MoveCostMatrixSwampPrio(target, 1);
+                    return false;
+                }
             }
         }
-        // 如果没有化合物，提取energy
-        if (this.withdraw(target, RESOURCE_ENERGY) === OK) return "picked up";
-        if (this.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+
+        // 没有化合物或化合物取失败，取能量
+        const energyResult = this.withdraw(target, RESOURCE_ENERGY);
+        if (energyResult === OK) {
+            delete this.memory.target;
+            return "picked up";
+        }
+        if (energyResult === ERR_NOT_IN_RANGE) {
             this.MoveCostMatrixSwampPrio(target, 1);
+            return false;
         }
     } else {
-        if (this.withdraw(target, RESOURCE_ENERGY) === OK) return "picked up";
-        if (this.withdraw(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+        // 非store对象且pickup失败的情况（理论上不会到这里，但保留原逻辑）
+        const withdrawResult = this.withdraw(target, RESOURCE_ENERGY);
+        if (withdrawResult === OK) {
+            delete this.memory.target;
+            return "picked up";
+        }
+        if (withdrawResult === ERR_NOT_IN_RANGE) {
             this.MoveCostMatrixSwampPrio(target, 1);
+            return false;
         }
     }
+
     return false;
 };
 
