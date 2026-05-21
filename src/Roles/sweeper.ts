@@ -1,169 +1,33 @@
-function findLocked(creep) {
-    const terminal = creep.room.terminal;
-    if (terminal && terminal.store[RESOURCE_ENERGY] < 10000) {
-        creep.memory.locked = terminal.id;
-        return terminal;
-    }
-
-    if (creep.room.energyCapacityAvailable / 1.5 < creep.room.energyAvailable) {
-        const towers = creep.room.find(FIND_MY_STRUCTURES, {
-            filter: building => building.structureType == STRUCTURE_TOWER && building.store[RESOURCE_ENERGY] < 200
-        });
-        if (towers.length > 0) {
-            const closestTower = creep.pos.findClosestByRange(towers);
-            creep.memory.locked = closestTower.id;
-            return closestTower;
-        }
-    }
-
-    const spawnAndExtensions = creep.room.find(FIND_MY_STRUCTURES, {
-        filter: building =>
-            (building.structureType == STRUCTURE_SPAWN ||
-                building.structureType == STRUCTURE_EXTENSION ||
-                building.structureType == STRUCTURE_TOWER) &&
-            building.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-    });
-    if (spawnAndExtensions.length > 0) {
-        const closestDropOffLocation = creep.pos.findClosestByRange(spawnAndExtensions);
-        creep.memory.locked = closestDropOffLocation.id;
-        return closestDropOffLocation;
-    }
-
-    const towers2 = creep.room.find(FIND_MY_STRUCTURES, {
-        filter: building => building.structureType == STRUCTURE_TOWER && building.store[RESOURCE_ENERGY] >= 0
-    });
-    if (towers2.length > 0) {
-        const closestTower = creep.pos.findClosestByRange(towers2);
-        creep.memory.locked = closestTower.id;
-        return closestTower;
-    }
-}
-
-/**
- * A little description of this function
- * @param {Creep} creep
- **/
-
-const run = function (creep) {
-    creep.memory.moving = false;
-    if (creep.evacuate()) {
-        return;
-    }
-    if (creep.memory.suicide == true) {
+const run = function (creep: Creep) {
+    if (creep.evacuate()) return;
+    if (creep.memory.suicide) {
         creep.recycle();
         return;
     }
-    if (!creep.memory.MaxStorage) {
-        let carryPartsAmount = 0;
-        for (const part of creep.body) {
-            if (part.type == CARRY) {
-                carryPartsAmount += 1;
-            }
-        }
-        creep.memory.MaxStorage = carryPartsAmount * 50;
-    }
-    const MaxStorage = creep.memory.MaxStorage;
 
-    if (creep.memory.full && creep.store.getFreeCapacity() == MaxStorage) {
-        creep.memory.full = false;
-        creep.memory.target = false;
-    }
-    if (!creep.memory.full && creep.store.getFreeCapacity() == 0) {
-        creep.memory.full = true;
-    }
-
-    if (creep.memory.full) {
-        const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
-        if (storage) {
-            if (creep.pos.isNearTo(storage)) {
-                for (const resourceType in creep.store) {
-                    creep.transfer(storage, resourceType);
-                }
-            } else {
-                creep.MoveCostMatrixRoadPrio(storage, 1);
-            }
-        } else {
-            if (!creep.memory.locked) {
-                const target = findLocked(creep);
-            }
-
-            if (creep.memory.locked) {
-                let target: any = Game.getObjectById(creep.memory.locked);
-
-                if (_.keys(target.store).length == 0) {
-                    target = findLocked(creep);
-                }
-
-                if (creep.pos.isNearTo(target)) {
-                    creep.transfer(target, RESOURCE_ENERGY);
-                    if (creep.store[RESOURCE_ENERGY] == 0) {
-                        creep.memory.full = false;
-                    } else {
-                        findLocked(creep);
-                        const target: any = Game.getObjectById(creep.memory.locked);
-                        if (!creep.pos.isNearTo(target)) {
-                            creep.MoveCostMatrixIgnoreRoads(target, 1);
-                        }
-                    }
-                } else {
-                    creep.MoveCostMatrixIgnoreRoads(target, 1);
-                }
-            }
-        }
-    } else {
-        const result = creep.Sweep();
-
-        if (result == "picked up" && creep.store.getFreeCapacity() == 0) {
-            const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();
-            if (storage) {
-                if (creep.pos.isNearTo(storage)) {
-                    if (creep.transfer(storage, RESOURCE_ENERGY) == 0) {
-                        creep.memory.full = false;
-                    }
-                } else {
-                    creep.MoveCostMatrixRoadPrio(storage, 1);
-                }
-            } else {
-                if (!creep.memory.locked) {
-                    const target = findLocked(creep);
-                }
-
-                if (creep.memory.locked) {
-                    const target = Game.getObjectById(creep.memory.locked);
-
-                    if (creep.pos.isNearTo(target)) {
-                        creep.transfer(target, RESOURCE_ENERGY);
-                        if (creep.store[RESOURCE_ENERGY] == 0) {
-                            creep.memory.full = false;
-                        } else {
-                            findLocked(creep);
-                            const target = Game.getObjectById(creep.memory.locked);
-                            if (!creep.pos.isNearTo(target)) {
-                                creep.MoveCostMatrixIgnoreRoads(target, 1);
-                            }
-                        }
-                    } else {
-                        creep.MoveCostMatrixIgnoreRoads(target, 1);
-                    }
-                }
-            }
-        }
-        //  && _.keys(creep.store).length == 0
-        if (result == "nothing to sweep" && creep.ticksToLive <= 1400) {
-            creep.memory.suicide = true;
-        } else if (creep.store.getFreeCapacity() == 0) {
-            creep.memory.full = true;
-        } else {
-            creep.memory.full = false;
-        }
-    }
+    // 重置移动标志
     creep.memory.moving = false;
+
+    const isFull = creep.store.getFreeCapacity() === 0;
+
+    if (isFull) {
+        // 卸货模式：正常优先级，启用 reserveFill（storage/terminal 自动排除）
+        const worked = creep.transferStore(false, true);
+        if (!worked && creep.ticksToLive < 100) {
+            creep.memory.suicide = true;
+        }
+        return;
+    }
+
+    // 扫荡模式：启用 sweepReserve 防止冲突
+    const hasWork = creep.Sweep(true);
+    if (!hasWork && creep.ticksToLive <= 1400) {
+        creep.memory.suicide = true;
+    }
 };
 
 const roleSweeper = {
     run
     //run: run,
-    //function2,
-    //function3
 };
 export default roleSweeper;
