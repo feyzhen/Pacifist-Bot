@@ -1348,7 +1348,7 @@ Creep.prototype.Sweep = function (useReserve: true): boolean {
             dropped = dropped.filter(r => r.pos.getRangeTo(r.pos.findClosestByRange(sources)) > 1);
         }
         const tombs = room.find(FIND_TOMBSTONES, { filter: t => _.keys(t.store).length > 0 });
-        const containers = room.find(FIND_MY_STRUCTURES, {
+        const containers = room.find(FIND_STRUCTURES, {
             filter: s => s.structureType === STRUCTURE_CONTAINER && _.keys(s.store).length > 0
         });
 
