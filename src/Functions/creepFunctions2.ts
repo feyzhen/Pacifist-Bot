@@ -1455,107 +1455,133 @@ Creep.prototype.Sweep = function (useReserve: true): boolean {
 };
 
 /**
- * 卸货模式：将背包内的资源转移到合适的建筑
- * @param reversePriority true=塔→孵化器→terminal→storage, false=反之
- * @param useReserveFill  是否使用 reserveFill 防止多个 creep 挤在同一非单例建筑
- * @returns true  - 正在移动或成功转移
- * @returns false - 没有可用的卸货目标
+ * 卸货模式：将背包中的资源转移到合适的建筑
+ * @param reversePriority 优先级顺序 false=storage→terminal→spawn/ext→低能量塔→任意塔, true=相反
+ * @param useReserveFill   是否使用 reserveFill 防止多个 creep 抢占同一非单例建筑
+ * @returns true  正在移动或已成功转移
+ * @returns false 没有合适的卸货目标（或目标已满且无法转移）
  */
-Creep.prototype.transferStore = function (reversePriority: false, useReserveFill: true): boolean {
+Creep.prototype.transferStore = function (reversePriority: boolean = false, useReserveFill: boolean = true): boolean {
     const room = this.room;
     const reserve = room.memory.reserveFill || (room.memory.reserveFill = []);
-    const hasMinerals = _.keys(this.store).some(r => r !== RESOURCE_ENERGY);
+    const hasMinerals = Object.keys(this.store).some(r => r !== RESOURCE_ENERGY);
 
-    // 检查目标是否可用（storage/terminal 不检查 reserveFill）
-    const isAvailable = (target: AnyStoreStructure): boolean => {
+    // 辅助函数：判断目标是否可用（如果是自己锁定的目标，不检查 reserveFill）
+    const isAvailable = (target: AnyStoreStructure, myLockedId?: string): boolean => {
         if (!target) return false;
         const isSingleton = target.structureType === STRUCTURE_STORAGE || target.structureType === STRUCTURE_TERMINAL;
-        if (!isSingleton && useReserveFill && reserve.includes(target.id)) return false;
+        // 非单例建筑且启用互斥：如果不是自己锁定的目标，且在 reserve 中，则不可用
+        if (!isSingleton && useReserveFill && target.id !== myLockedId && reserve.includes(target.id)) {
+            return false;
+        }
+        // 矿物只能去 storage/terminal
         if (hasMinerals) {
             return isSingleton;
         }
+        // 只处理能量：目标必须有能量空位
         return target.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
     };
 
-    let candidates: any[] = [];
-
-    if (hasMinerals) {
-        const storage = room.storage;
-        if (storage && isAvailable(storage)) candidates.push(storage);
-        const terminal = room.terminal;
-        if (terminal && isAvailable(terminal)) candidates.push(terminal);
-    } else {
-        if (!reversePriority) {
-            // 正常顺序
-            if (room.storage && isAvailable(room.storage)) candidates.push(room.storage);
-            if (room.terminal && room.terminal.store[RESOURCE_ENERGY] < 10000 && isAvailable(room.terminal))
-                candidates.push(room.terminal);
-
-            const spawnExt = room
-                .find(FIND_MY_STRUCTURES, {
-                    filter: s =>
-                        (s.structureType === STRUCTURE_SPAWN || s.structureType === STRUCTURE_EXTENSION) &&
-                        s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-                })
-                .filter(isAvailable);
-            candidates.push(...spawnExt);
-
-            const lowTowers = room
-                .find(FIND_MY_STRUCTURES, {
-                    filter: s => s.structureType === STRUCTURE_TOWER && s.store[RESOURCE_ENERGY] < 200
-                })
-                .filter(isAvailable);
-            candidates.push(...lowTowers);
-
-            const anyTower = room
-                .find(FIND_MY_STRUCTURES, {
-                    filter: s => s.structureType === STRUCTURE_TOWER && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-                })
-                .filter(isAvailable);
-            candidates.push(...anyTower);
+    // 1. 尝试使用已锁定的目标（如果仍有效）
+    let target: AnyStructure | null = null;
+    if (this.memory.unloadTarget) {
+        const locked = Game.getObjectById(this.memory.unloadTarget) as AnyStoreStructure | null;
+        if (locked && isAvailable(locked, this.memory.unloadTarget)) {
+            target = locked;
         } else {
-            // 反转顺序
-            const anyTower = room
-                .find(FIND_MY_STRUCTURES, {
-                    filter: s => s.structureType === STRUCTURE_TOWER && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-                })
-                .filter(isAvailable);
-            candidates.push(...anyTower);
-
-            const spawnExt = room
-                .find(FIND_MY_STRUCTURES, {
-                    filter: s =>
-                        (s.structureType === STRUCTURE_SPAWN || s.structureType === STRUCTURE_EXTENSION) &&
-                        s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-                })
-                .filter(isAvailable);
-            candidates.push(...spawnExt);
-
-            if (room.terminal && room.terminal.store[RESOURCE_ENERGY] < 10000 && isAvailable(room.terminal))
-                candidates.push(room.terminal);
-            if (room.storage && isAvailable(room.storage)) candidates.push(room.storage);
+            // 锁定的目标失效，清理内存和全局 reserve
+            const idx = reserve.indexOf(this.memory.unloadTarget);
+            if (idx !== -1) reserve.splice(idx, 1);
+            delete this.memory.unloadTarget;
         }
     }
 
-    if (candidates.length === 0) return false;
+    // 2. 如果没有有效目标，重新选择
+    if (!target) {
+        let candidates: AnyStructure[] = [];
 
-    // 按距离排序
-    candidates.sort((a, b) => this.pos.getRangeTo(a) - this.pos.getRangeTo(b));
-    const target = candidates[0];
-    const isSingleton = target.structureType === STRUCTURE_STORAGE || target.structureType === STRUCTURE_TERMINAL;
+        if (hasMinerals) {
+            const storage = room.storage;
+            if (storage && isAvailable(storage)) candidates.push(storage);
+            const terminal = room.terminal;
+            if (terminal && isAvailable(terminal)) candidates.push(terminal);
+        } else {
+            if (!reversePriority) {
+                // 正常顺序：storage → terminal → spawn/ext → 低能量塔 → 任意塔
+                if (room.storage && isAvailable(room.storage)) candidates.push(room.storage);
+                if (room.terminal && room.terminal.store[RESOURCE_ENERGY] < 10000 && isAvailable(room.terminal)) {
+                    candidates.push(room.terminal);
+                }
 
-    // 非单例建筑才加入 reserveFill
-    if (useReserveFill && !isSingleton && !reserve.includes(target.id)) {
-        reserve.push(target.id);
+                const spawnExt = room
+                    .find(FIND_MY_STRUCTURES, {
+                        filter: s =>
+                            (s.structureType === STRUCTURE_SPAWN || s.structureType === STRUCTURE_EXTENSION) &&
+                            s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+                    })
+                    .filter(s => isAvailable(s));
+                candidates.push(...spawnExt);
+
+                const lowTowers = room
+                    .find(FIND_MY_STRUCTURES, {
+                        filter: s => s.structureType === STRUCTURE_TOWER && s.store[RESOURCE_ENERGY] < 200
+                    })
+                    .filter(s => isAvailable(s));
+                candidates.push(...lowTowers);
+
+                const anyTower = room
+                    .find(FIND_MY_STRUCTURES, {
+                        filter: s => s.structureType === STRUCTURE_TOWER && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+                    })
+                    .filter(s => isAvailable(s));
+                candidates.push(...anyTower);
+            } else {
+                // 反转顺序：任意塔 → spawn/ext → terminal → storage
+                const anyTower = room
+                    .find(FIND_MY_STRUCTURES, {
+                        filter: s => s.structureType === STRUCTURE_TOWER && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+                    })
+                    .filter(s => isAvailable(s));
+                candidates.push(...anyTower);
+
+                const spawnExt = room
+                    .find(FIND_MY_STRUCTURES, {
+                        filter: s =>
+                            (s.structureType === STRUCTURE_SPAWN || s.structureType === STRUCTURE_EXTENSION) &&
+                            s.store.getFreeCapacity(RESOURCE_ENERGY) > 0
+                    })
+                    .filter(s => isAvailable(s));
+                candidates.push(...spawnExt);
+
+                if (room.terminal && room.terminal.store[RESOURCE_ENERGY] < 10000 && isAvailable(room.terminal)) {
+                    candidates.push(room.terminal);
+                }
+                if (room.storage && isAvailable(room.storage)) candidates.push(room.storage);
+            }
+        }
+
+        if (candidates.length === 0) return false;
+
+        // 按距离排序，选最近的
+        candidates.sort((a, b) => this.pos.getRangeTo(a) - this.pos.getRangeTo(b));
+        target = candidates[0];
+
+        // 锁定新目标（非单例建筑才加入全局 reserve）
+        const isSingleton = target.structureType === STRUCTURE_STORAGE || target.structureType === STRUCTURE_TERMINAL;
+        if (!isSingleton && useReserveFill && !reserve.includes(target.id)) {
+            reserve.push(target.id);
+        }
+        // 保存到 creep 内存中，以便后续 tick 继续使用
+        this.memory.unloadTarget = target.id;
     }
 
-    // 移动
+    // 3. 移动或转移
     if (!this.pos.isNearTo(target)) {
         this.MoveCostMatrixRoadPrio(target, 1);
-        return true;
+        return true; // 移动中
     }
 
-    // 转移：只要自己背包里有该资源就尝试转移（不能用 target.store[resType] 判断）
+    // 转移资源
     let transferred = false;
     for (const resType of Object.keys(this.store) as ResourceConstant[]) {
         if (this.store.getUsedCapacity(resType) <= 0) continue;
@@ -1564,18 +1590,24 @@ Creep.prototype.transferStore = function (reversePriority: false, useReserveFill
     }
 
     if (!transferred) {
-        // 目标满了，从 reserveFill 中移除（非单例）
+        // 目标已满或无法转移，清理锁并返回 false
+        const isSingleton = target.structureType === STRUCTURE_STORAGE || target.structureType === STRUCTURE_TERMINAL;
         if (useReserveFill && !isSingleton) {
             const idx = reserve.indexOf(target.id);
             if (idx !== -1) reserve.splice(idx, 1);
         }
+        delete this.memory.unloadTarget;
         return false;
     }
 
-    // 如果背包已空，清理 reserveFill（非单例）
-    if (this.store.getUsedCapacity() === 0 && useReserveFill && !isSingleton) {
-        const idx = reserve.indexOf(target.id);
-        if (idx !== -1) reserve.splice(idx, 1);
+    // 转移成功，如果背包已空则清理锁
+    if (this.store.getUsedCapacity() === 0) {
+        const isSingleton = target.structureType === STRUCTURE_STORAGE || target.structureType === STRUCTURE_TERMINAL;
+        if (useReserveFill && !isSingleton) {
+            const idx = reserve.indexOf(target.id);
+            if (idx !== -1) reserve.splice(idx, 1);
+        }
+        delete this.memory.unloadTarget;
     }
     return true;
 };
