@@ -1059,6 +1059,10 @@ class SpawnCache {
         const nukes = room.find(FIND_NUKES);
         const droppedResources = room.find(FIND_DROPPED_RESOURCES);
         const tombstones = room.find(FIND_TOMBSTONES);
+        const containers = room.find(FIND_STRUCTURES, {
+            filter: s => s.structureType === STRUCTURE_CONTAINER && _.keys(s.store).length > 0
+        });
+        const bin = Game.getObjectById(room.memory.Structures.bin) || room.findBin(storage);
 
         let rampartsInRoom: any[] = [];
         let spawnMaintainer = false;
@@ -1096,7 +1100,9 @@ class SpawnCache {
             myCreeps,
             nukes,
             droppedResources,
-            tombstones
+            tombstones,
+            containers,
+            bin,
         };
     }
 }
@@ -3475,6 +3481,7 @@ class SpecialUtilityGenerator {
     static generateSweeper(room: Room, sweepers: number, storage: any, roomState: any) {
         const droppedResources = roomState.droppedResources;
         const tombstones = roomState.tombstones;
+        const containers = roomState.containers;
 
         // 计算含有能量的墓碑数量
         const energyTombs = tombstones.filter((tombstone: any) => tombstone.store[RESOURCE_ENERGY] > 0).length;
@@ -3499,11 +3506,21 @@ class SpecialUtilityGenerator {
             return false;
         }).length;
 
-        // 基础清理目标：掉落资源 + 含能量的墓碑
-        const basicCleanupTargets = droppedResources.length + energyTombs + 1;
+        const mineralContainers = containers.filter(
+            (c: any) => c.store[RESOURCE_ENERGY] === 0 && _.keys(c.store).length > 0 && c.store.getUsedCapacity() > 1000
+        );
 
-        // 含化合物墓碑的优先级更高，每个化合物墓碑算作3个清理目标
-        const weightedCleanupTargets = basicCleanupTargets + compoundTombs * 2;
+        // 基础清理目标：掉落资源 + 含能量的墓碑 + 含基础矿物的容器
+        const basicCleanupTargets = droppedResources.length + energyTombs
+
+        // 含化合物墓碑和含有基础矿物的容器的优先级更高，每个化合物墓碑和容器都算作3个清理目标
+        const weightedCleanupTargets = basicCleanupTargets + compoundTombs * 3 + mineralContainers.length * 3;
+
+        // 没有 sweeper 时清理残留锁，避免新生成的 sweeper 被死锁阻塞
+        if (sweepers === 0) {
+            room.memory.sweepReserve = [];
+            room.memory.reserveFill = [];
+        }
 
         if (
             room.controller.level >= 4 &&
@@ -3519,9 +3536,11 @@ class SpecialUtilityGenerator {
                     newName +
                     " (Targets: " +
                     weightedCleanupTargets +
-                    ", Compound tombs: " +
+                    "[Compound tombs: " +
                     compoundTombs +
-                    ")"
+                    ", Mineral containers: " +
+                    mineralContainers.length +
+                    "]"
             );
         }
     }
