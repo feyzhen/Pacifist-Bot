@@ -94,6 +94,8 @@ declare global {
         resources:any;
         controllerLink:any;
         observe:any;
+        sweepReserve:any;
+        reserveFill:any;
     }
     interface CreepMemory {
         exposedStructures:any;
