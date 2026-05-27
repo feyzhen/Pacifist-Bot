@@ -10,6 +10,7 @@ declare global {
         findStorage: () => object | void;
         findClosestLink: () => object | void;
         findClosestLinkToStorage: () => object | void;
+        findClosestWorkPos: () => RoomPosition | null;
         withdrawStorage: (storage: StructureStorage | StructureContainer) => number | void;
         moveToRoom: (
             roomName: string,

@@ -873,6 +873,16 @@ Creep.prototype.findClosestLinkToStorage = function (): any {
     }
 };
 
+// 查找最近的work_pos
+Creep.prototype.findClosestWorkPos = function (): RoomPosition | null {
+    const roomName = this.room.name;
+    const workPosMem = Memory.roomPlanner?.[roomName]?.layout?.work_pos as Array<{ x: number; y: number }> | undefined;
+    if (!workPosMem || workPosMem.length === 0) return null;
+
+    const workPositions = workPosMem.map(p => new RoomPosition(p.x, p.y, roomName));
+    return this.pos.findClosestByPath(workPositions);
+};
+
 // ── withdrawStorage ───────────────────────────────────────────────────────────
 Creep.prototype.withdrawStorage = function withdrawStorage(storage: any): any {
     if (!storage) {
