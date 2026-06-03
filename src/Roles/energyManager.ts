@@ -2,6 +2,8 @@
  * A little description of this function
  * @param {Creep} creep
  **/
+
+import { getLabThreshold } from "../constants/constants.labs";
  const run = function (creep) {
     creep.memory.moving = false;
     if(creep.evacuate()) {
@@ -618,6 +620,8 @@
             if(storage && terminal && terminal.store.getFreeCapacity() > MaxStorage * 5) {
                 for(const resource in storage.store) {
                     if(listOfResourcesToTerminal1.includes(resource)) {
+                        const threshold = getLabThreshold(resource as ResourceConstant);
+                        if(storage.store[resource] <= threshold.pause) return;
                         if(creep.pos.isNearTo(storage)) {
                             creep.withdraw(storage, resource);
                             creep.memory.target = terminal.id;
