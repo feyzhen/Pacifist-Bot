@@ -847,7 +847,7 @@ import { getLabThreshold } from "../constants/constants.labs";
 
 
         if(!creep.memory.target) {
-            creep.MoveCostMatrixRoadPrio(storage, 5);
+            creep.MoveCostMatrixRoadPrio(storage, 1);
         }
 
     }

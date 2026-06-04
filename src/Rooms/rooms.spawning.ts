@@ -899,6 +899,10 @@ class SpawnCache {
         const nukes = room.find(FIND_NUKES);
         const droppedResources = room.find(FIND_DROPPED_RESOURCES);
         const tombstones = room.find(FIND_TOMBSTONES);
+        const containers = room.find(FIND_STRUCTURES, {
+            filter: s => s.structureType === STRUCTURE_CONTAINER && _.keys(s.store).length > 0
+        });
+        const bin = Game.getObjectById(room.memory.Structures.bin) || room.findBin(storage);
 
         let rampartsInRoom: any[] = [];
         let spawnMaintainer = false;
@@ -934,7 +938,9 @@ class SpawnCache {
             myCreeps,
             nukes,
             droppedResources,
-            tombstones
+            tombstones,
+            containers,
+            bin,
         };
     }
 }
