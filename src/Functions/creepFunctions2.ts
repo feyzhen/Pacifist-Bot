@@ -1225,7 +1225,7 @@ Creep.prototype.Sweep = function Sweep(): any {
         const tombs = room.find(FIND_TOMBSTONES, {
             filter: (t: any) => _.keys(t.store).length > 0
         });
-        const containers = room.find(FIND_MY_STRUCTURES, {
+        const containers = room.find(FIND_STRUCTURES, {
             filter: (c: any) => c.structureType === STRUCTURE_CONTAINER && _.keys(c.store).length > 0
         });
 

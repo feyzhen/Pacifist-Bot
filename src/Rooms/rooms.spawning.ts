@@ -2582,7 +2582,7 @@ class SpecialUtilityGenerator {
             sweepers < Math.floor(weightedCleanupTargets / 3)
         ) {
             const newName = "Sweeper-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
-            room.memory.spawn_list.push(getBody([CARRY, MOVE], room, 12), newName, { memory: { role: "sweeper" } });
+            room.memory.spawn_list.push(getBody([CARRY, MOVE], room, 24), newName, { memory: { role: "sweeper" } });
             console.log(
                 "Adding Sweeper to Spawn List: " +
                     newName +
