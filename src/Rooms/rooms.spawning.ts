@@ -1796,6 +1796,10 @@ class ConstructionRoleGenerator {
                 shouldSpawn = maintainers < rule.maintain_creep.amount && hasEnergySource &&
                               (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer);
                 break;
+            case 8:
+                shouldSpawn = maintainers < rule.maintain_creep.amount && hasEnergySource &&
+                              (room.memory.keepTheseRoads && room.memory.keepTheseRoads.length > 0 || spawnMaintainer);
+                break;
         }
 
         if (shouldSpawn) {
