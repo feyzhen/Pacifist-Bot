@@ -615,13 +615,13 @@ import { getLabThreshold } from "../constants/constants.labs";
             RESOURCE_CONDENSATE, RESOURCE_CONCENTRATE, RESOURCE_EXTRACT, RESOURCE_SPIRIT, RESOURCE_EMANATION, RESOURCE_ESSENCE,
             RESOURCE_GHODIUM_MELT, RESOURCE_COMPOSITE, RESOURCE_CRYSTAL, RESOURCE_LIQUID,
             RESOURCE_OXIDANT, RESOURCE_REDUCTANT, RESOURCE_ZYNTHIUM_BAR, RESOURCE_LEMERGIUM_BAR, RESOURCE_UTRIUM_BAR, RESOURCE_KEANIUM_BAR, RESOURCE_PURIFIER,
-            RESOURCE_METAL, RESOURCE_BIOMASS, RESOURCE_SILICON, RESOURCE_MIST,
-            RESOURCE_GHODIUM_HYDRIDE, RESOURCE_GHODIUM_ACID, RESOURCE_CATALYZED_GHODIUM_ACID, RESOURCE_KEANIUM_ACID];
+            RESOURCE_METAL, RESOURCE_BIOMASS, RESOURCE_SILICON, RESOURCE_MIST];
+            // RESOURCE_GHODIUM_HYDRIDE, RESOURCE_GHODIUM_ACID, RESOURCE_CATALYZED_GHODIUM_ACID, RESOURCE_KEANIUM_ACID];
             if(storage && terminal && terminal.store.getFreeCapacity() > MaxStorage * 5) {
                 for(const resource in storage.store) {
-                    if(listOfResourcesToTerminal1.includes(resource)) {
-                        const threshold = getLabThreshold(resource as ResourceConstant);
-                        if(storage.store[resource] <= threshold.pause) return;
+                    if(listOfResourcesToTerminal1.includes(resource) && storage.store[resource] > 4000 && terminal.store[resource] < 3000) {
+                        // const threshold = getLabThreshold(resource as ResourceConstant);
+                        // if(storage.store[resource] <= threshold.pause) return;
                         if(creep.pos.isNearTo(storage)) {
                             creep.withdraw(storage, resource);
                             creep.memory.target = terminal.id;
