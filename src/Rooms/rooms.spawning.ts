@@ -3479,9 +3479,9 @@ class SpecialUtilityGenerator {
     }
 
     static generateSweeper(room: Room, sweepers: number, storage: any, roomState: any) {
-        const droppedResources = roomState.droppedResources;
-        const tombstones = roomState.tombstones;
-        const containers = roomState.containers;
+        const tombstones: any[] = roomState.tombstones || [];
+        const containers: any[] = roomState.containers || [];
+        const droppedResources: any[] = roomState.droppedResources || [];
 
         // 计算含有能量的墓碑数量
         const energyTombs = tombstones.filter((tombstone: any) => tombstone.store[RESOURCE_ENERGY] > 0).length;
