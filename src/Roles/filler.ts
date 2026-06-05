@@ -74,11 +74,22 @@ const run = function (creep) {
     if(!creep.memory.full && creep.store.getFreeCapacity() == 0) {
         creep.memory.full = true;
     }
-    if(creep.memory.full) {
+    // 检查是否需要从能量源获取能量（只在非满载状态下检查）
+    // 这个条件用于告诉filler：当它能量不足时，应该先去获取能量
+    // 而不是在传输能量过程中被中断
+    if(!creep.memory.full) {
         if(creep.room.controller && (creep.room.controller.level <= 6 && creep.store[RESOURCE_ENERGY] < 50 || creep.room.controller.level == 7 && creep.store[RESOURCE_ENERGY] < 100 || creep.room.controller.level == 8 && creep.store[RESOURCE_ENERGY] < 200)) {
-            creep.memory.full = false;
-            creep.memory.t = false;
+            // 只有当确实需要能量时才标记为未满
+            // 如果已经有目标并且正在传输，不要中断
+            if(!creep.memory.t) {
+                creep.memory.full = false;
+            }
         }
+    }
+    else if(creep.store[RESOURCE_ENERGY] == 0) {
+        // 只有当creep确实空了，才清空full标记
+        creep.memory.full = false;
+        creep.memory.t = false;
     }
 
 
@@ -121,37 +132,57 @@ const run = function (creep) {
 
         let target = Game.getObjectById(creep.memory.t) || creep.findFillerTarget();
         if(target) {
-            if(target.store.getFreeCapacity(RESOURCE_ENERGY) == 0) {
+            // 检查目标是否有效（存在且有容量）
+            if(!target || target.store.getFreeCapacity(RESOURCE_ENERGY) == 0) {
                 target = creep.findFillerTarget();
             }
             if(target) {
-                if(creep.pos.isNearTo(target)) {
-                    const result = creep.transfer(target, RESOURCE_ENERGY);
-                    if(result == 0) {
-                        const indexOfTargetId = creep.room.memory.reserveFill.indexOf(target.id);
-                        if(indexOfTargetId !== -1) {
-                            creep.room.memory.reserveFill = creep.room.memory.reserveFill.splice(indexOfTargetId, 1);
+                // 检查目标是否仍然存在于房间中
+                if (!target.pos || target.room.name !== creep.room.name) {
+                    target = creep.findFillerTarget();
+                }
+                if(target) {
+                    if(creep.pos.isNearTo(target)) {
+                        const result = creep.transfer(target, RESOURCE_ENERGY);
+                        if(result == 0) {
+                            const indexOfTargetId = creep.room.memory.reserveFill.indexOf(target.id);
+                            if(indexOfTargetId !== -1) {
+                                creep.room.memory.reserveFill = creep.room.memory.reserveFill.splice(indexOfTargetId, 1);
+                            }
                         }
-                    }
-                    if(creep.store[RESOURCE_ENERGY] > target.store.getFreeCapacity(RESOURCE_ENERGY)) {
-                        const newTarget = creep.findFillerTarget();
-                        if(newTarget && creep.pos.getRangeTo(newTarget) > 1) {
-                            creep.MoveCostMatrixRoadPrio(newTarget, 1);
+                        if(creep.store[RESOURCE_ENERGY] > target.store.getFreeCapacity(RESOURCE_ENERGY)) {
+                            const newTarget = creep.findFillerTarget();
+                            if(newTarget && creep.pos.getRangeTo(newTarget) > 1) {
+                                creep.MoveCostMatrixRoadPrio(newTarget, 1);
+                            }
+                        }
+                        else {
+                            creep.memory.full = false;
+                            if(storage) {
+                                creep.MoveCostMatrixRoadPrio(storage, 1);
+                            }
                         }
                     }
                     else {
-                        creep.memory.full = false;
-                        if(storage) {
-                            creep.MoveCostMatrixRoadPrio(storage, 1);
+                        // 优化：检查当前tick内是否已经在尝试移动到这个目标
+                        // 如果多个tick都在尝试同一个目标，可能说明路径被阻塞
+                        if (creep.memory.t && Game.time % 10 === 0) {
+                            // 每10tick重新评估目标，如果仍然有更好选择则切换
+                            const betterTarget = creep.findFillerTarget();
+                            if (betterTarget && betterTarget.id !== target.id) {
+                                const currentRange = creep.pos.getRangeTo(target);
+                                const newRange = creep.pos.getRangeTo(betterTarget);
+                                if (newRange < currentRange) {
+                                    creep.memory.t = betterTarget.id;
+                                    target = betterTarget;
+                                }
+                            }
                         }
-                    }
-                }
-                else {
-                    if(creep.room.memory.danger) {
-                        creep.moveToSafePositionToRepairRampart(target, 1);
-                    }else {
-                        creep.MoveCostMatrixRoadPrio(target, 1)
-
+                        if(creep.room.memory.danger) {
+                            creep.moveToSafePositionToRepairRampart(target, 1);
+                        }else {
+                            creep.MoveCostMatrixRoadPrio(target, 1)
+                        }
                     }
                 }
             }
