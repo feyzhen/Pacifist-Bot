@@ -1242,9 +1242,9 @@ Creep.prototype.Sweep = function Sweep(): any {
 
     // ========== 3. 获取目标并执行操作 ==========
     const target: any = Game.getObjectById(this.memory.target);
-    if (!target) {
+    if (!target || (target.store && _.keys(target.store).length == 0)) {
         delete this.memory.target;
-        return false;
+        return this.Sweep();
     }
 
     // 尝试 pickup（掉落物）
