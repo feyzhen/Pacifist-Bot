@@ -149,16 +149,28 @@ const run = function (creep) {
             }
         }
         //  && _.keys(creep.store).length == 0
-      if (result == "nothing to sweep" && creep.ticksToLive <= 100) {
-
+        if (creep.ticksToLive <= 100) {
             creep.memory.suicide = true;
+        }
+        if (result == "nothing to sweep") {
+            if (!creep.memory.deposit) {
+                const found_deposit = creep.room.find(FIND_MINERALS);
+                creep.memory.deposit = found_deposit[0];
+            }
+
+            const deposit: any = Game.getObjectById(creep.memory.deposit.id);
+            if (deposit.mineralAmount == 0) {
+                creep.memory.suicide = true;
+            } else {
+                creep.MoveCostMatrixRoadPrio(deposit, 2);
+            }
         } else if (creep.store.getFreeCapacity() == 0) {
             creep.memory.full = true;
         } else {
             creep.memory.full = false;
         }
     }
-    creep.memory.moving = false;
+    // creep.memory.moving = false;
 };
 
 const roleSweeper = {
