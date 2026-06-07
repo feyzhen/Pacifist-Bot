@@ -368,6 +368,7 @@ function handleEmergencyEnergyManager(room: Room, spawn: StructureSpawn, storage
 
             if (spawnAttempt === 0) {
                 (room.memory as any).data.c_spawned++;
+                SpawnCache.invalidateRoleCount(room.name);
                 return "spawning";
             }
         }
@@ -386,6 +387,7 @@ function processSpawnQueue(room: Room, spawn: StructureSpawn): string {
         room.memory.spawn_list.shift();
         room.memory.spawn_list.shift();
         (room.memory as any).data.c_spawned++;
+        SpawnCache.invalidateRoleCount(room.name);
         return "spawning";
     }
 
@@ -414,7 +416,10 @@ function handleNotEnoughEnergyError(room: Room, spawn: StructureSpawn) {
         if (room.controller.level === 8) body.push(CARRY, CARRY, CARRY);
 
         const newName = 'emergencyFILLER-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-        spawn.spawnCreep(body, newName, {memory: {role: 'filler'} as any});
+        const spawnResult = spawn.spawnCreep(body, newName, {memory: {role: 'filler'} as any});
+        if (spawnResult === 0) {
+            SpawnCache.invalidateRoleCount(room.name);
+        }
         return;
     }
 
@@ -797,6 +802,23 @@ class SpawnCache {
         this.roleCountCache.clear();
         this.spawnRulesCache.clear();
         this.roomStateCache.clear();
+    }
+
+    /**
+     * 立即刷新指定房间的角色计数缓存
+     * 在spawn成功时调用，确保下一次判断使用最新数据
+     */
+    static invalidateRoleCount(roomName: string) {
+        this.roleCountCache.delete(roomName);
+    }
+
+    /**
+     * 立即刷新指定房间的所有缓存
+     * 用于紧急情况下强制刷新
+     */
+    static invalidateAll(roomName: string) {
+        this.roleCountCache.delete(roomName);
+        this.roomStateCache.delete(roomName);
     }
 
     static getRoleCount(room: Room) {
