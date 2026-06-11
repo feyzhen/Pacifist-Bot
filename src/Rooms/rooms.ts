@@ -10,6 +10,7 @@ import remotes from "./rooms.remotes";
 import powerSpawning from "./rooms.powerSpawning";
 import supportOtherRooms from "./rooms.supportOtherRooms";
 import layoutManager, { manageRoomLayout } from "./rooms.layoutManager";
+import { isObserveEnabled } from "../Misc/observeManager";
 
 function rooms() {
   /* */
@@ -223,7 +224,7 @@ function rooms() {
       roomDefence(room);
       // console.log('Room Defence Ran in', Game.cpu.getUsed() - defenceTime, 'ms')
 
-      if (room.controller.level == 8 && (!Memory.CPU.reduce || Game.cpu.bucket >= 8000 || Memory.pixelManager?.enabled)) {
+      if (room.controller.level == 8 && isObserveEnabled() && (!Memory.CPU.reduce || Game.cpu.bucket >= 8000 || Memory.pixelManager?.enabled)) {
         observe(room);
       }
       data(room);

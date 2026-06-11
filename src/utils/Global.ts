@@ -42,6 +42,9 @@ declare global {
       terrainDataInitialized: boolean;
       lastProcessedCoord: { x: number; y: number; };
       roomStatuses: any;
+      observeManager?: {
+        enabled: boolean;
+      };
     }
 
     interface billtong_rooms {
@@ -171,6 +174,11 @@ declare global {
             enableTrading: () => string;
             disableTrading: () => string;
             setKeepAmount: (amount: number) => string;
+            status: () => string;
+          };
+          observeManager: {
+            enable: () => string;
+            disable: () => string;
             status: () => string;
           };
         }

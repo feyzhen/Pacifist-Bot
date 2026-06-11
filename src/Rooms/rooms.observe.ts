@@ -2,14 +2,14 @@ function observe(room) {
     const interval = 64;
     const twoTimesInterval = interval*2
     const observer:any = Game.getObjectById(room.memory.Structures.observer) || room.findObserver();
-    if(observer && (Game.time % interval == 0 || Game.time % interval == 1) && (Game.cpu.bucket > 8000 || Memory.pixelManager?.enabled)) {
+    const observeConfig = !Memory.observeManager || Memory.observeManager.enabled !== false;
+    if(observeConfig && observer && (Game.time % interval == 0 || Game.time % interval == 1) && (Game.cpu.bucket > 8000 || Memory.pixelManager?.enabled)) {
         if(!room.memory.observe) {
             room.memory.observe = {};
         }
 
         if(!room.memory.observe.RoomsToSee) {
             const RoomsToSee = [];
-
 
             if(room.name.length == 6) {
                 const EastOrWest = room.name[0];
@@ -920,7 +920,7 @@ function observe(room) {
     }
 
     // find power banks
-    if(observer && (Game.time % twoTimesInterval == 2 || Game.time % twoTimesInterval == 3) && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
+    if(observeConfig && observer && (Game.time % twoTimesInterval == 2 || Game.time % twoTimesInterval == 3) && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
 
         if(!room.memory.observe)
             room.memory.observe = {};
