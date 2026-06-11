@@ -43,7 +43,10 @@ declare global {
       lastProcessedCoord: { x: number; y: number; };
       roomStatuses: any;
       observeManager?: {
-        enabled: boolean;
+        enabled?: boolean;
+        enemyScout?: boolean;
+        mineScout?: boolean;
+        powerScout?: boolean;
       };
     }
 
@@ -179,6 +182,8 @@ declare global {
           observeManager: {
             enable: () => string;
             disable: () => string;
+            enableScout: (scout: 'enemy' | 'mine' | 'power') => string;
+            disableScout: (scout: 'enemy' | 'mine' | 'power') => string;
             status: () => string;
           };
         }

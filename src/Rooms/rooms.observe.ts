@@ -2,7 +2,10 @@ function observe(room) {
     const interval = 64;
     const twoTimesInterval = interval*2
     const observer:any = Game.getObjectById(room.memory.Structures.observer) || room.findObserver();
-    const observeConfig = !Memory.observeManager || Memory.observeManager.enabled !== false;
+    const observeConfig = !(Memory as any).observeManager || (Memory as any).observeManager.enabled !== false;
+    const enemyScoutEnabled = !(Memory as any).observeManager?.enemyScout || (Memory as any).observeManager.enemyScout !== false;
+    const mineScoutEnabled = !(Memory as any).observeManager?.mineScout || (Memory as any).observeManager.mineScout !== false;
+    const powerScoutEnabled = !(Memory as any).observeManager?.powerScout || (Memory as any).observeManager.powerScout !== false;
     if(observeConfig && observer && (Game.time % interval == 0 || Game.time % interval == 1) && (Game.cpu.bucket > 8000 || Memory.pixelManager?.enabled)) {
         if(!room.memory.observe) {
             room.memory.observe = {};
@@ -142,7 +145,7 @@ function observe(room) {
 
         if(Game.time % interval == 1) {
             const adj = room.memory.observe.lastRoomObserved;
-            if(areRoomsNormalToThisRoom(room.name, adj)) {
+            if(enemyScoutEnabled && areRoomsNormalToThisRoom(room.name, adj)) {
                 if (
                   Game.rooms[adj] &&
                   room.name !== adj &&
@@ -919,7 +922,7 @@ function observe(room) {
 
     }
 
-    // find power banks
+    // find power banks / deposits (sub-pipeline)
     if(observeConfig && observer && (Game.time % twoTimesInterval == 2 || Game.time % twoTimesInterval == 3) && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
 
         if(!room.memory.observe)
@@ -1066,15 +1069,7 @@ function observe(room) {
 
                             const deposits = seenRoom.find(FIND_DEPOSITS);
 
-                            // if(powerBanks.length > 0 && storage.store[RESOURCE_ENERGY] > 330000 && (powerBanks[0].hits < 2000000 && Game.cpu.bucket > 7000 || Game.cpu.bucket > 9000) &&
-                            //  powerBanks[0].pos.getOpenPositionsIgnoreCreeps().length > 1 &&
-                            //  storage.store[RESOURCE_ENERGY] > 350000) {
-
-                            //     global.SPK(room.name, adj);
-
-                            // }
-
-                            if(deposits.length > 0 && storage.store[RESOURCE_ENERGY] > 225000 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
+                            if(mineScoutEnabled && deposits.length > 0 && storage.store[RESOURCE_ENERGY] > 225000 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
 
                                 // let hostiles = seenRoom.find(FIND_HOSTILE_CREEPS)
                                 // if(hostiles.length > 0) {
