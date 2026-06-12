@@ -10,6 +10,7 @@
 | `enemyScout` | 敌方房间侦察与响应（L0 接管、L2 SK 攻击、L3-8 侦察攻击） | `true` |
 | `mineScout` | 矿点侦查（发现 deposit 后调用 `SDM` 发起攻击） | `true` |
 | `powerScout` | Power Bank 侦查（预留，当前未启用） | `true` |
+| `debug` | 调试日志开关，开启后输出侦察和 spawn 信息 | `false` |
 
 ## 存储位置
 
@@ -30,6 +31,12 @@ global.observeManager.disable()
 ### 子开关
 
 ```javascript
+// 开启调试日志
+global.observeManager.enableDebug()
+
+// 关闭调试日志
+global.observeManager.disableDebug()
+
 // 开启/关闭特定子功能
 global.observeManager.enableScout('enemy')   // 敌方侦察
 global.observeManager.enableScout('mine')    // 矿点侦查
@@ -38,6 +45,16 @@ global.observeManager.enableScout('power')   // Power Bank 侦查
 global.observeManager.disableScout('enemy')  // 关闭敌方侦察
 global.observeManager.disableScout('mine')   // 关闭矿点侦查
 global.observeManager.disableScout('power')  // 关闭 Power Bank 侦查
+```
+
+### 调试日志
+
+```javascript
+// 开启调试日志
+global.observeManager.enableDebug()
+
+// 关闭调试日志
+global.observeManager.disableDebug()
 ```
 
 ### 状态查看
@@ -54,6 +71,7 @@ Enabled:      true
 Enemy Scout:  true
 Mine Scout:   false
 Power Scout:  true
+Debug:        false
 ```
 
 ## 使用场景

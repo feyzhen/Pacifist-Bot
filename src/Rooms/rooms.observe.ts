@@ -1,11 +1,19 @@
+import { isObserveEnabled, isScoutEnabled, debugLog } from '../Misc/observeManager';
+
+// DismantleControllerWalls body: 20 MOVE + 25 WORK
+const DISMANTLE_BODY = [
+  ...Array(25).fill(MOVE),
+  ...Array(25).fill(WORK),
+];
+
 function observe(room) {
     const interval = 64;
     const twoTimesInterval = interval*2
     const observer:any = Game.getObjectById(room.memory.Structures.observer) || room.findObserver();
-    const observeConfig = !(Memory as any).observeManager || (Memory as any).observeManager.enabled !== false;
-    const enemyScoutEnabled = !(Memory as any).observeManager?.enemyScout || (Memory as any).observeManager.enemyScout !== false;
-    const mineScoutEnabled = !(Memory as any).observeManager?.mineScout || (Memory as any).observeManager.mineScout !== false;
-    const powerScoutEnabled = !(Memory as any).observeManager?.powerScout || (Memory as any).observeManager.powerScout !== false;
+    const observeConfig = isObserveEnabled();
+    const enemyScoutEnabled = isScoutEnabled('enemy');
+    const mineScoutEnabled = isScoutEnabled('mine');
+    const powerScoutEnabled = isScoutEnabled('power');
     if(observeConfig && observer && (Game.time % interval == 0 || Game.time % interval == 1) && (Game.cpu.bucket > 8000 || Memory.pixelManager?.enabled)) {
         if(!room.memory.observe) {
             room.memory.observe = {};
@@ -135,7 +143,7 @@ function observe(room) {
             observer.observeRoom(chosenRoom);
 
 
-            console.log("seeing", chosenRoom)
+            debugLog("seeing", chosenRoom)
 
 
             room.memory.observe.lastObserved += 1;
@@ -150,11 +158,9 @@ function observe(room) {
                   Game.rooms[adj] &&
                   room.name !== adj &&
                   Game.rooms[adj].controller &&
-                  (!Game.rooms[adj].controller.owner || Game.rooms[adj].controller.owner) &&
+                  Game.rooms[adj].controller.owner &&
                   !Game.rooms[adj].controller.my &&
-                  Game.rooms[adj].controller.owner?.username !== "An1via" &&
-                  Game.rooms[adj].controller.owner?.username !== "nanachi" &&
-                  Game.rooms[adj].controller.owner?.username !== "nekey975" &&
+                  !(Memory as any).allies?.includes(Game.rooms[adj].controller.owner.username) &&
                   Game.map.getRoomStatus(adj).status == "normal"
                 ) {
                   const buildings = Game.rooms[adj].find(FIND_STRUCTURES, {
@@ -204,7 +210,7 @@ function observe(room) {
                                   swampCost: 1,
                                   roomCallback: function (roomName): any {
                                     const thisRoom = Game.rooms[roomName];
-                                    if (!room) return;
+                                    if (!thisRoom) return new PathFinder.CostMatrix();
                                     const costs = new PathFinder.CostMatrix();
 
                                     thisRoom.find(FIND_STRUCTURES).forEach(function (struct) {
@@ -274,58 +280,7 @@ function observe(room) {
                           if (!found) {
                             const newName = "DismantleControllerWalls-" + room.name + "-" + adj;
                             room.memory.spawn_list.push(
-                              [
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK
-                              ],
+                              DISMANTLE_BODY,
                               newName,
                               { memory: { role: "DismantleControllerWalls", homeRoom: room.name, targetRoom: adj } }
                             );
@@ -351,58 +306,7 @@ function observe(room) {
                       if (!found) {
                         const newName = "DismantleControllerWalls-" + room.name + "-" + adj;
                         room.memory.spawn_list.push(
-                          [
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK
-                          ],
+                          DISMANTLE_BODY,
                           newName,
                           { memory: { role: "DismantleControllerWalls", homeRoom: room.name, targetRoom: adj } }
                         );
@@ -635,7 +539,7 @@ function observe(room) {
                       const armedHostileCreeps = hostileCreeps.filter(
                         c => c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0
                       );
-                      if (!armedHostileCreeps) {
+                      if (armedHostileCreeps.length === 0) {
                         global.SGD(room.name, adj, [
                           MOVE,
                           MOVE,
@@ -764,7 +668,7 @@ function observe(room) {
                       const armedHostileCreeps = hostileCreeps.filter(
                         c => c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0
                       );
-                      if (!armedHostileCreeps) {
+                      if (armedHostileCreeps.length === 0) {
                         global.SGD(room.name, adj, [
                           MOVE,
                           MOVE,
@@ -1044,7 +948,7 @@ function observe(room) {
                 observer.observeRoom(chosenRoom);
 
 
-                console.log("seeing FOR POWER", chosenRoom)
+                debugLog("seeing FOR POWER", chosenRoom)
 
 
                 room.memory.observe.lastRoomObservedForPowerIndex += 1;

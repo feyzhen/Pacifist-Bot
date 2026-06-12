@@ -47,6 +47,7 @@ declare global {
         enemyScout?: boolean;
         mineScout?: boolean;
         powerScout?: boolean;
+        debug?: boolean;
       };
     }
 
@@ -185,6 +186,8 @@ declare global {
             enableScout: (scout: 'enemy' | 'mine' | 'power') => string;
             disableScout: (scout: 'enemy' | 'mine' | 'power') => string;
             status: () => string;
+            enableDebug: () => string;
+            disableDebug: () => string;
           };
         }
     }

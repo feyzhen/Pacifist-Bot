@@ -9,6 +9,7 @@
 //   enemyScout   — enemy room scouting & response (default: true)
 //   mineScout    — mineral deposit scouting (default: true)
 //   powerScout   — power bank scouting (default: true)
+//   debug        — enable verbose console.log output (default: false)
 //
 // Console commands:
 //   global.observeManager.enable() / disable()          — master switch
@@ -21,9 +22,10 @@ type ScoutKey = 'enemy' | 'mine' | 'power';
 
 const DEFAULTS = {
     enabled: true,
-    enemyScout: true,
+    enemyScout: false,
     mineScout: true,
     powerScout: true,
+    debug: false,
 } as const;
 
 function getConfig(): typeof DEFAULTS & Record<string, any> {
@@ -47,6 +49,23 @@ export function isScoutEnabled(key: ScoutKey): boolean {
     return (cfg as any)[key + 'Scout'] !== false;
 }
 
+/**
+ * Check whether debug logging is enabled.
+ */
+export function isDebug(): boolean {
+    const cfg = getConfig();
+    return !!cfg.debug;
+}
+
+/**
+ * Log a message to console only when debug is enabled.
+ */
+export function debugLog(...args: any[]): void {
+    if (isDebug()) {
+        console.log(...args);
+    }
+}
+
 // ── Console commands ─────────────────────────────────────────────────────────
 
 global.observeManager = {
@@ -66,6 +85,7 @@ global.observeManager = {
             `Enemy Scout:  ${cfg.enemyScout}`,
             `Mine Scout:   ${cfg.mineScout}`,
             `Power Scout:  ${cfg.powerScout}`,
+            `Debug:        ${cfg.debug}`,
         ].join("\n");
     },
     enableScout(scout: ScoutKey): string {
@@ -75,5 +95,13 @@ global.observeManager = {
     disableScout(scout: ScoutKey): string {
         Memory.observeManager = { ...(Memory.observeManager ?? {}), [scout + 'Scout']: false };
         return `${scout} scout disabled.`;
+    },
+    enableDebug(): string {
+        Memory.observeManager = { ...(Memory.observeManager ?? {}), debug: true };
+        return "Debug logging enabled.";
+    },
+    disableDebug(): string {
+        Memory.observeManager = { ...(Memory.observeManager ?? {}), debug: false };
+        return "Debug logging disabled.";
     },
 };
