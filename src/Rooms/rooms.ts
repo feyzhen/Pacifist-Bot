@@ -338,7 +338,7 @@ function rooms() {
   // }
 
   if (Game.time % 500 == 1) {
-    if (Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit - 10 && (Game.cpu.bucket > 9000 || Memory.pixelManager?.enabled)) {
+    if (Memory.CPU.fiveHundredTickAvg < Game.cpu.limit - 10 && (Game.cpu.bucket > 9000 || Memory.pixelManager?.enabled)) {
       const room = Game.rooms[myRooms[Math.floor(Math.random() * myRooms.length)]];
 
       if (room.controller.level >= 2) {
@@ -358,7 +358,7 @@ function rooms() {
           }
         }
       }
-    } else if (Memory.CPU.fiveHundredTickAvg.avg > Game.cpu.limit - 3) {
+    } else if (Memory.CPU.fiveHundredTickAvg > Game.cpu.limit - 3) {
       for (const roomName of myRooms) {
         const room = Game.rooms[roomName];
         let remoteRooms = Object.keys(room.memory.resources);

@@ -1824,7 +1824,7 @@ global.SC = function (targetRoomName, x?, y?) {
     }
     // 兼容旧版本：如果提供了x和y参数，仍然使用
     if(x !== undefined && y !== undefined) {
-        if(typeof x !== 'number' || typeof y !== 'number' || 
+        if(typeof x !== 'number' || typeof y !== 'number' ||
            x < 0 || x > 49 || y < 0 || y > 49) {
             return "Invalid parameters: x and y must be numbers between 0-49";
         }
@@ -2032,7 +2032,7 @@ global.SPK = function (homeRoom, targetRoomName) {
 
 global.SDM = function (homeRoom, targetRoomName) {
     const room = Game.rooms[homeRoom];
-    if (room && !room.memory.danger && Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit + 2 && (Game.cpu.bucket > 9500 || Memory.pixelManager?.enabled)) {
+    if (room && !room.memory.danger && Memory.CPU.fiveHundredTickAvg < Game.cpu.limit + 2 && (Game.cpu.bucket > 9500 || Memory.pixelManager?.enabled)) {
 
         let billtongs = 0;
         _.forEach(Game.creeps, function (creep) {
@@ -2052,8 +2052,11 @@ global.SDM = function (homeRoom, targetRoomName) {
                 MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE]
                 , newName, { memory: { role: 'billtong', homeRoom: room.name, targetRoom: targetRoomName } });
             console.log('Adding Billtong to Spawn List: ' + newName);
-
+            return "Success!";
         }
 
+        return "Already has billtongs or conditions not met";
     }
+
+    return "Room not found or danger flag set";
 }
