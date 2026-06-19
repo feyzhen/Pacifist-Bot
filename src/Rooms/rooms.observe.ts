@@ -975,30 +975,107 @@ function observe(room) {
 
                             if(mineScoutEnabled && deposits.length > 0 && storage.store[RESOURCE_ENERGY] > 225000 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
 
-                                // let hostiles = seenRoom.find(FIND_HOSTILE_CREEPS)
-                                // if(hostiles.length > 0) {
-                                //     let allow = true;
-                                //     for(let eCreep of hostiles) {
-                                //         if(eCreep.getActiveBodyparts(ATTACK) > 0) {
-                                //             allow = false;
-                                //             break;
-                                //         }
-                                //         else if(eCreep.getActiveBodyparts(RANGED_ATTACK) > 0) {
-                                //             allow = false;
-                                //             break;
-                                //         }
-                                //     }
+                                // ── Hostile check: skip if any hostile creep exists ──
+                                const hostiles = seenRoom.find(FIND_HOSTILE_CREEPS);
+                                if (hostiles.length === 0) {
 
-                                //     if(allow) {
-                                //         let newName = 'Deposit-Attacker-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-                                //         room.memory.spawn_list.push([MOVE,ATTACK], newName, {memory: {role: 'attacker', targetRoom: seenRoom.name, homeRoom:room.name}});
-                                //         console.log('Adding Deposit-Attacker to Spawn List: ' + newName);
-                                //     }
+                                    // Process each deposit independently
+                                    for (let i = 0; i < deposits.length; i++) {
+                                        const deposit = deposits[i];
+                                        const depId = deposit.id;
 
+                                        // lastCooldown check: skip if too high (efficiency too low)
+                                        if (deposit.lastCooldown > 120) continue;
 
-                                // }
-                                if(deposits[0].lastCooldown < 20) {
-                                    global.SDM(room.name, adj);
+                                        // Ensure per-deposit tracking structure exists
+                                        if (!Memory.depositMining) {
+                                            Memory.depositMining = {};
+                                        }
+                                        if (!Memory.depositMining[adj]) {
+                                            Memory.depositMining[adj] = {};
+                                        }
+                                        if (!Memory.depositMining[adj][depId]) {
+                                            Memory.depositMining[adj][depId] = {
+                                                type: deposit.depositType,
+                                                pos: { x: deposit.pos.x, y: deposit.pos.y },
+                                                lastCooldown: deposit.lastCooldown,
+                                                lastObserved: Game.time,
+                                                spawnDelay: Game.time + 1000,
+                                                threatChecked: true,
+                                                minersSpawned: 0,
+                                                carriesSpawned: 0
+                                            };
+                                        } else {
+                                            // Update tracking info
+                                            Memory.depositMining[adj][depId].lastObserved = Game.time;
+                                            Memory.depositMining[adj][depId].lastCooldown = deposit.lastCooldown;
+                                        }
+
+                                        const depMeta = Memory.depositMining[adj][depId];
+
+                                        // Spawn delay: wait 1000 ticks after first observation
+                                        if (Game.time < depMeta.spawnDelay) continue;
+
+                                        // Count existing miners + spawns for this deposit
+                                        let minerCount = 0;
+                                        let carryCount = 0;
+                                        _.forEach(Game.creeps, function (creep) {
+                                            if (creep.memory.targetRoom === adj) {
+                                                if (creep.memory.role === "depositMiner") minerCount++;
+                                                if (creep.memory.role === "depositCarry") carryCount++;
+                                            }
+                                        });
+                                        // Count in spawn_list
+                                        if (room.memory.spawn_list) {
+                                            _.forEach(room.memory.spawn_list, function (entry) {
+                                                if (entry && typeof entry === 'object' && entry[2] && entry[2].memory) {
+                                                    if (entry[2].memory.targetRoom === adj) {
+                                                        if (entry[2].memory.role === "depositMiner") minerCount++;
+                                                        if (entry[2].memory.role === "depositCarry") carryCount++;
+                                                    }
+                                                }
+                                            });
+                                        }
+
+                                        // Spawn if we haven't reached 1 pair yet
+                                        if (depMeta.minersSpawned === 0) {
+                                            // Spawn depositMiner
+                                            const minerResult = global.SDMine(room.name, adj, depId, deposit.depositType);
+                                            if (minerResult === "Success!") {
+                                                depMeta.minersSpawned = 1;
+                                                // Spawn matching carry
+                                                global.SDCarry(room.name, adj);
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Mark deposits in this room as unsafe temporarily
+                                    if (!Memory.depositMining) {
+                                        Memory.depositMining = {};
+                                    }
+                                    if (!Memory.depositMining[adj]) {
+                                        Memory.depositMining[adj] = {};
+                                    }
+                                    for (let i = 0; i < deposits.length; i++) {
+                                        const depId = deposits[i].id;
+                                        if (!Memory.depositMining[adj][depId]) {
+                                            Memory.depositMining[adj][depId] = {
+                                                type: deposits[i].depositType,
+                                                pos: { x: deposits[i].pos.x, y: deposits[i].pos.y },
+                                                lastCooldown: deposits[i].lastCooldown,
+                                                lastObserved: Game.time,
+                                                spawnDelay: Game.time + 1000,
+                                                threatChecked: true,
+                                                minersSpawned: 0,
+                                                carriesSpawned: 0
+                                            };
+                                        }
+                                        // Reset spawn counters so it can be retried after hostiles leave
+                                        Memory.depositMining[adj][depId].minersSpawned = 0;
+                                        Memory.depositMining[adj][depId].carriesSpawned = 0;
+                                        // Reset spawnDelay to allow re-evaluation after hostiles leave
+                                        Memory.depositMining[adj][depId].spawnDelay = Game.time + 1000;
+                                    }
                                 }
 
                             }

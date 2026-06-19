@@ -864,7 +864,7 @@ class SpawnCache {
         const roles = [
             'EnergyMiner', 'carry', 'builder', 'upgrader', 'repair', 'filler',
             'maintainer', 'defender', 'RampartDefender', 'RRD', 'Dismantler',
-            'scout', 'claimer', 'attacker', 'billtong', 'RangedAttacker',
+            'scout', 'claimer', 'attacker', 'billtong', 'depositMiner', 'depositCarry', 'RangedAttacker',
             'remoteBuilder', 'RampartErector', 'SneakyControllerUpgrader',
             'DrainTower', 'healer', 'RemoteDismantler', 'annoy', 'clearer',
             'ram', 'signifer', 'sweeper', 'goblin', 'Sign', 'Priest',
@@ -3198,6 +3198,10 @@ if (Game.time % 1000 === 0) {
     testBoostCalculation();
     testBoostResourceCheck();
 }
+
+// Expose body builders globally for Commands.ts
+(global as any).getBodyByRatio = getBodyByRatio;
+(global as any).getBodyByRatioWithLimits = getBodyByRatioWithLimits;
 
 export {getBody};
 export default spawning;

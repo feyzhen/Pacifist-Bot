@@ -42,6 +42,20 @@ declare global {
       terrainDataInitialized: boolean;
       lastProcessedCoord: { x: number; y: number; };
       roomStatuses: any;
+      depositMining?: {
+        [roomName: string]: {
+          [depositId: string]: {
+            type: string;
+            pos: { x: number; y: number };
+            lastCooldown: number;
+            lastObserved: number;
+            spawnDelay: number;
+            threatChecked: boolean;
+            minersSpawned: number;
+            carriesSpawned: number;
+          };
+        };
+      };
       observeManager?: {
         enabled?: boolean;
         enemyScout?: boolean;
@@ -127,6 +141,8 @@ declare global {
         sourceId:any;
         myLink: any;
         deposit: any;
+        depositType: string;
+        transferTarget: any;
         MaxStorage: number;
         searchedRooms: Array<string>;
         controllerLink:any;
@@ -162,6 +178,10 @@ declare global {
           SGD: any;
           SPK: any;
           SDM: any;
+          SDMine: any;
+          SDCarry: any;
+          getBodyByRatio: any;
+          getBodyByRatioWithLimits: any;
           SCCK: any;
           SCCK2: any;
           SMDP: any;

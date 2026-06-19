@@ -24,7 +24,9 @@
 | [FakeFiller](fakeFiller.md) | `FakeFiller.ts` | 简化版 filler，无 reserveFill 管理 |
 | [ControllerLinkFiller](controllerLinkFiller.md) | `ControllerLinkFiller.ts` | 专精 controller link 填充 |
 | [ResourceHauler](resourceHauler.md) | `resourceHauler.ts` | 跨房搬运所有资源类型（不限能量） |
-| [Billtong](billtong.md) | `billtong.ts` | 跨房采集 deposit 矿物并运回 |
+| [Billtong](billtong.md) | `billtong.ts` | 跨房采集 deposit 矿物并运回（单体，采集+搬运一体） |
+| [DepositMiner](depositMiner.md) | `depositMiner.ts` | 专职 deposit 采集者，产出矿物给 carrier |
+| [DepositCarry](depositCarry.md) | `depositCarry.ts` | 专职 deposit 搬运者，从 miner 收矿物运回 home |
 | [Sweeper](sweeper.md) | `sweeper.md` | 战场清扫者，扫 tombstones/ruins/dropped |
 | [EnergyMiner](energyMiner.md) | `energyMiner.ts` | energy source 采集者，管理 sourceLink 网络 |
 | [MineralMiner](mineralMiner.md) | `mineralMiner.ts` | 矿物 deposit 采集者 |
@@ -139,6 +141,8 @@
 | SpecialCarry ↔ SpecialRepair | 高优先级维修+专属供能 |
 | RampartDefender ↔ Defender | 防守配对 |
 | CreepKiller → CCK | 到达后 spawn 后继力量 |
+| Billtong → deposit rooms | 跨房采集 deposit 并运回 |
+| DepositMiner ↔ DepositCarry | 采集+搬运配对，miner 产出，carrier 运输 |
 | PowerMelee → Goblin | power bank ≤180000 时 spawn goblin 回收 |
 | Claimer → DismantleControllerWalls | 占领成功后 spawn 清理兵 |
 
@@ -151,6 +155,7 @@ claimer claim 成功 → 触发 layoutConfig → spawn DismantleControllerWalls
   → energyMiner 采集 → energyManager 调度 → filler 分发
 rooms.supportOtherRooms → spawnConvoy → Convoy 跨房运输
 rooms.supportOtherRooms → spawnSafeModer → SafeModer 生成 safe mode
+rooms.observe → deposit 侦察 → SDMine/SDCarry → depositMiner ↔ depositCarry 采集搬运链路
 PowerMelee 攻击 power bank → spawn goblin → Goblin 回收战利品
 ```
 

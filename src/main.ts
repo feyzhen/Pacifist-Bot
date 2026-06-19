@@ -57,6 +57,8 @@ import roleRampartErector from "Roles/RampartErector";
 import roleRam from "Roles/ram";
 import roleSignifer from "Roles/signifer";
 import roleBilltong from "./Roles/billtong"
+import roleDepositMiner from "./Roles/depositMiner";
+import roleDepositCarry from "./Roles/depositCarry";
 import roleGoblin from "Roles/goblin";
 import roleSpecialRepair from "Roles/SpecialRepair";
 import roleSpecialCarry from "Roles/SpecialCarry";
@@ -131,6 +133,8 @@ global.ROLES = {
   signifer: roleSignifer,
   ram: roleRam,
   billtong: roleBilltong,
+  depositMiner: roleDepositMiner,
+  depositCarry: roleDepositCarry,
   goblin: roleGoblin,
   SpecialRepair: roleSpecialRepair,
   SpecialCarry: roleSpecialCarry,

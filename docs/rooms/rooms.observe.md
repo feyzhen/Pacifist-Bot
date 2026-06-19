@@ -7,7 +7,7 @@
 | 时间片 | 触发间隔 | 目标 |
 |--------|----------|------|
 | 敌情侦察 | `Game.time % 64 == 0~1` | 扫描附近房间，发现敌方建筑/单位后自动调度攻击或清墙蠕虫 |
-| 资源侦察 | `Game.time % 128 == 2~3` | 扫描主干道房间，寻找能量矿藏（Deposit）或能量银行（Power Bank） |
+| 资源侦察 | `Game.time % 128 == 2~3` | 扫描主干道房间，寻找 deposit（矿藏） |
 
 所有侦察行为受 `observeManager` 全局开关和子模块开关控制。
 
@@ -123,13 +123,58 @@ observer && isObserveEnabled() && (Game.time % interval == 0 || 1) && (Game.cpu.
 
 1. 验证路径正常（`areRoomsNormalToThisRoom`）
 2. 检查 storage 能量 > 225000
-3. 检查房间内无墙壁（`FIND_STRUCTURES` filter WALL == 0）
-4. 查找 Deposit
+3. 检查房间内无墙壁（`FIND_STRUCTURES` filter WALL == 0，排除新手区）
+4. 查找 Deposit（`seenRoom.find(FIND_DEPOSITS)`）
 
-如果 `mineScoutEnabled` 且 Deposit 存在且 `deposits[0].lastCooldown < 20` 且 CPU 桶 > 9750：
-- 调度 `global.SDM(room.name, adj)` 矿藏攻击编队
+如果 `mineScoutEnabled` 且 Deposit 存在且 CPU 桶 > 9750：
 
-> 注释掉的代码块曾用于检测 hostile creep 并动态创建 Deposit-Attacker，目前处于禁用状态。
+#### 敌对爬检测
+
+```
+seenRoom.find(FIND_HOSTILE_CREEPS)
+```
+
+- 存在任意敌对蠕虫 → 跳过该房间所有 deposit，记录到 `Memory.depositMining`，1000 ticks 后重新评估
+- 无敌对爬 → 继续处理
+
+#### 逐个 Deposit 处理
+
+对每个 deposit 执行以下检查：
+
+| 检查项 | 条件 | 说明 |
+|--------|------|------|
+| lastCooldown | `≤ 120` | 采集频率过高时效率低，跳过 |
+| spawnDelay | `≥ Game.time + 1000` | 首次观察后等待 1000 ticks 再生，避免敌对爬刚刷出就派 miner |
+| spawn 计数 | `minersSpawned == 0` | 每个 deposit 点位最多 1 对 miner+carry |
+
+spawn 计数统计方式：`Game.creeps` 中 `targetRoom === adj` 的 `depositMiner`/`depositCarry` + `spawn_list` 中匹配的同名条目，总和超过上限不再 spawn。
+
+#### Spawn 流程
+
+当所有检查通过后：
+1. 调用 `global.SDMine(room.name, adj, deposit.id, deposit.depositType)` 生成 depositMiner
+2. 成功后调用 `global.SDCarry(room.name, adj)` 生成 depositCarry
+
+#### Memory 追踪结构
+
+首次发现 deposit 时在 `Memory.depositMining[adj][depositId]` 记录：
+
+```
+{
+    type: 'mist'|'biomass'|'metal'|'silicon',
+    pos: { x, y },
+    lastCooldown: number,
+    lastObserved: Game.time,
+    spawnDelay: Game.time + 1000,
+    threatChecked: true,
+    minersSpawned: 0,
+    carriesSpawned: 0
+}
+```
+
+敌对爬存在时：重置 `minersSpawned`/`carriesSpawned` 为 0，`spawnDelay` 重置为当前时间 + 1000，等敌对爬离开后自动重试。
+
+> deposit 的 type 为 `RESOURCE_MIST` / `RESOURCE_BIOMASS` / `RESOURCE_METAL` / `RESOURCE_SILICON`，不是 `RESOURCE_ENERGY`。
 
 ---
 
@@ -143,6 +188,22 @@ room.memory.observe
 ├── listOfRoomsForPower   // string[] — 资源侦察待观察房间列表（主干道）
 ├── lastRoomObservedForPowerIndex  // number — 资源侦察当前索引
 └── lastRoomObservedForPower       // string — 资源侦察上一次观察的房间
+```
+
+#### Memory.depositMining
+
+全局 deposit 追踪字典，按 `房间名 × depositId` 组织：
+
+```
+Memory.depositMining[targetRoom][depositId]
+├── type              // 'mist'|'biomass'|'metal'|'silicon'
+├── pos               // { x, y } — deposit 坐标
+├── lastCooldown      // 上次采集的 cooldown 值
+├── lastObserved      // 上次观察到的 tick
+├── spawnDelay        // 允许 spawn 的 tick 时间戳
+├── threatChecked     // 是否已做过敌对爬检查
+├── minersSpawned     // 是否已 spawn miner（0/1）
+└── carriesSpawned    // 是否已 spawn carrier（0/1）
 ```
 
 ---
