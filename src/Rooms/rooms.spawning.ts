@@ -1767,10 +1767,12 @@ class ConstructionRoleGenerator {
                               rampartsInRoomBelow5Mil.length > 0;
                 break;
             case 8:
+                const rampartsInRoomBelow10Mil = rampartsInRoom?.filter(function(s) {return s.hits < 9050000;});
                 shouldSpawn = repairers < rule.repair_creep.amount + 2 && storage &&
                               ((storage as any).store[RESOURCE_ENERGY] > 500000 ||
                               Game.time % 3000 < 100 && (storage as any).store[RESOURCE_ENERGY] > 50000 ||
-                              room.memory.danger && (storage as any).store[RESOURCE_ENERGY] > 50000);
+                              room.memory.danger && (storage as any).store[RESOURCE_ENERGY] > 50000) &&
+                              (rampartsInRoomBelow10Mil.length > 0 || room.memory.danger_timer > 200);
                 break;
         }
 
