@@ -964,7 +964,7 @@ function observe(room) {
 
                     const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
 
-                    if(seenRoom && storage && storage.store[RESOURCE_ENERGY] > 225000) {
+                    if(seenRoom && storage && storage.store[RESOURCE_ENERGY] > 105000) {
 
                         const walls = seenRoom.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_WALL});
                         if(walls.length == 0) {
@@ -973,7 +973,7 @@ function observe(room) {
 
                             const deposits = seenRoom.find(FIND_DEPOSITS);
 
-                            if(mineScoutEnabled && deposits.length > 0 && storage.store[RESOURCE_ENERGY] > 225000 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
+                            if(mineScoutEnabled && deposits.length > 0 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
 
                                 // ── Hostile check: skip if any hostile creep exists ──
                                 const hostiles = seenRoom.find(FIND_HOSTILE_CREEPS);
