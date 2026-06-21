@@ -2935,17 +2935,21 @@ class SpecialRoleGenerator {
     }
 
     static generateScouts(room: Room, scouts: number, EnergyMinersInRoom: number, resourceData: any, activeRemotes: string[], roomState: any) {
-        const roomsToRemote = Object.keys(resourceData);
-        for (const remoteRoom of roomsToRemote) {
-            if (activeRemotes.includes(remoteRoom) && remoteRoom !== room.name) {
-                if (scouts < 1 && EnergyMinersInRoom > 1) {
-                    const newName = 'Scout-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    room.memory.spawn_list.push([MOVE], newName, {memory: {role: 'scout', homeRoom: room.name, targetRoom: remoteRoom}});
-                    console.log('Adding Scout to Spawn List: ' + newName);
-                    break;
-                }
-            }
-        }
+        if (scouts >= 1 || EnergyMinersInRoom <= 1) return;
+
+        // 只向尚未激活（未被 scout 确认过）的房间发送 scout
+        // activeRemotes 里的房间要么是本房间，要么已经有 scout 确认过有 energy source
+        // 不应该对已激活的房间反复派 scout
+        const unexploredRooms = Object.keys(resourceData).filter(remoteRoom =>
+            remoteRoom !== room.name && !activeRemotes.includes(remoteRoom)
+        );
+
+        if (unexploredRooms.length === 0) return;
+
+        const remoteRoom = unexploredRooms[0];
+        const newName = 'Scout-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+        room.memory.spawn_list.push([MOVE], newName, {memory: {role: 'scout', homeRoom: room.name, targetRoom: remoteRoom}});
+        console.log('Adding Scout to Spawn List: ' + newName + ' -> ' + remoteRoom);
     }
 
     static generateClaimers(room: Room, claimers: number, storage: any, roomState: any) {

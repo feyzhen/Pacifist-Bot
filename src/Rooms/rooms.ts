@@ -337,6 +337,31 @@ function rooms() {
   //     delete Memory.rooms[visibleRoom.name];
   // }
 
+  // ============================================================================
+  // 【已废弃】Scout 生成逻辑已迁移至 SpecialRoleGenerator.generateScouts
+  // (rooms.spawning.ts)，分支: refactor/Rooms/room.observer
+  //
+  // Old: 对已激活(active)的房间反复派发 scout → 无限循环
+  //      (scout → active → scout → active → ...)
+  // 旧: 对走廊房间等无 source 的房间也派 scout → 自杀 → 再生成 → 死循环
+  //
+  // Old logic (340-384):
+  //   1) Scouted rooms that were already "active" → caused infinite scout loops
+  //      (scout → active → scout → active → ...)
+  //   2) CPU-reset branch (361-383) had a logic bug: set all active=false,
+  //      then checked if any was still true → never fired.
+  //   3) Sent scouts to corridor rooms with no sources → suicide loop
+  //
+  // New logic (generateScouts):
+  //   - 只向未激活的房间发送 scout（真正未探索的）
+  //   - Only sends scouts to rooms NOT in activeRemotes (truly unexplored)
+  //   - 仅在 scouts=0 且 EnergyMiner>1 时触发
+  //   - Guards on scouts < 1 AND EnergyMinersInRoom > 1
+  //   - 每个房间 spawning 时独立判断，不再每500tick随机选一个房间
+  //   - Runs per-room during spawning, not once every 500 ticks on a random room
+  // ============================================================================
+
+  /*
   if (Game.time % 500 == 1) {
     if (Memory.CPU.fiveHundredTickAvg < Game.cpu.limit - 10 && (Game.cpu.bucket > 9000 || Memory.pixelManager?.enabled)) {
       const room = Game.rooms[myRooms[Math.floor(Math.random() * myRooms.length)]];
@@ -383,6 +408,7 @@ function rooms() {
       }
     }
   }
+  */
 
   console.log("Rooms Ran in", Game.cpu.getUsed() - start, "ms");
 }
