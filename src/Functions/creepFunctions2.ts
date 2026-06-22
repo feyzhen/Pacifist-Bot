@@ -833,6 +833,7 @@ Creep.prototype.findDeposit = function () {
     }
     if (deposit) {
         this.memory.deposit = deposit.id;
+        this.memory.depositType = deposit.depositType
         return deposit;
     }
 };

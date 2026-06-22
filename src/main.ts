@@ -164,7 +164,7 @@ global.ROLES = {
 export const loop = ErrorMapper.wrapLoop(() => {
 
   // Initialize super move optimization for this tick
-  preTickBetterMove();
+  // preTickBetterMove();
 
   const startTotal = Game.cpu.getUsed();
 
@@ -193,7 +193,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
   // console.log(JSON.stringify(Memory.roomStatuses))
 
   // Resolve all queued movements at the end of the tick
-  endTickResolve(isWorkTile);
+  // endTickResolve(isWorkTile);
 
   const tickTotal = (Game.cpu.getUsed() - startTotal).toFixed(2);
   console.log(tickTotal + "ms", "on this tick");

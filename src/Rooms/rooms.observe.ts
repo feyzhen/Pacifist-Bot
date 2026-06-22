@@ -1036,7 +1036,7 @@ function observe(room) {
                                         // Calculate how many miners still needed for this deposit
                                         const maxPairs = depMeta.maxPairs || 1;
                                         let minersNeeded = Math.max(0, maxPairs - aliveMiners);
-                                        let carryNeeded = Math.max(0, maxPairs - aliveCarries);
+                                        let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - aliveCarries);
 
                                         // Spawn miners up to the open-position limit
                                         while (minersNeeded > 0) {

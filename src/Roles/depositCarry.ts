@@ -1,19 +1,18 @@
 /**
- * depositCarry — Dedicated energy transporter.
- * Travels to the target deposit room, collects energy from depositMiner creeps,
- * and returns to home room to deposit into storage.
+ * depositCarry — 专职能量运输者。
+ * 前往目标沉积物房间，从 depositMiner 处收集能量，
+ * 返回 home 房间存入 storage。
  *
- * Body ratio: CARRY:1, MOVE:1 (dynamic via getBodyByRatio)
+ * 身体配比：CARRY:1, MOVE:1（通过 getBodyByRatio 动态构建）
  */
 const run = function (creep: any) {
     creep.memory.moving = false;
 
-    // ── Evacuation & danger checks ──────────────────────────────────
+    // ── 撤离与危险检测 ──────────────────────────────────────────
     if (creep.evacuate()) return;
     if (creep.fleeHomeIfInDanger() == "timeOut") return;
 
-    // ── State tracking ──────────────────────────────────────────────
-
+    // ── 状态跟踪 ────────────────────────────────────────────────
     if (creep.store.getFreeCapacity() === 0) {
         creep.memory.full = true;
     }
@@ -21,20 +20,39 @@ const run = function (creep: any) {
         creep.memory.full = false;
     }
 
-    // ── Phase 1: Travel to target room ──────────────────────────────
+    // ── 阶段4：生命末期处理 ───────────────────────────────────────
+    if (creep.ticksToLive <= 300) {
+        // 快死了：如果身上有能量，先尝试存回 storage（即使快死了也要尽量带能量回家）
+        // 如果不在 home 房间，recycle() 会尝试带能量回家
+        if (creep.store.getUsedCapacity() == 0) {
+            // 在异地：标记 homeRoom 为当前房间，让 recycle() 直接在此回收
+            // （recycle 的 homeRoom 判断会跳过跨房间逻辑，直接在 bin/spawn 处回收）
+            creep.memory.homeRoom = creep.room.name;
+        }
+        creep.memory.suicide = true;
+    }
+    if (creep.memory.suicide) {
+        creep.recycle();
+        return; // ← 关键修复：recycle() 后必须 return
+                // 否则继续执行下面的 Phase 1，会被拉回 targetRoom，形成"横跳"
+    }
+
+    // ── 阶段1：前往目标房间 ──────────────────────────────────────
     if (creep.room.name !== creep.memory.targetRoom) {
         return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
     }
-    if (!creep.memory.depositType) {
-        const deposit = creep.findDeposit()
-        if (deposit) {
-            creep.memory.depositType = deposit.depositType;
-        }
-    }
 
-    const depositType = creep.memory.depositType;
+    // 首次到达 deposit 房间时，识别沉积物类型
+    // if (!creep.memory.depositType) {
+    //     const deposit = creep.findDeposit();
+    //     if (deposit) {
+    //         creep.memory.depositType = deposit.depositType;
+    //     }
+    // }
+    const deposit: any = Game.getObjectById(creep.memory.deposit) || creep.findDeposit();
+    const depositType = creep.memory.depositType || deposit.depositType;
 
-    // ── Phase 2: Collect energy from miners ─────────────────────────
+    // ── 阶段2：从 miner 处收集能量 ────────────────────────────────
     if (!creep.memory.full) {
         const miners = creep.room.find(FIND_MY_CREEPS, {
             filter: c => c.memory.role === "depositMiner" && c.store.getUsedCapacity() > 0
@@ -43,6 +61,9 @@ const run = function (creep: any) {
         if (miners.length > 0) {
             const target = creep.pos.findClosestByRange(miners);
             if (creep.pos.isNearTo(target)) {
+                // 注意：这里用 withdraw 从 miner 身上取能量
+                // 由于 miner 现在会在采集间隙主动 transfer，carry 的 withdraw
+                // 主要应对 miner 尚未实现主动 transfer 的情况
                 creep.withdraw(target, depositType);
             } else {
                 creep.moveTo(target);
@@ -50,7 +71,7 @@ const run = function (creep: any) {
             return;
         }
 
-        // Fallback: pick up dropped energy
+        // 回退：捡起地上掉落的能量
         const dropped = creep.room.find(FIND_DROPPED_RESOURCES, {
             filter: r => r.resourceType === depositType
         });
@@ -64,7 +85,8 @@ const run = function (creep: any) {
             return;
         }
 
-        // No miners found — wait briefly, then suicide
+        // 没找到任何 miner —— 短暂等待后 suicide
+        // 原因：所有 miner 都已满载离开，或 miner 尚未到达
         if (!creep.memory.waitStart) {
             creep.memory.waitStart = Game.time;
         }
@@ -74,13 +96,13 @@ const run = function (creep: any) {
         return;
     }
 
-    // ── Phase 3: Return home ────────────────────────────────────────
+    // ── 阶段3：满载返程 ─────────────────────────────────────────
     if (creep.memory.full) {
         if (creep.room.name !== creep.memory.homeRoom) {
             return creep.moveToRoomAvoidEnemyRooms(creep.memory.homeRoom);
         }
 
-        // Priority 1: storage
+        // 优先存入 storage
         let storage: any = Game.getObjectById(creep.memory.storage) || creep.findStorage();
         if (storage && storage.store.getFreeCapacity(depositType) > 0) {
             if (creep.pos.isNearTo(storage)) {
@@ -95,7 +117,7 @@ const run = function (creep: any) {
             return;
         }
 
-        // Priority 2: terminal
+        // 其次存入 terminal
         if (creep.room.terminal && creep.room.terminal.store.getFreeCapacity(depositType) > 0) {
             if (creep.pos.isNearTo(creep.room.terminal)) {
                 creep.transfer(creep.room.terminal, depositType);
@@ -107,14 +129,11 @@ const run = function (creep: any) {
             return;
         }
 
-        // No receiver — wait
+        // 没有接收方——等待
         return;
     }
 
-    // ── Phase 4: End-of-life ────────────────────────────────────────
-    if (creep.memory.suicide) {
-        creep.recycle();
-    }
+
 };
 
 const roleDepositCarry = { run };
