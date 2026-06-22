@@ -13,12 +13,11 @@ const run = function (creep: any) {
     if (creep.fleeHomeIfInDanger() == "timeOut") return;
 
     // ── State tracking ──────────────────────────────────────────────
-    const depositType = creep.memory.depositType || RESOURCE_ENERGY;
 
     if (creep.store.getFreeCapacity() === 0) {
         creep.memory.full = true;
     }
-    if (creep.store.getFreeCapacity() > 0 && creep.store[depositType] === 0) {
+    if (creep.store.getUsedCapacity() === 0) {
         creep.memory.full = false;
     }
 
@@ -26,11 +25,19 @@ const run = function (creep: any) {
     if (creep.room.name !== creep.memory.targetRoom) {
         return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
     }
+    if (!creep.memory.depositType) {
+        const deposit = creep.findDeposit()
+        if (deposit) {
+            creep.memory.depositType = deposit.depositType;
+        }
+    }
+
+    const depositType = creep.memory.depositType;
 
     // ── Phase 2: Collect energy from miners ─────────────────────────
     if (!creep.memory.full) {
         const miners = creep.room.find(FIND_MY_CREEPS, {
-            filter: c => c.memory.role === "depositMiner" && c.store[depositType] > 0
+            filter: c => c.memory.role === "depositMiner" && c.store.getUsedCapacity() > 0
         });
 
         if (miners.length > 0) {

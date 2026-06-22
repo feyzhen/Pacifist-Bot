@@ -51,8 +51,7 @@ declare global {
             lastObserved: number;
             spawnDelay: number;
             threatChecked: boolean;
-            minersSpawned: number;
-            carriesSpawned: number;
+            maxPairs: number;
           };
         };
       };

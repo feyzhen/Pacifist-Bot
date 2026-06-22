@@ -995,6 +995,7 @@ function observe(room) {
                                             Memory.depositMining[adj] = {};
                                         }
                                         if (!Memory.depositMining[adj][depId]) {
+                                            const openPositions = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
                                             Memory.depositMining[adj][depId] = {
                                                 type: deposit.depositType,
                                                 pos: { x: deposit.pos.x, y: deposit.pos.y },
@@ -1002,8 +1003,7 @@ function observe(room) {
                                                 lastObserved: Game.time,
                                                 spawnDelay: Game.time + 1000,
                                                 threatChecked: true,
-                                                minersSpawned: 0,
-                                                carriesSpawned: 0
+                                                maxPairs: openPositions,
                                             };
                                         } else {
                                             // Update tracking info
@@ -1016,36 +1016,41 @@ function observe(room) {
                                         // Spawn delay: wait 1000 ticks after first observation
                                         if (Game.time < depMeta.spawnDelay) continue;
 
-                                        // Count existing miners + spawns for this deposit
-                                        let minerCount = 0;
-                                        let carryCount = 0;
-                                        _.forEach(Game.creeps, function (creep) {
-                                            if (creep.memory.targetRoom === adj) {
-                                                if (creep.memory.role === "depositMiner") minerCount++;
-                                                if (creep.memory.role === "depositCarry") carryCount++;
+                                        // Single pass: count alive miners and carries from both Game.creeps and spawn_list
+                                        let aliveMiners = 0;
+                                        let aliveCarries = 0;
+                                        const allSources = [
+                                            ...Object.values(Game.creeps),
+                                            ...(room.memory.spawn_list || []).filter(e => e && typeof e === "object" && e[2] && e[2].memory)
+                                        ];
+                                        for (const src of allSources) {
+                                            const mem = src.memory || (src as any)[2].memory;
+                                            if (mem.role === "depositMiner" && mem.targetRoom === adj && mem.deposit === depId) {
+                                                aliveMiners++;
                                             }
-                                        });
-                                        // Count in spawn_list
-                                        if (room.memory.spawn_list) {
-                                            _.forEach(room.memory.spawn_list, function (entry) {
-                                                if (entry && typeof entry === 'object' && entry[2] && entry[2].memory) {
-                                                    if (entry[2].memory.targetRoom === adj) {
-                                                        if (entry[2].memory.role === "depositMiner") minerCount++;
-                                                        if (entry[2].memory.role === "depositCarry") carryCount++;
-                                                    }
-                                                }
-                                            });
+                                            if (mem.role === "depositCarry" && mem.targetRoom === adj) {
+                                                aliveCarries++;
+                                            }
                                         }
 
-                                        // Spawn if we haven't reached 1 pair yet
-                                        if (depMeta.minersSpawned === 0) {
-                                            // Spawn depositMiner
-                                            const minerResult = global.SDMine(room.name, adj, depId, deposit.depositType);
-                                            if (minerResult === "Success!") {
-                                                depMeta.minersSpawned = 1;
-                                                // Spawn matching carry
-                                                global.SDCarry(room.name, adj);
-                                            }
+                                        // Calculate how many miners still needed for this deposit
+                                        const maxPairs = depMeta.maxPairs || 1;
+                                        let minersNeeded = Math.max(0, maxPairs - aliveMiners);
+                                        let carryNeeded = Math.max(0, maxPairs - aliveCarries);
+
+                                        // Spawn miners up to the open-position limit
+                                        while (minersNeeded > 0) {
+                                            // Pass depositId only when there are multiple deposits
+                                            const result = global.SDMine(room.name, adj, depId);
+                                            if (result !== "Success!") break;
+                                            minersNeeded--;
+                                        }
+
+                                        // Spawn carries if needed
+                                        while (carryNeeded > 0) {
+                                            const result = global.SDCarry(room.name, adj);
+                                            if (result !== "Success!") break;
+                                            carryNeeded--;
                                         }
                                     }
                                 } else {
@@ -1059,6 +1064,7 @@ function observe(room) {
                                     for (let i = 0; i < deposits.length; i++) {
                                         const depId = deposits[i].id;
                                         if (!Memory.depositMining[adj][depId]) {
+                                            const openPositions = deposits[i].pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
                                             Memory.depositMining[adj][depId] = {
                                                 type: deposits[i].depositType,
                                                 pos: { x: deposits[i].pos.x, y: deposits[i].pos.y },
@@ -1066,15 +1072,31 @@ function observe(room) {
                                                 lastObserved: Game.time,
                                                 spawnDelay: Game.time + 1000,
                                                 threatChecked: true,
-                                                minersSpawned: 0,
-                                                carriesSpawned: 0
+                                                maxPairs: openPositions,
                                             };
                                         }
-                                        // Reset spawn counters so it can be retried after hostiles leave
-                                        Memory.depositMining[adj][depId].minersSpawned = 0;
-                                        Memory.depositMining[adj][depId].carriesSpawned = 0;
-                                        // Reset spawnDelay to allow re-evaluation after hostiles leave
-                                        Memory.depositMining[adj][depId].spawnDelay = Game.time + 1000;
+                                        // Allow re-evaluation after a short delay (hostiles may just be passing through)
+                                        Memory.depositMining[adj][depId].spawnDelay = Game.time + 200;
+                                    }
+                                }
+
+                                // ── Cleanup expired deposits (applies to both safe and hostile branches) ──
+                                // Remove entries where lastObserved > 5000 ticks ago (deposit likely gone)
+                                // or where the deposit no longer exists in the room
+                                if (Memory.depositMining && Memory.depositMining[adj]) {
+                                    const currentDepIds = new Set(deposits.map(d => d.id as string));
+                                    for (const depId in Memory.depositMining[adj]) {
+                                        const meta = Memory.depositMining[adj][depId];
+                                        if (meta.lastObserved && Game.time - meta.lastObserved > 50000) {
+                                            delete Memory.depositMining[adj][depId];
+                                        } else if (!currentDepIds.has(depId)) {
+                                            // Deposit was observed before but no longer exists in this room
+                                            delete Memory.depositMining[adj][depId];
+                                        }
+                                    }
+                                    // Clean up empty room entries
+                                    if (Object.keys(Memory.depositMining[adj]).length === 0) {
+                                        delete Memory.depositMining[adj];
                                     }
                                 }
 

@@ -20,7 +20,7 @@ const run = function (creep: any) {
     }
 
     // ── Phase 2: Harvest deposit ────────────────────────────────────
-    const deposit: any = Game.getObjectById(creep.memory.deposit);
+    const deposit: any = Game.getObjectById(creep.memory.deposit) || creep.findDeposit();
     if (!deposit) {
         creep.memory.suicide = true;
         return;
@@ -44,7 +44,7 @@ const run = function (creep: any) {
 
     // ── Phase 3: Transfer when full ─────────────────────────────────
     if (creep.store.getFreeCapacity() === 0) {
-        const depositType = creep.memory.depositType || RESOURCE_ENERGY;
+        const depositType = creep.memory.depositType || deposit.depositType;
 
         // Try to transfer to a cached carrier first
         let carrier: any = null;
