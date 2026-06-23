@@ -60,12 +60,7 @@ const run = function (creep: any) {
 
         if (miners.length > 0) {
             const target = creep.pos.findClosestByRange(miners);
-            if (creep.pos.isNearTo(target)) {
-                // 注意：这里用 withdraw 从 miner 身上取能量
-                // 由于 miner 现在会在采集间隙主动 transfer，carry 的 withdraw
-                // 主要应对 miner 尚未实现主动 transfer 的情况
-                creep.withdraw(target, depositType);
-            } else {
+            if (!creep.pos.isNearTo(target)) {
                 creep.moveTo(target);
             }
             return;
@@ -77,7 +72,7 @@ const run = function (creep: any) {
         });
         if (dropped.length > 0) {
             const target = dropped[0];
-            if (creep.pos.getRangeTo(target) <= 1) {
+            if (creep.pos.isNearTo(target)) {
                 creep.pickup(target);
             } else {
                 creep.moveTo(target);
@@ -87,12 +82,12 @@ const run = function (creep: any) {
 
         // 没找到任何 miner —— 短暂等待后 suicide
         // 原因：所有 miner 都已满载离开，或 miner 尚未到达
-        if (!creep.memory.waitStart) {
-            creep.memory.waitStart = Game.time;
-        }
-        if (Game.time - creep.memory.waitStart > 100) {
-            creep.memory.suicide = true;
-        }
+        // if (!creep.memory.waitStart) {
+        //     creep.memory.waitStart = Game.time;
+        // }
+        // if (Game.time - creep.memory.waitStart > 100) {
+        //     creep.memory.suicide = true;
+        // }
         return;
     }
 
@@ -109,7 +104,7 @@ const run = function (creep: any) {
                 const result = creep.transfer(storage, depositType);
                 if (result === OK && creep.store[depositType] === 0) {
                     creep.memory.full = false;
-                    delete creep.memory.waitStart;
+                    // delete creep.memory.waitStart;
                 }
             } else {
                 creep.MoveCostMatrixRoadPrio(storage, 1);
@@ -122,7 +117,7 @@ const run = function (creep: any) {
             if (creep.pos.isNearTo(creep.room.terminal)) {
                 creep.transfer(creep.room.terminal, depositType);
                 creep.memory.full = false;
-                delete creep.memory.waitStart;
+                // delete creep.memory.waitStart;
             } else {
                 creep.MoveCostMatrixRoadPrio(creep.room.terminal, 1);
             }

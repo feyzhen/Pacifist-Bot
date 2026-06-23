@@ -985,7 +985,7 @@ function observe(room) {
                                         const depId = deposit.id;
 
                                         // lastCooldown check: skip if too high (efficiency too low)
-                                        if (deposit.lastCooldown > 120) continue;
+                                        if (deposit.lastCooldown > 100) continue;
 
                                         // Ensure per-deposit tracking structure exists
                                         if (!Memory.depositMining) {
@@ -1039,18 +1039,20 @@ function observe(room) {
                                         let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - aliveCarries);
 
                                         // Spawn miners up to the open-position limit
-                                        while (minersNeeded > 0) {
-                                            // Pass depositId only when there are multiple deposits
-                                            const result = global.SDMine(room.name, adj, depId);
-                                            if (result !== "Success!") break;
-                                            minersNeeded--;
-                                        }
-
-                                        // Spawn carries if needed
-                                        while (carryNeeded > 0) {
-                                            const result = global.SDCarry(room.name, adj);
-                                            if (result !== "Success!") break;
-                                            carryNeeded--;
+                                        if ((minersNeeded / maxPairs) > (carryNeeded / Math.floor((maxPairs + 1) / 2))) {
+                                            while (minersNeeded > 0) {
+                                                // Pass depositId only when there are multiple deposits
+                                                const result = global.SDMine(room.name, adj, depId);
+                                                if (result !== "Success!") break;
+                                                minersNeeded--;
+                                            }
+                                        } else {
+                                            // Spawn carries if needed
+                                            while (carryNeeded > 0) {
+                                                const result = global.SDCarry(room.name, adj);
+                                                if (result !== "Success!") break;
+                                                carryNeeded--;
+                                            }
                                         }
                                     }
                                 } else {

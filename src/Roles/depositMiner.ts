@@ -20,12 +20,20 @@ const run = function (creep: any) {
             const nearby = creep.room.find(FIND_MY_CREEPS, {
                 filter: c =>
                     (c.memory.role === "depositCarry" || c.memory.role === "depositMiner") &&
-                    c.store.getFreeCapacity() > 0
+                    c.store.getFreeCapacity() > 0 &&
+                    c.memory.targetRoom == creep.memory.targetRoom &&
+                    c.id != creep.id
             });
             const target = nearby.length > 0 ? creep.pos.findClosestByRange(nearby) : null;
             if (target) {
                 for (const resource in creep.store) {
-                    creep.transfer(target, resource)
+                    if (creep.pos.isNearTo(target)) {
+                        creep.transfer(target, resource);
+                    }
+                    // else {
+                    //     creep.moveTo(target)
+                    // }
+
                 }
                 return; // 本 tick 已转移，不再执行后续操作
             }
@@ -82,11 +90,12 @@ const run = function (creep: any) {
                     creep.transfer(target, depositType);
                     // transfer 占用本 tick，下 tick 继续采集
                     return;
-                } else {
-                    // carry 稍远，先移动到它身边（下 tick 再 transfer）
-                    creep.moveTo(target);
-                    return;
                 }
+                // else {
+                //     // carry 稍远，先移动到它身边（下 tick 再 transfer）
+                //     creep.moveTo(target);
+                //     return;
+                // }
             }
         }
     } else {
