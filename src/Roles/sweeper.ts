@@ -83,12 +83,12 @@ const run = function (creep) {
                 creep.MoveCostMatrixRoadPrio(storage, 1);
             }
         } else {
-            if (!creep.memory.locked) {
-                const target = findLocked(creep);
-            }
-
-            if (creep.memory.locked) {
-                let target: any = Game.getObjectById(creep.memory.locked);
+            // if (!creep.memory.locked) {
+            //     const target = findLocked(creep);
+            // }
+            let target: any = Game.getObjectById(creep.memory.locked) || findLocked(creep);
+            if (target) {
+                // let target: any = Game.getObjectById(creep.memory.locked);
 
                 if (_.keys(target.store).length == 0) {
                     target = findLocked(creep);

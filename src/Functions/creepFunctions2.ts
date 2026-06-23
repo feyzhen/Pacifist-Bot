@@ -1270,7 +1270,7 @@ Creep.prototype.Sweep = function Sweep(): any {
         return "picked up";
     }
     if (pickupResult === ERR_NOT_IN_RANGE) {
-        this.MoveCostMatrixSwampPrio(target, 1);
+        this.MoveCostMatrixRoadPrio(target, 1);
         return false;
     }
 
@@ -1287,7 +1287,7 @@ Creep.prototype.Sweep = function Sweep(): any {
                     return "picked up";
                 }
                 if (withdrawResult === ERR_NOT_IN_RANGE) {
-                    this.MoveCostMatrixSwampPrio(target, 1);
+                    this.MoveCostMatrixRoadPrio(target, 1);
                     return false;
                 }
             }
