@@ -3010,14 +3010,14 @@ class SpecialRoleGenerator {
                 _.forEach(data.energy, function(values, sourceId) {
                     const newName = 'Reserver-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
 
-                    if (Memory.CanClaimRemote >= 3 && Game.rooms[targetRoomName] && Game.rooms[targetRoomName].controller && !Game.rooms[targetRoomName].controller.my && (Game.rooms[targetRoomName].controller.reservation && Game.rooms[targetRoomName].controller.reservation.ticksToEnd <= 750 || !Game.rooms[targetRoomName].controller.reservation)) {
-                        if (room.memory.danger) return;
-                        room.memory.spawn_list.push([CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name, claim: true}});
-                        console.log('Adding Reserver to Spawn List: ' + newName);
-                        values.lastSpawnReserver = Game.time;
-                        Memory.CanClaimRemote -= 1;
-                        return;
-                    }
+                    // if (Memory.CanClaimRemote >= 3 && Game.rooms[targetRoomName] && Game.rooms[targetRoomName].controller && !Game.rooms[targetRoomName].controller.my && (Game.rooms[targetRoomName].controller.reservation && Game.rooms[targetRoomName].controller.reservation.ticksToEnd <= 750 || !Game.rooms[targetRoomName].controller.reservation)) {
+                    //     if (room.memory.danger) return;
+                    //     room.memory.spawn_list.push([CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name, claim: true}});
+                    //     console.log('Adding Reserver to Spawn List: ' + newName);
+                    //     values.lastSpawnReserver = Game.time;
+                    //     Memory.CanClaimRemote -= 1;
+                    //     return;
+                    // }
 
                     if (targetRoomName != room.name && Game.rooms[targetRoomName] != undefined && Game.rooms[targetRoomName].memory.roomData && !Game.rooms[targetRoomName].memory.roomData.has_hostile_creeps && !Game.rooms[targetRoomName].controller.my) {
                         if (Game.rooms[targetRoomName] != undefined && Game.rooms[targetRoomName].controller.reservation && Game.rooms[targetRoomName].controller.reservation.ticksToEnd <= 1000 && Game.time - (values.lastSpawnReserver || 0) > CREEP_LIFE_TIME / 2 || Game.rooms[targetRoomName] != undefined && !Game.rooms[targetRoomName].controller.reservation && Game.time - (values.lastSpawnReserver || 0) > CREEP_LIFE_TIME / 4) {

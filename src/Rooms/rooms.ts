@@ -276,7 +276,7 @@ function rooms() {
         console.log("Layout Management Ran in", Game.cpu.getUsed() - start, "ms");
       }
 
-      if (Game.time % 2000 == 0 && bucket > 3500 && room.controller.level >= 3) {
+      if (Game.time % 2000 == 0 && (bucket > 3500 || Memory.pixelManager?.enabled) && room.controller.level >= 3) {
         const start = Game.cpu.getUsed();
         Build_Remote_Roads(room);
         console.log("REMOTE Construction Ran in", Game.cpu.getUsed() - start, "ms");
