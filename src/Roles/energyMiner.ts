@@ -352,6 +352,25 @@ const run = function (creep) {
             }
         }
 
+        if(creep.store.getFreeCapacity() > 0) {
+            // Deadlock breaker: sourceLink full + targetLink not empty
+            // Dump energy to nearby container or drop on ground
+            const containers = creep.room.find(FIND_STRUCTURES, {
+                filter: s => s.structureType == STRUCTURE_CONTAINER
+                          && creep.pos.getRangeTo(s) <= 2
+            });
+            const targetContainer = containers.find(c => (c as StructureContainer).store.getFreeCapacity() > 0);
+            if(targetContainer) {
+                creep.transfer(targetContainer as StructureContainer, RESOURCE_ENERGY);
+                return;
+            }
+            // All containers full — drop on ground so energy isn't lost
+            if(creep.store[RESOURCE_ENERGY] > 0) {
+                creep.pos.drop(RESOURCE_ENERGY, creep.store[RESOURCE_ENERGY]);
+                return;
+            }
+        }
+
         if(creep.store.getFreeCapacity() >= creep.memory.potential) {
             const result = creep.harvestEnergy();
         }
