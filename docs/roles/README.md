@@ -95,6 +95,29 @@
 |------|------|------|
 | [PowerMelee](powerMelee.md) | `PowerMelee.ts` | 攻击 power bank，≤180000 HP 时 spawn Goblin |
 
+### 小队作战
+
+| 角色 | 文件 | 用途 |
+|------|------|------|
+| [SquadCreepA](squad/SquadCreepA.md) | `SquadCreepA.ts` | 小队队长/指挥核心，跨房行进+2x2队形+动态角色交换 |
+| [SquadCreepB](squad/SquadCreepB.md) | `SquadCreepB.md` | 小队右侧成员，近战掩护+侧翼攻击 |
+| [SquadCreepY](squad/SquadCreepY.md) | `SquadCreepY.md` | 小队下方成员，侧翼掩护+下方防御 |
+| [SquadCreepZ](squad/SquadCreepZ.md) | `SquadCreepZ.md` | 小队右下角成员，侧翼掩护+后方支援 |
+| [SquadHelperFunctions](squad/SquadHelperFunctions.md) | `SquadHelperFunctions.ts` | 路径成本矩阵生成器，参数化构建四种移动策略 |
+
+### 编队作战 (Party)
+
+| 角色 | 文件 | 用途 |
+|------|------|------|
+| [FreedomFighter](party/FreedomFighter.md) | `FreedomFighter.ts` | 编队战斗/治疗核心，远程攻击+治疗队友+编队跟随 |
+| [CCKparty](party/CCKparty.md) | `CCKparty.ts` | 编队攻击成员，完全由队长调度，自毁后 Solomon 接替 |
+
+### 力量蠕虫
+
+| 角色 | 文件 | 用途 |
+|------|------|------|
+| [Efficient](power-creeps/efficient.md) | `efficient.ts` | PowerCreep，自动管理 power 技能维护房间基础设施 |
+
 ### 侦察
 
 | 角色 | 文件 | 用途 |
@@ -127,9 +150,13 @@
 | `Memory.roomPlanner` | RampartErector, remoteBuilder, rooms.construction |
 | `Memory.CanClaimRemote` | WallClearer, scout |
 | `Memory.commandsToExecute` | ContinuousControllerKiller, Escort, FreedomFighter |
-| `creep.room.memory.danger` | 几乎所有战斗/防守角色 |
+| `creep.room.memory.danger` | 几乎所有战斗/防守角色, Efficient |
 | `creep.room.memory.reserveFill` | Filler, ControllerLinkFiller |
 | `creep.room.memory.Structures` | 几乎所有资源管理角色 |
+| `creep.memory.squad` | SquadCreepA, SquadCreepB, SquadCreepY, SquadCreepZ |
+| `creep.memory.route` | SquadCreepA（跨房路线） |
+| `creep.memory.line` | FreedomFighter, CCKparty（编队行号） |
+| `creep.memory.party` | FreedomFighter, CCKparty（队长管理的成员列表） |
 
 ### 角色配对
 
@@ -140,6 +167,9 @@
 | Signifer ↔ Ram | 突击+医疗配对 |
 | SpecialCarry ↔ SpecialRepair | 高优先级维修+专属供能 |
 | RampartDefender ↔ Defender | 防守配对 |
+| SquadCreepA/B/Y/Z | 2x2 战斗小队，A 为队长指挥 |
+| CCKparty ↔ FreedomFighter | Party 编队，队长(line=1)统一调度，CCK 自毁后 Solomon 接替 |
+| Efficient (PowerCreep) | 力量蠕虫，维护 power 技能基础设施 |
 | CreepKiller → CCK | 到达后 spawn 后继力量 |
 | Billtong → deposit rooms | 跨房采集 deposit 并运回 |
 | DepositMiner ↔ DepositCarry | 采集+搬运配对，miner 产出，carrier 运输 |
