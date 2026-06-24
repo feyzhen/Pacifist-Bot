@@ -6,6 +6,195 @@ const DISMANTLE_BODY = [
   ...Array(25).fill(WORK),
 ];
 
+// ── Module-level helpers for deposit hostile state machine ──────────────
+
+interface DepositMeta {
+    type: string;
+    pos: { x: number; y: number };
+    lastCooldown: number;
+    lastObserved: number;
+    spawnDelay: number;
+    threatChecked: boolean;
+    maxPairs: number;
+    hostilePhase: string;
+    lastHostileSeen: number | null;
+    lastDrainSpawned: number | null;
+    lastEliminateSpawned: number | null;
+    lastAbandoned?: number;
+}
+
+/** Classify hostile threat: military parts / total parts, strong if >= 30% */
+function classifyThreat(hostileCreeps: Creep[]): { militaryRatio: number; isStrong: boolean } {
+    let totalMilitary = 0, totalParts = 0;
+    for (const h of hostileCreeps) {
+        const body = (h as any).body;
+        if (!body) continue;
+        let m = 0, p = 0;
+        for (const part of body) {
+            p += (part as any).num || 1;
+            if ((part as any).part === ATTACK || (part as any).part === RANGED_ATTACK || (part as any).part === HEAL) m += (part as any).num || 1;
+        }
+        totalMilitary += m;
+        totalParts += p;
+    }
+    return { militaryRatio: totalParts > 0 ? totalMilitary / totalParts : 0, isStrong: totalMilitary / totalParts >= 0.3 };
+}
+
+/** Count stationed RangedElites for a given targetRoom and wave type */
+function countStationedElite(targetRoom: string, wave: string): number {
+    return Object.values(Game.creeps).filter(
+        c => (c as any).memory.role === "RangedElite" && (c as any).memory.targetRoom === targetRoom && (c as any).memory.wave === wave
+    ).length;
+}
+
+/** Ensure per-deposit tracking structure exists, initializing hostile fields. Returns the meta object. */
+function ensureDepMeta(depositMining: any, roomName: string, depId: string, deposit: any): DepositMeta {
+    if (!depositMining[roomName]) depositMining[roomName] = {};
+    if (!depositMining[roomName][depId]) {
+        depositMining[roomName][depId] = {
+            type: deposit.depositType,
+            pos: { x: deposit.pos.x, y: deposit.pos.y },
+            lastCooldown: deposit.lastCooldown,
+            lastObserved: Game.time,
+            spawnDelay: Game.time + 1000,
+            threatChecked: true,
+            maxPairs: deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length,
+            hostilePhase: "none",
+            lastHostileSeen: null,
+            lastDrainSpawned: null,
+            lastEliminateSpawned: null,
+        };
+    }
+    return depositMining[roomName][depId];
+}
+
+/** Count alive miners/carries for a deposit from Game.creeps + spawn_list */
+function countAliveMinersCarries(room: any, targetRoom: string, depositId?: string): { miners: number; carries: number } {
+    let miners = 0, carries = 0;
+    const allSources = [
+        ...Object.values(Game.creeps),
+        ...(room.memory.spawn_list || []).filter(e => e && typeof e === "object" && e[2] && e[2].memory)
+    ];
+    for (const src of allSources) {
+        const mem = src.memory || (src as any)[2].memory;
+        if (mem.role === "depositMiner" && mem.targetRoom === targetRoom) {
+            if (depositId && mem.deposit !== depositId) continue;
+            miners++;
+        }
+        if (mem.role === "depositCarry" && mem.targetRoom === targetRoom) {
+            carries++;
+        }
+    }
+    return { miners, carries };
+}
+
+/** Spawn miners/carries for a deposit based on maxPairs and alive count */
+function spawnMinersCarries(homeRoom: string, targetRoom: string, depId: string, maxPairs: number) {
+    const { miners, carries } = countAliveMinersCarries(Game.rooms[homeRoom], targetRoom, depId);
+    let minersNeeded = Math.max(0, maxPairs - miners);
+    let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);
+
+    if ((minersNeeded / maxPairs) > (carryNeeded / Math.floor((maxPairs + 1) / 2))) {
+        while (minersNeeded > 0) {
+            if (global.SDMine(homeRoom, targetRoom, depId) !== "Success!") break;
+            minersNeeded--;
+        }
+    } else {
+        while (carryNeeded > 0) {
+            if (global.SDCarry(homeRoom, targetRoom) !== "Success!") break;
+            carryNeeded--;
+        }
+    }
+}
+
+/**
+ * Process a single deposit entry through the hostile state machine.
+ * @returns true if spawn was attempted (or skipped due to phase), false if deposit was skipped (cooldown/invalid)
+ */
+function processDeposit(
+    deposit: any,
+    depId: string,
+    depMeta: DepositMeta,
+    isHostile: boolean,
+    prevLastHostileSeen: number | null,
+    homeRoom: string,
+    targetRoom: string,
+    isStrong: boolean
+): boolean {
+    if (deposit.lastCooldown > 100) return false;
+
+    // Update tracking
+    if (isHostile) depMeta.lastHostileSeen = Game.time;
+    depMeta.lastObserved = Game.time;
+    depMeta.lastCooldown = deposit.lastCooldown;
+
+    // ── Abandoned cooldown reset ────────────────────────────
+    if (depMeta.hostilePhase === "abandoned") {
+        if (depMeta.lastAbandoned && (Game.time - depMeta.lastAbandoned > 5000)) {
+            depMeta.hostilePhase = "none";
+            depMeta.lastHostileSeen = null;
+            depMeta.lastDrainSpawned = null;
+            depMeta.lastEliminateSpawned = null;
+            delete depMeta.lastAbandoned;
+            console.log(`[deposit] ${targetRoom}/${depId} abandoned cooldown expired, resetting`);
+        } else {
+            return false;
+        }
+    }
+
+    // ── Hostile cleared: check if elite is still needed ─────
+    if (!isHostile && (depMeta.hostilePhase === "drain" || depMeta.hostilePhase === "eliminate")) {
+        const eliteWave = depMeta.hostilePhase === "drain" ? "drain" : "eliminate";
+        if (countStationedElite(targetRoom, eliteWave) === 0) {
+            depMeta.hostilePhase = "none";
+            depMeta.lastHostileSeen = null;
+            depMeta.lastDrainSpawned = null;
+            depMeta.lastEliminateSpawned = null;
+            console.log(`[deposit] ${targetRoom}/${depId} hostile cleared, elite dead, resuming spawn`);
+        } else {
+            return false;
+        }
+    }
+
+    // ── Spawn delay ─────────────────────────────────────────
+    if (Game.time < depMeta.spawnDelay) return false;
+
+    // ── State machine transitions ───────────────────────────
+    if (isHostile && depMeta.hostilePhase === "drain") {
+        if (countStationedElite(targetRoom, "drain") === 0 && depMeta.lastDrainSpawned) {
+            depMeta.hostilePhase = "eliminate";
+            depMeta.lastEliminateSpawned = Game.time;
+            global.SRE(homeRoom, targetRoom, true);
+            console.log(`[deposit] ${targetRoom}/${depId} drain died, escalating to eliminate wave`);
+        }
+    } else if (isHostile && depMeta.hostilePhase === "eliminate") {
+        if (countStationedElite(targetRoom, "eliminate") === 0 && depMeta.lastEliminateSpawned) {
+            depMeta.hostilePhase = "abandoned";
+            depMeta.lastAbandoned = Game.time;
+            console.log(`[deposit] ${targetRoom}/${depId} eliminate died, abandoning`);
+        }
+    }
+
+    // ── Spawn logic based on phase ──────────────────────────
+    if (depMeta.hostilePhase === "none") {
+        // Transition to drain on 2nd consecutive hostile sighting
+        if (isHostile && prevLastHostileSeen !== null) {
+            const ticksSince = Game.time - prevLastHostileSeen;
+            if (ticksSince >= 64 && ticksSince < 130) {
+                depMeta.hostilePhase = "drain";
+                depMeta.lastDrainSpawned = Game.time;
+                global.SRE(homeRoom, targetRoom, false);
+                console.log(`[deposit] ${targetRoom}/${depId} hostile persistent, spawning drain wave`);
+            }
+        }
+        spawnMinersCarries(homeRoom, targetRoom, depId, depMeta.maxPairs);
+    } else if (depMeta.hostilePhase === "drain" || depMeta.hostilePhase === "eliminate") {
+        // Strong hostile: pause spawn. Weak hostile: caller handles spawn separately.
+    }
+    // "abandoned" phase: skip spawn (handled above)
+    return true;
+}
+
 function observe(room) {
     const interval = 64;
     const twoTimesInterval = interval*2
@@ -975,110 +1164,33 @@ function observe(room) {
 
                             if(mineScoutEnabled && deposits.length > 0 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
 
-                                // ── Hostile check: skip if any hostile creep exists ──
                                 const hostiles = seenRoom.find(FIND_HOSTILE_CREEPS);
-                                if (hostiles.length === 0) {
 
-                                    // Process each deposit independently
+                                if (hostiles.length === 0) {
+                                    // ── No hostiles: process deposits normally ──────────
                                     for (let i = 0; i < deposits.length; i++) {
                                         const deposit = deposits[i];
                                         const depId = deposit.id;
-
-                                        // lastCooldown check: skip if too high (efficiency too low)
-                                        if (deposit.lastCooldown > 100) continue;
-
-                                        // Ensure per-deposit tracking structure exists
-                                        if (!Memory.depositMining) {
-                                            Memory.depositMining = {};
-                                        }
-                                        if (!Memory.depositMining[adj]) {
-                                            Memory.depositMining[adj] = {};
-                                        }
-                                        if (!Memory.depositMining[adj][depId]) {
-                                            const openPositions = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
-                                            Memory.depositMining[adj][depId] = {
-                                                type: deposit.depositType,
-                                                pos: { x: deposit.pos.x, y: deposit.pos.y },
-                                                lastCooldown: deposit.lastCooldown,
-                                                lastObserved: Game.time,
-                                                spawnDelay: Game.time + 1000,
-                                                threatChecked: true,
-                                                maxPairs: openPositions,
-                                            };
-                                        } else {
-                                            // Update tracking info
-                                            Memory.depositMining[adj][depId].lastObserved = Game.time;
-                                            Memory.depositMining[adj][depId].lastCooldown = deposit.lastCooldown;
-                                        }
-
-                                        const depMeta = Memory.depositMining[adj][depId];
-
-                                        // Spawn delay: wait 1000 ticks after first observation
-                                        if (Game.time < depMeta.spawnDelay) continue;
-
-                                        // Single pass: count alive miners and carries from both Game.creeps and spawn_list
-                                        let aliveMiners = 0;
-                                        let aliveCarries = 0;
-                                        const allSources = [
-                                            ...Object.values(Game.creeps),
-                                            ...(room.memory.spawn_list || []).filter(e => e && typeof e === "object" && e[2] && e[2].memory)
-                                        ];
-                                        for (const src of allSources) {
-                                            const mem = src.memory || (src as any)[2].memory;
-                                            if (mem.role === "depositMiner" && mem.targetRoom === adj && mem.deposit === depId) {
-                                                aliveMiners++;
-                                            }
-                                            if (mem.role === "depositCarry" && mem.targetRoom === adj) {
-                                                aliveCarries++;
-                                            }
-                                        }
-
-                                        // Calculate how many miners still needed for this deposit
-                                        const maxPairs = depMeta.maxPairs || 1;
-                                        let minersNeeded = Math.max(0, maxPairs - aliveMiners);
-                                        let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - aliveCarries);
-
-                                        // Spawn miners up to the open-position limit
-                                        if ((minersNeeded / maxPairs) > (carryNeeded / Math.floor((maxPairs + 1) / 2))) {
-                                            while (minersNeeded > 0) {
-                                                // Pass depositId only when there are multiple deposits
-                                                const result = global.SDMine(room.name, adj, depId);
-                                                if (result !== "Success!") break;
-                                                minersNeeded--;
-                                            }
-                                        } else {
-                                            // Spawn carries if needed
-                                            while (carryNeeded > 0) {
-                                                const result = global.SDCarry(room.name, adj);
-                                                if (result !== "Success!") break;
-                                                carryNeeded--;
-                                            }
-                                        }
+                                        const depMeta = ensureDepMeta(Memory.depositMining, adj, depId, deposit);
+                                        processDeposit(deposit, depId, depMeta, false, null, room.name, adj, false);
                                     }
                                 } else {
-                                    // Mark deposits in this room as unsafe temporarily
-                                    if (!Memory.depositMining) {
-                                        Memory.depositMining = {};
-                                    }
-                                    if (!Memory.depositMining[adj]) {
-                                        Memory.depositMining[adj] = {};
-                                    }
+                                    // ── Hostiles detected: classify threat + state machine ─
+                                    const { isStrong } = classifyThreat(hostiles);
+
                                     for (let i = 0; i < deposits.length; i++) {
-                                        const depId = deposits[i].id;
-                                        if (!Memory.depositMining[adj][depId]) {
-                                            const openPositions = deposits[i].pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
-                                            Memory.depositMining[adj][depId] = {
-                                                type: deposits[i].depositType,
-                                                pos: { x: deposits[i].pos.x, y: deposits[i].pos.y },
-                                                lastCooldown: deposits[i].lastCooldown,
-                                                lastObserved: Game.time,
-                                                spawnDelay: Game.time + 1000,
-                                                threatChecked: true,
-                                                maxPairs: openPositions,
-                                            };
+                                        const deposit = deposits[i];
+                                        const depId = deposit.id;
+                                        const depMeta = ensureDepMeta(Memory.depositMining, adj, depId, deposit);
+                                        const prevHostileSeen = depMeta.lastHostileSeen;
+                                        processDeposit(deposit, depId, depMeta, true, prevHostileSeen, room.name, adj, isStrong);
+
+                                        // Weak hostile under attack wave: allow spawn alongside elite
+                                        if (depMeta.hostilePhase === "drain" || depMeta.hostilePhase === "eliminate") {
+                                            if (!isStrong) {
+                                                spawnMinersCarries(room.name, adj, depId, depMeta.maxPairs);
+                                            }
                                         }
-                                        // Allow re-evaluation after a short delay (hostiles may just be passing through)
-                                        Memory.depositMining[adj][depId].spawnDelay = Game.time + 200;
                                     }
                                 }
 

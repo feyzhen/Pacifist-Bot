@@ -83,6 +83,9 @@ declare global {
     targetRoom?: string;
     targetBuildingId?: string;
     targetPos?: RoomPosition;
+    // RangedElite fields
+    wave?: string;
+    timeOut?: number;
   }
 // 布局管理全局函数
   interface Global {
@@ -101,6 +104,8 @@ declare global {
     RP: (roomName: string) => void;
     VP: (roomName: string) => void;
     SP: (roomName: string) => void;
+    // Deposit defense
+    SRE: (homeRoom: string, targetRoom: string, boosted?: boolean) => string;
   }
 }
 

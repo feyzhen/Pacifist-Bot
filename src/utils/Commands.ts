@@ -2230,3 +2230,80 @@ global.SDCarry = function (homeRoom, targetRoom) {
     console.log('Adding depositCarry to Spawn List: ' + newName);
     return "Success!";
 };
+
+/**
+ * SRE — Spawn a RangedElite creep for deposit room defense.
+ * RangedElite stations itself in the target room and continuously
+ * attacks hostile creeps, providing sustained defense for deposit mining ops.
+ *
+ * Body ratio: TOUGH:RANGED_ATTACK:HEAL:MOVE = 1:3:1:5
+ * Boosted (eliminate wave) uses lab-boosted components.
+ */
+global.SRE = function (homeRoom, targetRoom, boosted = false): string {
+    const room = Game.rooms[homeRoom];
+    if (!room || room.memory.danger) return "Room not found or danger flag set";
+    if (Memory.CPU && Memory.CPU.fiveHundredTickAvg >= Game.cpu.limit - 5) return "CPU too high";
+
+    // Bucket requirements differ by wave type
+    if (boosted) {
+        if (Game.cpu.bucket < 9500 && !Memory.pixelManager?.enabled) return "CPU bucket too low";
+    } else {
+        if (Game.cpu.bucket < 8000 && !Memory.pixelManager?.enabled) return "CPU bucket too low";
+    }
+
+    // Build body: TOUGH:RANGED_ATTACK:HEAL:MOVE = 1:3:1:5
+    const body = (global as any).getBodyByRatio([
+        { part: TOUGH, count: 1 },
+        { part: RANGED_ATTACK, count: 3 },
+        { part: HEAL, count: 1 },
+        { part: MOVE, count: 5 }
+    ], room, 50);
+
+    if (body.length === 0) return "Cannot build body (not enough energy)";
+
+    const wave = boosted ? "eliminate" : "drain";
+    const newName = `RE-${Math.floor(Math.random() * Game.time)}-${homeRoom}-${targetRoom}`;
+
+    const spawnOpts: any = {
+        memory: {
+            role: "RangedElite",
+            homeRoom: homeRoom,
+            targetRoom: targetRoom,
+            wave: wave
+        }
+    };
+
+    // Apply boost labs for eliminate wave
+    if (boosted && room.memory.labs && room.memory.labs.outputLab2 && room.memory.labs.outputLab7) {
+        spawnOpts.memory.boostlabs = [room.memory.labs.outputLab2, room.memory.labs.outputLab7];
+
+        // Reserve lab materials
+        if (room.memory.labs.status && !room.memory.labs.status.boost) {
+            room.memory.labs.status.boost = {};
+        }
+        if (room.memory.labs.status.boost) {
+            // zyn alk — boosts RANGED_ATTACK (WORK-like for harvest, but RANGED_ATTACK gets Zyn boost)
+            if (room.memory.labs.status.boost.lab2) {
+                room.memory.labs.status.boost.lab2.amount += 300;
+                room.memory.labs.status.boost.lab2.use += 1;
+            } else {
+                room.memory.labs.status.boost.lab2 = {};
+                room.memory.labs.status.boost.lab2.amount = 300;
+                room.memory.labs.status.boost.lab2.use = 1;
+            }
+            // gho alk — boosts HEAL
+            if (room.memory.labs.status.boost.lab7) {
+                room.memory.labs.status.boost.lab7.amount += 270;
+                room.memory.labs.status.boost.lab7.use += 1;
+            } else {
+                room.memory.labs.status.boost.lab7 = {};
+                room.memory.labs.status.boost.lab7.amount = 270;
+                room.memory.labs.status.boost.lab7.use = 1;
+            }
+        }
+    }
+
+    room.memory.spawn_list.push(body, newName, spawnOpts);
+    console.log(`Adding RangedElite (${wave}) to Spawn List: ${newName}`);
+    return "Success!";
+};

@@ -59,6 +59,7 @@ import roleSignifer from "Roles/signifer";
 import roleBilltong from "./Roles/billtong"
 import roleDepositMiner from "./Roles/depositMiner";
 import roleDepositCarry from "./Roles/depositCarry";
+import roleRangedElite from "./Roles/RangedElite";
 import roleGoblin from "Roles/goblin";
 import roleSpecialRepair from "Roles/SpecialRepair";
 import roleSpecialCarry from "Roles/SpecialCarry";
@@ -135,6 +136,7 @@ global.ROLES = {
   billtong: roleBilltong,
   depositMiner: roleDepositMiner,
   depositCarry: roleDepositCarry,
+  RangedElite: roleRangedElite,
   goblin: roleGoblin,
   SpecialRepair: roleSpecialRepair,
   SpecialCarry: roleSpecialCarry,

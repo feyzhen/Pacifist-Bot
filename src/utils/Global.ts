@@ -179,6 +179,7 @@ declare global {
           SDM: any;
           SDMine: any;
           SDCarry: any;
+          SRE: any;
           getBodyByRatio: any;
           getBodyByRatioWithLimits: any;
           SCCK: any;
