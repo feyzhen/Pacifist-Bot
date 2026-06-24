@@ -316,7 +316,7 @@ const run = function (creep) {
                 }
             }
 
-            if(closestLink && closestLink.store[RESOURCE_ENERGY] < 800) {
+            if(closestLink && closestLink.store[RESOURCE_ENERGY] < 800 && creep.store[RESOURCE_ENERGY] > 0) {
                 if(creep.pos.isNearTo(closestLink)) {
                     creep.transfer(closestLink, RESOURCE_ENERGY);
                 }
@@ -324,6 +324,47 @@ const run = function (creep) {
                     creep.MoveCostMatrixRoadPrio(closestLink, 1);
                 }
             }
+        }
+
+        // 满载 fallback：sourceLink 满 + targetLink 满 → 投递到 source 旁 container 或 drop
+        if(creep.store[RESOURCE_ENERGY] > 0 && creep.store.getFreeCapacity() < creep.memory.potential) {
+            const sourceLink = Game.getObjectById(creep.memory.sourceLink) as StructureLink;
+            if(sourceLink && sourceLink.store[RESOURCE_ENERGY] < 800) {
+                // sourceLink 还有空位，投递给它
+                if(creep.pos.isNearTo(sourceLink)) {
+                    creep.transfer(sourceLink, RESOURCE_ENERGY);
+                }
+                else {
+                    creep.MoveCostMatrixRoadPrio(sourceLink, 1);
+                }
+                return;
+            }
+
+            // sourceLink 满了 → 找 source 附近的 container
+            const storedSource:any = Game.getObjectById(creep.memory.sourceId);
+            const containers = creep.room.find(FIND_STRUCTURES, {
+                filter: s => s.structureType == STRUCTURE_CONTAINER
+                          && storedSource && creep.pos.getRangeTo(storedSource) <= 3
+                          && (s as StructureContainer).store.getFreeCapacity() > 0
+            });
+            if(containers.length > 0) {
+                const target = containers[0] as StructureContainer;
+                if(creep.pos.isNearTo(target)) {
+                    creep.transfer(target, RESOURCE_ENERGY);
+                }
+                else {
+                    creep.MoveCostMatrixRoadPrio(target, 0);
+                }
+                return;
+            }
+
+            // container 也满了 → drop
+            creep.drop(RESOURCE_ENERGY);
+            return;
+        }
+
+        if(creep.store.getFreeCapacity() >= creep.memory.potential) {
+            const result = creep.harvestEnergy();
         }
 
         const storedSource:any = Game.getObjectById(creep.memory.sourceId)
@@ -349,25 +390,6 @@ const run = function (creep) {
                         creep.MoveCostMatrixRoadPrio(rampart, 0);
                     }
                 }
-            }
-        }
-
-        if(creep.store.getFreeCapacity() > 0) {
-            // Deadlock breaker: sourceLink full + targetLink not empty
-            // Dump energy to nearby container or drop on ground
-            const containers = creep.room.find(FIND_STRUCTURES, {
-                filter: s => s.structureType == STRUCTURE_CONTAINER
-                          && creep.pos.getRangeTo(s) <= 2
-            });
-            const targetContainer = containers.find(c => (c as StructureContainer).store.getFreeCapacity() > 0);
-            if(targetContainer) {
-                creep.transfer(targetContainer as StructureContainer, RESOURCE_ENERGY);
-                return;
-            }
-            // All containers full — drop on ground so energy isn't lost
-            if(creep.store[RESOURCE_ENERGY] > 0) {
-                creep.pos.drop(RESOURCE_ENERGY, creep.store[RESOURCE_ENERGY]);
-                return;
             }
         }
 
