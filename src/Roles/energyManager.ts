@@ -61,16 +61,24 @@ import { getLabThreshold } from "../constants/constants.labs";
 
     if(creep.memory.target) {
         const target = Game.getObjectById(creep.memory.target);
-        if(creep.pos.isNearTo(target)) {
+        if(!target) {
+            delete creep.memory.target;
+        }
+        else if(creep.pos.isNearTo(target)) {
+            let delivered = false;
             for(const resource in creep.store) {
-                if(creep.transfer(target, resource) !== 0) {
-                    creep.memory.target = false;
+                if(creep.transfer(target, resource) === OK) {
+                    delivered = true;
                 }
+            }
+            if(delivered) {
+                creep.memory.target = false;
             }
         }
         else {
-            creep.MoveCostMatrixRoadPrio(target, 1)
+            creep.MoveCostMatrixRoadPrio(target, 1);
         }
+        if(creep.memory.target !== false) return;
     }
     if(!creep.memory.target) {
         const storage = Game.getObjectById(creep.memory.storage) || creep.findStorage();

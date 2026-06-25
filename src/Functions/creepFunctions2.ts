@@ -822,6 +822,22 @@ Creep.prototype.findSource = function () {
     }
 };
 
+Creep.prototype.findDeposit = function () {
+    let deposit: any = this.memory.deposit ? Game.getObjectById(this.memory.deposit) : null;
+    if (!deposit) {
+        let deposits = this.room.find(FIND_DEPOSITS, { filter: (s: any) => s.lastCooldown <= 120 });
+        if (deposits.length) {
+            // deposits = deposits.filter((s: any) => s.pos.getOpenPositions().length > 0);
+            deposit = this.pos.findClosestByRange(deposits);
+        }
+    }
+    if (deposit) {
+        this.memory.deposit = deposit.id;
+        this.memory.depositType = deposit.depositType
+        return deposit;
+    }
+};
+
 Creep.prototype.findSpawn = function () {
     const spawns = this.room.find(FIND_MY_STRUCTURES, { filter: (s: any) => s.structureType === STRUCTURE_SPAWN });
     if (spawns.length) {
@@ -1254,7 +1270,7 @@ Creep.prototype.Sweep = function Sweep(): any {
         return "picked up";
     }
     if (pickupResult === ERR_NOT_IN_RANGE) {
-        this.MoveCostMatrixSwampPrio(target, 1);
+        this.MoveCostMatrixRoadPrio(target, 1);
         return false;
     }
 
@@ -1271,7 +1287,7 @@ Creep.prototype.Sweep = function Sweep(): any {
                     return "picked up";
                 }
                 if (withdrawResult === ERR_NOT_IN_RANGE) {
-                    this.MoveCostMatrixSwampPrio(target, 1);
+                    this.MoveCostMatrixRoadPrio(target, 1);
                     return false;
                 }
             }

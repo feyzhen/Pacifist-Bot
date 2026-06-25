@@ -48,7 +48,7 @@ const run = function (creep) {
         }
     }
     else {
-        if(creep.room.controller?.level<3 && !creep.room.controller.my && !creep.room.controller.safeMode) {
+        if(creep.room.controller && creep.room.controller.level >= 1 && creep.room.controller.level < 3 && !creep.room.controller.my && !creep.room.controller.safeMode) {
             const newName = 'Annoyer-' + Math.floor(Math.random() * Game.time) + "-" + creep.memory.homeRoom;
             Memory.rooms[creep.memory.homeRoom].spawn_list.push([ATTACK, MOVE], newName, {memory: {role: 'annoy', homeRoom:creep.memory.homeRoom, targetRoom:creep.room.name}});
         }

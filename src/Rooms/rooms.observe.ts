@@ -1,15 +1,26 @@
+import { isObserveEnabled, isScoutEnabled, debugLog } from '../Misc/observeManager';
+
+// DismantleControllerWalls body: 20 MOVE + 25 WORK
+const DISMANTLE_BODY = [
+  ...Array(25).fill(MOVE),
+  ...Array(25).fill(WORK),
+];
+
 function observe(room) {
     const interval = 64;
     const twoTimesInterval = interval*2
     const observer:any = Game.getObjectById(room.memory.Structures.observer) || room.findObserver();
-    if(observer && (Game.time % interval == 0 || Game.time % interval == 1) && (Game.cpu.bucket > 8000 || Memory.pixelManager?.enabled)) {
+    const observeConfig = isObserveEnabled();
+    const enemyScoutEnabled = isScoutEnabled('enemy');
+    const mineScoutEnabled = isScoutEnabled('mine');
+    const powerScoutEnabled = isScoutEnabled('power');
+    if(observeConfig && observer && (Game.time % interval == 0 || Game.time % interval == 1) && (Game.cpu.bucket > 8000 || Memory.pixelManager?.enabled)) {
         if(!room.memory.observe) {
             room.memory.observe = {};
         }
 
         if(!room.memory.observe.RoomsToSee) {
             const RoomsToSee = [];
-
 
             if(room.name.length == 6) {
                 const EastOrWest = room.name[0];
@@ -132,7 +143,7 @@ function observe(room) {
             observer.observeRoom(chosenRoom);
 
 
-            console.log("seeing", chosenRoom)
+            debugLog("seeing", chosenRoom)
 
 
             room.memory.observe.lastObserved += 1;
@@ -142,16 +153,14 @@ function observe(room) {
 
         if(Game.time % interval == 1) {
             const adj = room.memory.observe.lastRoomObserved;
-            if(areRoomsNormalToThisRoom(room.name, adj)) {
+            if(enemyScoutEnabled && areRoomsNormalToThisRoom(room.name, adj)) {
                 if (
                   Game.rooms[adj] &&
                   room.name !== adj &&
                   Game.rooms[adj].controller &&
-                  (!Game.rooms[adj].controller.owner || Game.rooms[adj].controller.owner) &&
+                  Game.rooms[adj].controller.owner &&
                   !Game.rooms[adj].controller.my &&
-                  Game.rooms[adj].controller.owner?.username !== "An1via" &&
-                  Game.rooms[adj].controller.owner?.username !== "nanachi" &&
-                  Game.rooms[adj].controller.owner?.username !== "nekey975" &&
+                  !(Memory as any).allies?.includes(Game.rooms[adj].controller.owner.username) &&
                   Game.map.getRoomStatus(adj).status == "normal"
                 ) {
                   const buildings = Game.rooms[adj].find(FIND_STRUCTURES, {
@@ -201,7 +210,7 @@ function observe(room) {
                                   swampCost: 1,
                                   roomCallback: function (roomName): any {
                                     const thisRoom = Game.rooms[roomName];
-                                    if (!room) return;
+                                    if (!thisRoom) return new PathFinder.CostMatrix();
                                     const costs = new PathFinder.CostMatrix();
 
                                     thisRoom.find(FIND_STRUCTURES).forEach(function (struct) {
@@ -271,58 +280,7 @@ function observe(room) {
                           if (!found) {
                             const newName = "DismantleControllerWalls-" + room.name + "-" + adj;
                             room.memory.spawn_list.push(
-                              [
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                MOVE,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK,
-                                WORK
-                              ],
+                              DISMANTLE_BODY,
                               newName,
                               { memory: { role: "DismantleControllerWalls", homeRoom: room.name, targetRoom: adj } }
                             );
@@ -348,58 +306,7 @@ function observe(room) {
                       if (!found) {
                         const newName = "DismantleControllerWalls-" + room.name + "-" + adj;
                         room.memory.spawn_list.push(
-                          [
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            MOVE,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK,
-                            WORK
-                          ],
+                          DISMANTLE_BODY,
                           newName,
                           { memory: { role: "DismantleControllerWalls", homeRoom: room.name, targetRoom: adj } }
                         );
@@ -632,7 +539,7 @@ function observe(room) {
                       const armedHostileCreeps = hostileCreeps.filter(
                         c => c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0
                       );
-                      if (!armedHostileCreeps) {
+                      if (armedHostileCreeps.length === 0) {
                         global.SGD(room.name, adj, [
                           MOVE,
                           MOVE,
@@ -761,7 +668,7 @@ function observe(room) {
                       const armedHostileCreeps = hostileCreeps.filter(
                         c => c.getActiveBodyparts(ATTACK) > 0 || c.getActiveBodyparts(RANGED_ATTACK) > 0
                       );
-                      if (!armedHostileCreeps) {
+                      if (armedHostileCreeps.length === 0) {
                         global.SGD(room.name, adj, [
                           MOVE,
                           MOVE,
@@ -919,8 +826,8 @@ function observe(room) {
 
     }
 
-    // find power banks
-    if(observer && (Game.time % twoTimesInterval == 2 || Game.time % twoTimesInterval == 3) && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
+    // find power banks / deposits (sub-pipeline)
+    if(observeConfig && observer && (Game.time % twoTimesInterval == 2 || Game.time % twoTimesInterval == 3) && (Game.cpu.bucket > 7000 || Memory.pixelManager?.enabled)) {
 
         if(!room.memory.observe)
             room.memory.observe = {};
@@ -1041,7 +948,7 @@ function observe(room) {
                 observer.observeRoom(chosenRoom);
 
 
-                console.log("seeing FOR POWER", chosenRoom)
+                debugLog("seeing FOR POWER", chosenRoom)
 
 
                 room.memory.observe.lastRoomObservedForPowerIndex += 1;
@@ -1057,7 +964,7 @@ function observe(room) {
 
                     const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
 
-                    if(seenRoom && storage && storage.store[RESOURCE_ENERGY] > 225000) {
+                    if(seenRoom && storage && storage.store[RESOURCE_ENERGY] > 105000) {
 
                         const walls = seenRoom.find(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_WALL});
                         if(walls.length == 0) {
@@ -1066,40 +973,133 @@ function observe(room) {
 
                             const deposits = seenRoom.find(FIND_DEPOSITS);
 
-                            // if(powerBanks.length > 0 && storage.store[RESOURCE_ENERGY] > 330000 && (powerBanks[0].hits < 2000000 && Game.cpu.bucket > 7000 || Game.cpu.bucket > 9000) &&
-                            //  powerBanks[0].pos.getOpenPositionsIgnoreCreeps().length > 1 &&
-                            //  storage.store[RESOURCE_ENERGY] > 350000) {
+                            if(mineScoutEnabled && deposits.length > 0 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
 
-                            //     global.SPK(room.name, adj);
+                                // ── Hostile check: skip if any hostile creep exists ──
+                                const hostiles = seenRoom.find(FIND_HOSTILE_CREEPS);
+                                if (hostiles.length === 0) {
 
-                            // }
+                                    // Process each deposit independently
+                                    for (let i = 0; i < deposits.length; i++) {
+                                        const deposit = deposits[i];
+                                        const depId = deposit.id;
 
-                            if(deposits.length > 0 && storage.store[RESOURCE_ENERGY] > 225000 && (Game.cpu.bucket >= 9750 || Memory.pixelManager?.enabled)) {
+                                        // lastCooldown check: skip if too high (efficiency too low)
+                                        if (deposit.lastCooldown > 100) continue;
 
-                                // let hostiles = seenRoom.find(FIND_HOSTILE_CREEPS)
-                                // if(hostiles.length > 0) {
-                                //     let allow = true;
-                                //     for(let eCreep of hostiles) {
-                                //         if(eCreep.getActiveBodyparts(ATTACK) > 0) {
-                                //             allow = false;
-                                //             break;
-                                //         }
-                                //         else if(eCreep.getActiveBodyparts(RANGED_ATTACK) > 0) {
-                                //             allow = false;
-                                //             break;
-                                //         }
-                                //     }
+                                        // Ensure per-deposit tracking structure exists
+                                        if (!Memory.depositMining) {
+                                            Memory.depositMining = {};
+                                        }
+                                        if (!Memory.depositMining[adj]) {
+                                            Memory.depositMining[adj] = {};
+                                        }
+                                        if (!Memory.depositMining[adj][depId]) {
+                                            const openPositions = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
+                                            Memory.depositMining[adj][depId] = {
+                                                type: deposit.depositType,
+                                                pos: { x: deposit.pos.x, y: deposit.pos.y },
+                                                lastCooldown: deposit.lastCooldown,
+                                                lastObserved: Game.time,
+                                                spawnDelay: Game.time + 1000,
+                                                threatChecked: true,
+                                                maxPairs: openPositions,
+                                            };
+                                        } else {
+                                            // Update tracking info
+                                            Memory.depositMining[adj][depId].lastObserved = Game.time;
+                                            Memory.depositMining[adj][depId].lastCooldown = deposit.lastCooldown;
+                                        }
 
-                                //     if(allow) {
-                                //         let newName = 'Deposit-Attacker-'+ Math.floor(Math.random() * Game.time) + "-" + room.name;
-                                //         room.memory.spawn_list.push([MOVE,ATTACK], newName, {memory: {role: 'attacker', targetRoom: seenRoom.name, homeRoom:room.name}});
-                                //         console.log('Adding Deposit-Attacker to Spawn List: ' + newName);
-                                //     }
+                                        const depMeta = Memory.depositMining[adj][depId];
 
+                                        // Spawn delay: wait 1000 ticks after first observation
+                                        if (Game.time < depMeta.spawnDelay) continue;
 
-                                // }
-                                if(deposits[0].lastCooldown < 20) {
-                                    global.SDM(room.name, adj);
+                                        // Single pass: count alive miners and carries from both Game.creeps and spawn_list
+                                        let aliveMiners = 0;
+                                        let aliveCarries = 0;
+                                        const allSources = [
+                                            ...Object.values(Game.creeps),
+                                            ...(room.memory.spawn_list || []).filter(e => e && typeof e === "object" && e[2] && e[2].memory)
+                                        ];
+                                        for (const src of allSources) {
+                                            const mem = src.memory || (src as any)[2].memory;
+                                            if (mem.role === "depositMiner" && mem.targetRoom === adj && mem.deposit === depId) {
+                                                aliveMiners++;
+                                            }
+                                            if (mem.role === "depositCarry" && mem.targetRoom === adj) {
+                                                aliveCarries++;
+                                            }
+                                        }
+
+                                        // Calculate how many miners still needed for this deposit
+                                        const maxPairs = depMeta.maxPairs || 1;
+                                        let minersNeeded = Math.max(0, maxPairs - aliveMiners);
+                                        let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - aliveCarries);
+
+                                        // Spawn miners up to the open-position limit
+                                        if ((minersNeeded / maxPairs) > (carryNeeded / Math.floor((maxPairs + 1) / 2))) {
+                                            while (minersNeeded > 0) {
+                                                // Pass depositId only when there are multiple deposits
+                                                const result = global.SDMine(room.name, adj, depId);
+                                                if (result !== "Success!") break;
+                                                minersNeeded--;
+                                            }
+                                        } else {
+                                            // Spawn carries if needed
+                                            while (carryNeeded > 0) {
+                                                const result = global.SDCarry(room.name, adj);
+                                                if (result !== "Success!") break;
+                                                carryNeeded--;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Mark deposits in this room as unsafe temporarily
+                                    if (!Memory.depositMining) {
+                                        Memory.depositMining = {};
+                                    }
+                                    if (!Memory.depositMining[adj]) {
+                                        Memory.depositMining[adj] = {};
+                                    }
+                                    for (let i = 0; i < deposits.length; i++) {
+                                        const depId = deposits[i].id;
+                                        if (!Memory.depositMining[adj][depId]) {
+                                            const openPositions = deposits[i].pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
+                                            Memory.depositMining[adj][depId] = {
+                                                type: deposits[i].depositType,
+                                                pos: { x: deposits[i].pos.x, y: deposits[i].pos.y },
+                                                lastCooldown: deposits[i].lastCooldown,
+                                                lastObserved: Game.time,
+                                                spawnDelay: Game.time + 1000,
+                                                threatChecked: true,
+                                                maxPairs: openPositions,
+                                            };
+                                        }
+                                        // Allow re-evaluation after a short delay (hostiles may just be passing through)
+                                        Memory.depositMining[adj][depId].spawnDelay = Game.time + 200;
+                                    }
+                                }
+
+                                // ── Cleanup expired deposits (applies to both safe and hostile branches) ──
+                                // Remove entries where lastObserved > 5000 ticks ago (deposit likely gone)
+                                // or where the deposit no longer exists in the room
+                                if (Memory.depositMining && Memory.depositMining[adj]) {
+                                    const currentDepIds = new Set(deposits.map(d => d.id as string));
+                                    for (const depId in Memory.depositMining[adj]) {
+                                        const meta = Memory.depositMining[adj][depId];
+                                        if (meta.lastObserved && Game.time - meta.lastObserved > 50000) {
+                                            delete Memory.depositMining[adj][depId];
+                                        } else if (!currentDepIds.has(depId)) {
+                                            // Deposit was observed before but no longer exists in this room
+                                            delete Memory.depositMining[adj][depId];
+                                        }
+                                    }
+                                    // Clean up empty room entries
+                                    if (Object.keys(Memory.depositMining[adj]).length === 0) {
+                                        delete Memory.depositMining[adj];
+                                    }
                                 }
 
                             }

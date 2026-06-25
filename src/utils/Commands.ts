@@ -1824,7 +1824,7 @@ global.SC = function (targetRoomName, x?, y?) {
     }
     // 兼容旧版本：如果提供了x和y参数，仍然使用
     if(x !== undefined && y !== undefined) {
-        if(typeof x !== 'number' || typeof y !== 'number' || 
+        if(typeof x !== 'number' || typeof y !== 'number' ||
            x < 0 || x > 49 || y < 0 || y > 49) {
             return "Invalid parameters: x and y must be numbers between 0-49";
         }
@@ -2032,8 +2032,12 @@ global.SPK = function (homeRoom, targetRoomName) {
 
 global.SDM = function (homeRoom, targetRoomName) {
     const room = Game.rooms[homeRoom];
-    if (room && !room.memory.danger && Memory.CPU.fiveHundredTickAvg.avg < Game.cpu.limit + 2 && (Game.cpu.bucket > 9500 || Memory.pixelManager?.enabled)) {
-
+    if (
+        room &&
+        !room.memory.danger &&
+        Memory.CPU.fiveHundredTickAvg < Game.cpu.limit + 2 &&
+        (Game.cpu.bucket > 9500 || Memory.pixelManager?.enabled)
+    ) {
         let billtongs = 0;
         _.forEach(Game.creeps, function (creep) {
             switch (creep.memory.role) {
@@ -2046,14 +2050,183 @@ global.SDM = function (homeRoom, targetRoomName) {
         });
 
         if (billtongs == 0) {
-
-            const newName = 'Billtong-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-            room.memory.spawn_list.push([MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE,
-                MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE, MOVE, WORK, CARRY, MOVE]
-                , newName, { memory: { role: 'billtong', homeRoom: room.name, targetRoom: targetRoomName } });
-            console.log('Adding Billtong to Spawn List: ' + newName);
-
+            const newName = "Billtong-" + Math.floor(Math.random() * Game.time) + "-" + room.name;
+            room.memory.spawn_list.push(
+                [
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE,
+                    MOVE,
+                    WORK,
+                    CARRY,
+                    MOVE
+                ],
+                newName,
+                { memory: { role: "billtong", homeRoom: room.name, targetRoom: targetRoomName } }
+            );
+            console.log("Adding Billtong to Spawn List: " + newName);
+            return "Success!";
         }
 
+        return "Already has billtongs or conditions not met";
     }
+
+    return "Room not found or danger flag set";
 }
+
+/**
+ * SDMine — Spawn a depositMiner for a specific deposit.
+ * depositId is optional: omitted when there's only 1 deposit in the room,
+ * required when multiple deposits exist and we need per-deposit targeting.
+ * minerCount uses targetRoom only (not depositId), so the cap is based on
+ * total miners en route to the room vs max open positions.
+ */
+global.SDMine = function (homeRoom, targetRoom, depositId?) {
+    const room = Game.rooms[homeRoom];
+    if (!room || room.memory.danger) return "Room not found or danger flag set";
+    if (Memory.CPU && Memory.CPU.fiveHundredTickAvg >= Game.cpu.limit - 5) return "CPU too high";
+    if (Game.cpu.bucket < 9500 && !Memory.pixelManager?.enabled) return "CPU bucket too low";
+
+    // Only cap: if depositId is provided, also check per-deposit count
+    // if (depositId) {
+    //     let depositMinerCount = 0;
+    //     _.forEach(Game.creeps, function (creep) {
+    //         if (creep.memory.role === "depositMiner" && creep.memory.deposit === depositId) {
+    //             depositMinerCount++;
+    //         }
+    //     });
+    //     if (room.memory.spawn_list) {
+    //         _.forEach(room.memory.spawn_list, function (entry) {
+    //             if (entry && typeof entry === 'object' && entry[2] && entry[2].memory && entry[2].memory.role === "depositMiner" && entry[2].memory.deposit === depositId) {
+    //                 depositMinerCount++;
+    //             }
+    //         });
+    //     }
+    //     if (depositMinerCount >= minerCount) {
+    //         return "Already have enough miner for this deposit";
+    //     }
+    // }
+
+    // Build body using getBodyByRatio
+    const rcl = room.controller ? room.controller.level : 1;
+    let body;
+    if (rcl == 8) {
+        body = (global as any).getBodyByRatio([
+            { part: WORK, count: 22 },
+            { part: CARRY, count: 6 },
+            { part: MOVE, count: 22 }
+        ], room, 50);
+    } else {
+        body = (global as any).getBodyByRatio([
+            { part: WORK, count: 2 },
+            { part: CARRY, count: 1 },
+            { part: MOVE, count: 2 }
+        ], room, 50);
+    }
+
+    if (body.length === 0) return "Cannot build body (not enough energy)";
+
+    const newName = 'DM-' + Math.floor(Math.random() * Game.time) + "-" + homeRoom + "-" + targetRoom;
+    room.memory.spawn_list.push(body, newName, {
+        memory: {
+            role: "depositMiner",
+            homeRoom: homeRoom,
+            targetRoom: targetRoom,
+            deposit: depositId || null,
+        }
+    });
+    console.log('Adding depositMiner to Spawn List: ' + newName);
+    return "Success!";
+};
+
+/**
+ * SDCarry — Spawn a depositCarry for a specific deposit room.
+ * Counts existing carries en route to targetRoom (spawn_list + Game.creeps).
+ * Carriers are room-level (not deposit-specific) since they serve all miners in the room.
+ */
+global.SDCarry = function (homeRoom, targetRoom) {
+    const room = Game.rooms[homeRoom];
+    if (!room || room.memory.danger) return "Room not found or danger flag set";
+    if (Memory.CPU && Memory.CPU.fiveHundredTickAvg >= Game.cpu.limit - 5) return "CPU too high";
+    if (Game.cpu.bucket < 9500 && !Memory.pixelManager?.enabled) return "CPU bucket too low";
+
+    // Count existing depositCarriers en route to targetRoom
+    // let carryCount = 0;
+    // _.forEach(Game.creeps, function (creep) {
+    //     if (creep.memory.role === "depositCarry" && creep.memory.targetRoom === targetRoom) {
+    //         carryCount++;
+    //     }
+    // });
+    // // Also count in spawn_list
+    // if (room.memory.spawn_list) {
+    //     _.forEach(room.memory.spawn_list, function (entry) {
+    //         if (entry && typeof entry === 'object' && entry[2] && entry[2].memory && entry[2].memory.role === "depositCarry" && entry[2].memory.targetRoom === targetRoom) {
+    //             carryCount++;
+    //         }
+    //     });
+    // }
+    //
+    // if (carryCount >= 1) {
+    //     return "Already have a carrier for this room";
+    // }
+
+    // Build body: CARRY:1, MOVE:1
+    const body = (global as any).getBodyByRatio([
+        { part: CARRY, count: 1 },
+        { part: MOVE, count: 1 }
+    ], room, 50);
+
+    if (body.length === 0) return "Cannot build body (not enough energy)";
+
+    const newName = 'DC-' + Math.floor(Math.random() * Game.time) + "-" + homeRoom + "-" + targetRoom;
+    room.memory.spawn_list.push(body, newName, {
+        memory: {
+            role: "depositCarry",
+            homeRoom: homeRoom,
+            targetRoom: targetRoom
+        }
+    });
+    console.log('Adding depositCarry to Spawn List: ' + newName);
+    return "Success!";
+};

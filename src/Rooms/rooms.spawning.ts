@@ -864,7 +864,7 @@ class SpawnCache {
         const roles = [
             'EnergyMiner', 'carry', 'builder', 'upgrader', 'repair', 'filler',
             'maintainer', 'defender', 'RampartDefender', 'RRD', 'Dismantler',
-            'scout', 'claimer', 'attacker', 'billtong', 'RangedAttacker',
+            'scout', 'claimer', 'attacker', 'billtong', 'depositMiner', 'depositCarry', 'RangedAttacker',
             'remoteBuilder', 'RampartErector', 'SneakyControllerUpgrader',
             'DrainTower', 'healer', 'RemoteDismantler', 'annoy', 'clearer',
             'ram', 'signifer', 'sweeper', 'goblin', 'Sign', 'Priest',
@@ -1767,10 +1767,12 @@ class ConstructionRoleGenerator {
                               rampartsInRoomBelow5Mil.length > 0;
                 break;
             case 8:
+                const rampartsInRoomBelow10Mil = rampartsInRoom?.filter(function(s) {return s.hits < 9050000;});
                 shouldSpawn = repairers < rule.repair_creep.amount + 2 && storage &&
                               ((storage as any).store[RESOURCE_ENERGY] > 500000 ||
                               Game.time % 3000 < 100 && (storage as any).store[RESOURCE_ENERGY] > 50000 ||
-                              room.memory.danger && (storage as any).store[RESOURCE_ENERGY] > 50000);
+                              room.memory.danger && (storage as any).store[RESOURCE_ENERGY] > 50000) &&
+                              (rampartsInRoomBelow10Mil.length > 0 || room.memory.danger_timer > 200);
                 break;
         }
 
@@ -2933,17 +2935,21 @@ class SpecialRoleGenerator {
     }
 
     static generateScouts(room: Room, scouts: number, EnergyMinersInRoom: number, resourceData: any, activeRemotes: string[], roomState: any) {
-        const roomsToRemote = Object.keys(resourceData);
-        for (const remoteRoom of roomsToRemote) {
-            if (activeRemotes.includes(remoteRoom) && remoteRoom !== room.name) {
-                if (scouts < 1 && EnergyMinersInRoom > 1) {
-                    const newName = 'Scout-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
-                    room.memory.spawn_list.push([MOVE], newName, {memory: {role: 'scout', homeRoom: room.name, targetRoom: remoteRoom}});
-                    console.log('Adding Scout to Spawn List: ' + newName);
-                    break;
-                }
-            }
-        }
+        if (scouts >= 1 || EnergyMinersInRoom <= 1) return;
+
+        // 只向尚未激活（未被 scout 确认过）的房间发送 scout
+        // activeRemotes 里的房间要么是本房间，要么已经有 scout 确认过有 energy source
+        // 不应该对已激活的房间反复派 scout
+        const unexploredRooms = Object.keys(resourceData).filter(remoteRoom =>
+            remoteRoom !== room.name && !activeRemotes.includes(remoteRoom)
+        );
+
+        if (unexploredRooms.length === 0) return;
+
+        const remoteRoom = unexploredRooms[0];
+        const newName = 'Scout-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
+        room.memory.spawn_list.push([MOVE], newName, {memory: {role: 'scout', homeRoom: room.name, targetRoom: remoteRoom}});
+        console.log('Adding Scout to Spawn List: ' + newName + ' -> ' + remoteRoom);
     }
 
     static generateClaimers(room: Room, claimers: number, storage: any, roomState: any) {
@@ -3004,14 +3010,14 @@ class SpecialRoleGenerator {
                 _.forEach(data.energy, function(values, sourceId) {
                     const newName = 'Reserver-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
 
-                    if (Memory.CanClaimRemote >= 3 && Game.rooms[targetRoomName] && Game.rooms[targetRoomName].controller && !Game.rooms[targetRoomName].controller.my && (Game.rooms[targetRoomName].controller.reservation && Game.rooms[targetRoomName].controller.reservation.ticksToEnd <= 750 || !Game.rooms[targetRoomName].controller.reservation)) {
-                        if (room.memory.danger) return;
-                        room.memory.spawn_list.push([CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name, claim: true}});
-                        console.log('Adding Reserver to Spawn List: ' + newName);
-                        values.lastSpawnReserver = Game.time;
-                        Memory.CanClaimRemote -= 1;
-                        return;
-                    }
+                    // if (Memory.CanClaimRemote >= 3 && Game.rooms[targetRoomName] && Game.rooms[targetRoomName].controller && !Game.rooms[targetRoomName].controller.my && (Game.rooms[targetRoomName].controller.reservation && Game.rooms[targetRoomName].controller.reservation.ticksToEnd <= 750 || !Game.rooms[targetRoomName].controller.reservation)) {
+                    //     if (room.memory.danger) return;
+                    //     room.memory.spawn_list.push([CLAIM, MOVE], newName, {memory: {role: 'reserve', targetRoom: targetRoomName, homeRoom: room.name, claim: true}});
+                    //     console.log('Adding Reserver to Spawn List: ' + newName);
+                    //     values.lastSpawnReserver = Game.time;
+                    //     Memory.CanClaimRemote -= 1;
+                    //     return;
+                    // }
 
                     if (targetRoomName != room.name && Game.rooms[targetRoomName] != undefined && Game.rooms[targetRoomName].memory.roomData && !Game.rooms[targetRoomName].memory.roomData.has_hostile_creeps && !Game.rooms[targetRoomName].controller.my) {
                         if (Game.rooms[targetRoomName] != undefined && Game.rooms[targetRoomName].controller.reservation && Game.rooms[targetRoomName].controller.reservation.ticksToEnd <= 1000 && Game.time - (values.lastSpawnReserver || 0) > CREEP_LIFE_TIME / 2 || Game.rooms[targetRoomName] != undefined && !Game.rooms[targetRoomName].controller.reservation && Game.time - (values.lastSpawnReserver || 0) > CREEP_LIFE_TIME / 4) {
@@ -3198,6 +3204,10 @@ if (Game.time % 1000 === 0) {
     testBoostCalculation();
     testBoostResourceCheck();
 }
+
+// Expose body builders globally for Commands.ts
+(global as any).getBodyByRatio = getBodyByRatio;
+(global as any).getBodyByRatioWithLimits = getBodyByRatioWithLimits;
 
 export {getBody};
 export default spawning;

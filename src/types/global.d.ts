@@ -6,6 +6,7 @@ declare global {
     evacuate: any;
     findFillerTarget: any;
     findSource: () => object;
+    findDeposit: () => object;
     findSpawn: () => object | void;
     findStorage: () => object | void;
     findClosestLink: () => object | void;

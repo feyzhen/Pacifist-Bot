@@ -42,6 +42,26 @@ declare global {
       terrainDataInitialized: boolean;
       lastProcessedCoord: { x: number; y: number; };
       roomStatuses: any;
+      depositMining?: {
+        [roomName: string]: {
+          [depositId: string]: {
+            type: string;
+            pos: { x: number; y: number };
+            lastCooldown: number;
+            lastObserved: number;
+            spawnDelay: number;
+            threatChecked: boolean;
+            maxPairs: number;
+          };
+        };
+      };
+      observeManager?: {
+        enabled?: boolean;
+        enemyScout?: boolean;
+        mineScout?: boolean;
+        powerScout?: boolean;
+        debug?: boolean;
+      };
     }
 
     interface billtong_rooms {
@@ -120,6 +140,8 @@ declare global {
         sourceId:any;
         myLink: any;
         deposit: any;
+        depositType: string;
+        transferTarget: any;
         MaxStorage: number;
         searchedRooms: Array<string>;
         controllerLink:any;
@@ -155,6 +177,10 @@ declare global {
           SGD: any;
           SPK: any;
           SDM: any;
+          SDMine: any;
+          SDCarry: any;
+          getBodyByRatio: any;
+          getBodyByRatioWithLimits: any;
           SCCK: any;
           SCCK2: any;
           SMDP: any;
@@ -172,6 +198,15 @@ declare global {
             disableTrading: () => string;
             setKeepAmount: (amount: number) => string;
             status: () => string;
+          };
+          observeManager: {
+            enable: () => string;
+            disable: () => string;
+            enableScout: (scout: 'enemy' | 'mine' | 'power') => string;
+            disableScout: (scout: 'enemy' | 'mine' | 'power') => string;
+            status: () => string;
+            enableDebug: () => string;
+            disableDebug: () => string;
           };
         }
     }
