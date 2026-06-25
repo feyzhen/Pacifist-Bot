@@ -24,19 +24,6 @@ const run = function (creep: any) {
     // ── 阶段5：boosted creep 生命末期处理 ────────────────────────
     // 仅消灭波（使用了 boost）在生命到期时 suicide + recycle
     if (creep.memory.wave === "eliminate" && creep.ticksToLive <= 300) {
-        if (creep.store.getUsedCapacity() > 0) {
-            // 尝试把身上能量交给附近队友
-            const nearby = creep.room.find(FIND_MY_CREEPS, {
-                filter: c => c.store.getFreeCapacity() > 0
-            });
-            const target = nearby.length > 0 ? creep.pos.findClosestByRange(nearby) : null;
-            if (target) {
-                for (const resource in creep.store) {
-                    creep.transfer(target, resource);
-                }
-                return;
-            }
-        }
         creep.memory.homeRoom = creep.room.name;
         creep.memory.suicide = true;
     }
@@ -81,12 +68,35 @@ const run = function (creep: any) {
         }
     }
 
-    // 攻击逻辑
-    if (creep.pos.getRangeTo(target) <= 1) {
-        creep.attack(target);
+    // ── 攻击 + 拉扯逻辑（参考 RangedAttacker 的距离分层） ────────
+    const range = creep.pos.getRangeTo(target);
+
+    // 判断目标是否有近战部件（ATTACK）
+    let isMelee = false;
+    for (const part of target.body) {
+        if (part.type === ATTACK) {
+            isMelee = true;
+            break;
+        }
+    }
+
+    if (isMelee && range <= 2) {
+        // 近战敌人贴脸：先打一下，然后拉开
+        if (range === 1) {
+            creep.attack(target);
+            creep.rangedAttack(target);
+        }
+        creep.moveTo(target, { range: 4 });
+    } else if (range === 1) {
+        // 贴脸无近战威胁：全力输出
+        creep.rangedMassAttack(target);
+    } else if (range === 2 || range === 3) {
+        // 中程：远程攻击 + 继续靠近
         creep.rangedAttack(target);
+        creep.moveTo(target, { range: 1 });
     } else {
-        creep.rangedAttack(target);
+        // 远距离：靠近到射程内
+        creep.moveTo(target, { range: 3 });
     }
 };
 

@@ -7,7 +7,7 @@
 // }
 
 const run = function (creep) {
-    
+
 
     creep.memory.moving = false;
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
@@ -59,7 +59,7 @@ const run = function (creep) {
             }
         }
 
-        return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
+        return creep.moveToRoom(creep.memory.targetRoom);
     }
     else {
 

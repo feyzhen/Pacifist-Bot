@@ -344,9 +344,8 @@ const run = function (creep) {
             const storedSource:any = Game.getObjectById(creep.memory.sourceId);
             const containers = creep.room.find(FIND_STRUCTURES, {
                 filter: s => s.structureType == STRUCTURE_CONTAINER
-                          && storedSource && creep.pos.getRangeTo(storedSource) <= 3
                           && (s as StructureContainer).store.getFreeCapacity() > 0
-            });
+            }).filter(s => storedSource && storedSource.pos.getRangeTo(s) <= 1) as StructureContainer[];
             if(containers.length > 0) {
                 const target = containers[0] as StructureContainer;
                 if(creep.pos.isNearTo(target)) {

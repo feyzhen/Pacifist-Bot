@@ -63,6 +63,7 @@ function countStationedElite(targetRoom: string, wave: string): number {
 
 /** Ensure per-deposit tracking structure exists, initializing hostile fields. Returns the meta object. */
 function ensureDepMeta(depositMining: any, roomName: string, depId: string, deposit: any): DepositMeta {
+    if (!depositMining) depositMining = Memory.depositMining = {};
     if (!depositMining[roomName]) depositMining[roomName] = {};
     if (!depositMining[roomName][depId]) {
         depositMining[roomName][depId] = {
