@@ -40,11 +40,25 @@ function classifyThreat(hostileCreeps: Creep[]): { militaryRatio: number; isStro
     return { militaryRatio: totalParts > 0 ? totalMilitary / totalParts : 0, isStrong: totalMilitary / totalParts >= 0.3 };
 }
 
-/** Count stationed RangedElites for a given targetRoom and wave type */
+/** Count stationed RangedElites for a given targetRoom and wave type.
+ * Includes both living creeps and creeps in spawn_list. */
 function countStationedElite(targetRoom: string, wave: string): number {
-    return Object.values(Game.creeps).filter(
+    let count = Object.values(Game.creeps).filter(
         c => (c as any).memory.role === "RangedElite" && (c as any).memory.targetRoom === targetRoom && (c as any).memory.wave === wave
     ).length;
+    // Also count creeps in spawn_list (haven't been born yet)
+    for (const room of Object.values(Game.rooms) as any[]) {
+        if (!room?.memory?.spawn_list) continue;
+        for (const entry of room.memory.spawn_list) {
+            if (entry && typeof entry === "object" && entry[2] && entry[2].memory) {
+                const m = entry[2].memory;
+                if (m.role === "RangedElite" && m.targetRoom === targetRoom && m.wave === wave) {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
 }
 
 /** Ensure per-deposit tracking structure exists, initializing hostile fields. Returns the meta object. */
@@ -88,22 +102,27 @@ function countAliveMinersCarries(room: any, targetRoom: string, depositId?: stri
     return { miners, carries };
 }
 
-/** Spawn miners/carries for a deposit based on maxPairs and alive count */
+/** Spawn miners/carries for a deposit based on maxPairs and alive count.
+ * Alternates between miner and carry to maintain ~2:1 ratio. */
 function spawnMinersCarries(homeRoom: string, targetRoom: string, depId: string, maxPairs: number) {
     const { miners, carries } = countAliveMinersCarries(Game.rooms[homeRoom], targetRoom, depId);
     let minersNeeded = Math.max(0, maxPairs - miners);
     let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);
+    let spawnMiner = true; // alternate starting with miner
 
-    if ((minersNeeded / maxPairs) > (carryNeeded / Math.floor((maxPairs + 1) / 2))) {
-        while (minersNeeded > 0) {
-            if (global.SDMine(homeRoom, targetRoom, depId) !== "Success!") break;
-            minersNeeded--;
+    while (minersNeeded > 0 || carryNeeded > 0) {
+        if (spawnMiner) {
+            if (minersNeeded > 0) {
+                if (global.SDMine(homeRoom, targetRoom, depId) !== "Success!") break;
+                minersNeeded--;
+            }
+        } else {
+            if (carryNeeded > 0) {
+                if (global.SDCarry(homeRoom, targetRoom) !== "Success!") break;
+                carryNeeded--;
+            }
         }
-    } else {
-        while (carryNeeded > 0) {
-            if (global.SDCarry(homeRoom, targetRoom) !== "Success!") break;
-            carryNeeded--;
-        }
+        spawnMiner = !spawnMiner;
     }
 }
 
@@ -162,10 +181,15 @@ function processDeposit(
     // ── State machine transitions ───────────────────────────
     if (isHostile && depMeta.hostilePhase === "drain") {
         if (countStationedElite(targetRoom, "drain") === 0 && depMeta.lastDrainSpawned) {
-            depMeta.hostilePhase = "eliminate";
-            depMeta.lastEliminateSpawned = Game.time;
-            global.SRE(homeRoom, targetRoom, true);
-            console.log(`[deposit] ${targetRoom}/${depId} drain died, escalating to eliminate wave`);
+            const escResult = global.SRE(homeRoom, targetRoom, true);
+            if (escResult === "Success!") {
+                depMeta.hostilePhase = "eliminate";
+                depMeta.lastEliminateSpawned = Game.time;
+                console.log(`[deposit] ${targetRoom}/${depId} drain died, escalating to eliminate wave`);
+            } else {
+                console.log(`[deposit] ${targetRoom}/${depId} eliminate spawn failed: ${escResult}`);
+                // Keep drain phase, will retry next tick
+            }
         }
     } else if (isHostile && depMeta.hostilePhase === "eliminate") {
         if (countStationedElite(targetRoom, "eliminate") === 0 && depMeta.lastEliminateSpawned) {
@@ -183,15 +207,26 @@ function processDeposit(
             if (ticksSince >= 64 && ticksSince < 130) {
                 depMeta.hostilePhase = "drain";
                 depMeta.lastDrainSpawned = Game.time;
-                global.SRE(homeRoom, targetRoom, false);
-                console.log(`[deposit] ${targetRoom}/${depId} hostile persistent, spawning drain wave`);
+                const drainResult = global.SRE(homeRoom, targetRoom, false);
+                if (drainResult === "Success!") {
+                    console.log(`[deposit] ${targetRoom}/${depId} hostile persistent, spawning drain wave`);
+                    // Drain wave spawned successfully — stop spawning deposits.
+                    // Caller will handle weak-hostile spawn on subsequent ticks.
+                    return true;
+                } else {
+                    console.log(`[deposit] ${targetRoom}/${depId} drain spawn failed: ${drainResult}`);
+                    // Spawn failed — revert to none so we retry next tick
+                    depMeta.hostilePhase = "none";
+                    depMeta.lastDrainSpawned = null;
+                    // Fall through to normal spawn below
+                }
             }
         }
+        // First hostile sighting (or drain spawn failed) — spawn deposits normally
         spawnMinersCarries(homeRoom, targetRoom, depId, depMeta.maxPairs);
-    } else if (depMeta.hostilePhase === "drain" || depMeta.hostilePhase === "eliminate") {
-        // Strong hostile: pause spawn. Weak hostile: caller handles spawn separately.
     }
-    // "abandoned" phase: skip spawn (handled above)
+    // drain/eliminate/abandoned phases: no spawn from here.
+    // (weak hostile spawn is handled by caller after processDeposit returns)
     return true;
 }
 
