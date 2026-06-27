@@ -4,7 +4,7 @@
 
 ## 概述
 
-本文件为 Screeps 原生 `RoomPosition` 对象扩展了四个便捷方法，用于获取目标位置周围的可行走/空闲位置。这些扩展方法封装了地形检测、生物体（蠕虫/结构）过滤等重复逻辑，使业务代码可以更简洁地表达意图。
+本文件为 Screeps 原生 `RoomPosition` 对象扩展了五个便捷方法，用于获取目标位置周围的可行走/空闲位置。这些扩展方法封装了地形检测、生物体（蠕虫/结构）过滤等重复逻辑，使业务代码可以更简洁地表达意图。
 
 所有扩展方法均遵循 Screeps 插件模式的惯例：在原型上定义函数，全局生效。
 
@@ -29,6 +29,7 @@ interface RoomPosition {
     getOpenPositions: () => Array<RoomPosition>;
     getOpenPositionsIgnoreCreeps: () => Array<RoomPosition>;
     getOpenPositionsIgnoreCreepsCheckStructs: () => Array<RoomPosition>;
+    getOpenPositionsFull: () => Array<RoomPosition>;
 }
 ```
 
@@ -101,6 +102,28 @@ interface RoomPosition {
 
 ---
 
+### 5. `getOpenPositionsFull()`
+
+获取当前位置周围所有**可通行、无人无物且无阻挡性建筑**的空闲位置。这是最严格的过滤方法。
+
+**过滤流程**:
+1. 调用 `getNearbyPositions()` 获取候选位置
+2. 通过地形数据过滤掉墙壁位置，并检查坐标边界 (`x >= 1 && x <= 48 && y >= 1 && y <= 48`)
+3. 通过 `lookFor(LOOK_CREEPS)` 过滤掉有蠕虫占据的位置
+4. 通过 `lookFor(LOOK_STRUCTURES)` 过滤：仅当位置**没有任何结构体**，或**仅有 ROAD 或 CONTAINER** 时保留
+
+**返回值**: `RoomPosition[]` — 可通过、无蠕虫、无关键建筑的相邻位置
+
+**允许的结构体**:
+- `STRUCTURE_ROAD` — 道路不影响通行
+- `STRUCTURE_CONTAINER` — 容器不影响通行
+
+**排除项**: 墙壁、蠕虫、其他任何结构体（tower、lab、extension 等）
+
+**典型用途**: 需要寻找完全空闲的位置部署新单位或建筑时使用。
+
+---
+
 ## 方法对比
 
 | 方法 | 地形检查 | 蠕虫检查 | 结构体检查 | 坐标边界 |
@@ -109,6 +132,7 @@ interface RoomPosition {
 | `getOpenPositions` | ✅ | ✅ | ❌ | ❌ |
 | `getOpenPositionsIgnoreCreeps` | ✅ | ❌ | ❌ | ❌ |
 | `getOpenPositionsIgnoreCreepsCheckStructs` | ✅ | ❌ | ✅ (仅允许 Road/Container) | ✅ |
+| `getOpenPositionsFull` | ✅ | ✅ | ✅ (仅允许 Road/Container) | ✅ |
 
 ---
 

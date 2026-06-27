@@ -3,6 +3,7 @@ interface RoomPosition {
     getOpenPositions:() => Array<RoomPosition>;
     getOpenPositionsIgnoreCreeps:() => Array<RoomPosition>;
     getOpenPositionsIgnoreCreepsCheckStructs:() => Array<RoomPosition>;
+    getOpenPositionsFull:() => Array<RoomPosition>;
 }
 
 RoomPosition.prototype.getNearbyPositions = function getNearbyPositions() {
@@ -59,4 +60,21 @@ RoomPosition.prototype.getOpenPositionsIgnoreCreepsCheckStructs = function getOp
         return lookStructures.length == 0 || lookStructures.length == 1 && (lookStructures[0].structureType == STRUCTURE_ROAD || lookStructures[0].structureType == STRUCTURE_CONTAINER);});
 
     return freePositions;
+}
+
+RoomPosition.prototype.getOpenPositionsFull = function getOpenPositionsFull() {
+    const nearbyPositions = this.getNearbyPositions();
+
+    const terrain = Game.map.getRoomTerrain(this.roomName);
+    const walkablePositions = _.filter(nearbyPositions, function(pos:any) {
+        return terrain.get(pos.x, pos.y) !== TERRAIN_MASK_WALL && pos.x >= 1 && pos.x <= 48 && pos.y >= 1 && pos.y <= 48;});
+
+    const creepsFiltered = _.filter(walkablePositions, function(pos) {
+        return !pos.lookFor(LOOK_CREEPS).length;});
+
+    const structFiltered = _.filter(creepsFiltered, function(pos) {
+        const lookStructures = pos.lookFor(LOOK_STRUCTURES)
+        return lookStructures.length == 0 || lookStructures.length == 1 && (lookStructures[0].structureType == STRUCTURE_ROAD || lookStructures[0].structureType == STRUCTURE_CONTAINER);});
+
+    return structFiltered;
 }
