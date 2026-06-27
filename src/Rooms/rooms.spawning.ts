@@ -181,7 +181,7 @@ function spawning(room: any) {
         (room.memory.spawn_list.length == 0 && Game.time - room.memory.lastTimeSpawnUsed == 2) ||
         (!room.memory.danger &&
             room.memory.spawn_list.length == 0 &&
-            (Game.time - room.memory.lastTimeSpawnUsed) % 10 == 0 &&
+            (Game.time - room.memory.lastTimeSpawnUsed) % 35 == 0 &&
             room.controller.level >= 6) ||
         (!room.memory.danger &&
             room.memory.spawn_list.length == 0 &&
@@ -2883,6 +2883,9 @@ class RemoteDefenseGenerator {
                                 thisRoom.memory.roomData.has_hostile_creeps = false;
                                 delete thisRoom.memory.roomData.hostile_body_type;
                                 thisRoom.memory.roomData.has_attacker = true;
+                            } else {
+                                console.log('remoteRoomDefense spawn failed')
+                                Game.notify('remoteRoomDefense spawn failed in room ' + room.name + ' for target room ' + thisRoom.name + ' due to body length exceeding 50. Body length: ' + body.length);
                             }
                         }
                     }
