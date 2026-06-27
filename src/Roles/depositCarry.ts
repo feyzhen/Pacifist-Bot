@@ -1,3 +1,6 @@
+import { countAliveMinersCarries } from "../Rooms/rooms.observe";
+import global from "../utils/Global";
+
 /**
  * depositCarry — 专职能量运输者。
  * 前往目标沉积物房间，从 depositMiner 处收集能量，
@@ -55,7 +58,7 @@ const run = function (creep: any) {
     // ── 阶段2：从 miner 处收集能量 ────────────────────────────────
     if (!creep.memory.full) {
         const miners = creep.room.find(FIND_MY_CREEPS, {
-            filter: c => c.memory.role === "depositMiner" && c.store.getUsedCapacity() > 0
+            filter: c => c.memory.role === "depositMiner" && c.store.getUsedCapacity() >= 0
         });
 
         if (miners.length > 0) {
@@ -64,6 +67,21 @@ const run = function (creep: any) {
                 creep.moveTo(target);
             }
             return;
+        } else {
+            if (deposit.lastCooldown <= 100) {
+                const { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
+                let maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
+                let minersNeeded = Math.max(0, maxPairs - miners);
+                if (minersNeeded > 0) {
+                    global.SDCarry(creep.memory.homeRoom, creep.memory.targetRoom)
+                    if (creep.ticksToLive <= (Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom) + 1) * 50) {
+                        creep.memory.suicide = true
+                        return;
+                    }
+                }
+            } else {
+                creep.memory.suicide = true
+            }
         }
 
         // 回退：捡起地上掉落的能量

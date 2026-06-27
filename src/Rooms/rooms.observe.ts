@@ -105,25 +105,37 @@ function countAliveMinersCarries(room: any, targetRoom: string, depositId?: stri
 
 /** Spawn miners/carries for a deposit based on maxPairs and alive count.
  * Alternates between miner and carry to maintain ~2:1 ratio. */
+// function spawnMinersCarries(homeRoom: string, targetRoom: string, depId: string, maxPairs: number) {
+//     const { miners, carries } = countAliveMinersCarries(Game.rooms[homeRoom], targetRoom, depId);
+//     let minersNeeded = Math.max(0, maxPairs - miners);
+//
+//     let spawnMiner = true; // alternate starting with miner
+//
+//     while (minersNeeded > 0 || carryNeeded > 0) {
+//         if (spawnMiner) {
+//             if (minersNeeded > 0) {
+//                 if (global.SDMine(homeRoom, targetRoom, depId) !== "Success!") break;
+//                 minersNeeded--;
+//             }
+//         } else {
+//             if (carryNeeded > 0) {
+//                 if (global.SDCarry(homeRoom, targetRoom) !== "Success!") break;
+//                 carryNeeded--;
+//             }
+//         }
+//         spawnMiner = !spawnMiner;
+//     }
+// }
+
+/** Spawn miners/carries for a deposit based on maxPairs and alive count.
+ * Alternates between miner and carry to maintain ~2:1 ratio. */
 function spawnMinersCarries(homeRoom: string, targetRoom: string, depId: string, maxPairs: number) {
     const { miners, carries } = countAliveMinersCarries(Game.rooms[homeRoom], targetRoom, depId);
     let minersNeeded = Math.max(0, maxPairs - miners);
     let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);
-    let spawnMiner = true; // alternate starting with miner
-
-    while (minersNeeded > 0 || carryNeeded > 0) {
-        if (spawnMiner) {
-            if (minersNeeded > 0) {
-                if (global.SDMine(homeRoom, targetRoom, depId) !== "Success!") break;
-                minersNeeded--;
-            }
-        } else {
-            if (carryNeeded > 0) {
-                if (global.SDCarry(homeRoom, targetRoom) !== "Success!") break;
-                carryNeeded--;
-            }
-        }
-        spawnMiner = !spawnMiner;
+    while (minersNeeded > 0) {
+        if (global.SDMine(homeRoom, targetRoom, depId) !== "Success!") break;
+        minersNeeded--;
     }
 }
 
@@ -1290,5 +1302,5 @@ function areRoomsNormalToThisRoom(homeRoom, targetRoom) {
 
     return true;
 }
-
+export {countAliveMinersCarries};
 export default observe;
