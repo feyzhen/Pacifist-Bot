@@ -49,7 +49,7 @@ const run = function (creep: any) {
     const target = creep.pos.findClosestByRange(hostiles);
 
     // 治疗逻辑：先治疗自己，再治疗队友
-    if (creep.hits < creep.hitsMax * 0.5) {
+    if (creep.hits < creep.hitsMax * 0.8) {
         creep.heal(creep);
         return;
     }
@@ -60,7 +60,11 @@ const run = function (creep: any) {
     if (injuredAllies.length > 0) {
         const injured = injuredAllies[0];
         if (creep.pos.getRangeTo(injured) <= 3) {
-            creep.heal(injured);
+            if (creep.pos.isNearTo(injured)) {
+                creep.heal(injured)
+            } else {
+                creep.rangedHeal(injured);
+            }
             return;
         } else {
             creep.moveTo(injured);
@@ -73,31 +77,50 @@ const run = function (creep: any) {
 
     // 判断目标是否有近战部件（ATTACK）
     let isMelee = false;
+    let isRanged = false;
+    let isHeal = false;
     for (const part of target.body) {
         if (part.type === ATTACK) {
             isMelee = true;
-            break;
+        } else if (part.type === RANGED_ATTACK) {
+            isRanged = true;
+        } else if (part.type === HEAL) {
+            isHeal = true;
         }
     }
 
-    if (isMelee && range <= 2) {
-        // 近战敌人贴脸：先打一下，然后拉开
-        if (range === 1) {
-            creep.attack(target);
-            creep.rangedAttack(target);
-        }
-        creep.moveTo(target, { range: 4 });
-    } else if (range === 1) {
-        // 贴脸无近战威胁：全力输出
-        creep.rangedMassAttack(target);
-    } else if (range === 2 || range === 3) {
-        // 中程：远程攻击 + 继续靠近
-        creep.rangedAttack(target);
-        creep.moveTo(target, { range: 1 });
+    if(creep.pos.getRangeTo(target) > 3) {
+        creep.moveTo(target);
+        return;
+    } else if(creep.pos.isNearTo(target)) {
+        creep.rangedMassAttack();
     } else {
-        // 远距离：靠近到射程内
-        creep.moveTo(target, { range: 3 });
+        creep.rangedAttack(target);
+        creep.moveTo(target);
     }
+    if(isMelee && creep.rangedAttack(target) == 0) {
+        creep.RangedAttackFleeFromMelee(target);
+    } else {
+        creep.moveTo(target);
+    }
+    // if (isMelee && range <= 2) {
+    //     // 近战敌人贴脸：先打一下，然后拉开
+    //     if (range === 1) {
+    //         creep.rangedAttack(target);
+    //     }
+    //     creep.moveTo(target, { range: 4 });
+    // } else if (range === 1) {
+    //     // 贴脸无近战威胁：全力输出
+    //     creep.rangedMassAttack(target);
+    // } else if (range === 2 || range === 3) {
+    //     // 中程：远程攻击 + 继续靠近
+    //     creep.rangedAttack(target);
+    //     creep.moveTo(target, { range: 1 });
+    // } else {
+    //     // 远距离：靠近到射程内
+    //     creep.rangedAttack(target);
+    //     creep.moveTo(target, { range: 3 });
+    // }
 };
 
 const roleRangedElite = { run };

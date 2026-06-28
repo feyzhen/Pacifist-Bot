@@ -1,4 +1,5 @@
 import urgent_buy from "Random_Stuff/urgent_buy";
+import { BoostUtils } from "../Rooms/rooms.spawning"
 global.spawn_mosquito = function (homeRoom: string, roomName: string): boolean {
   if (Game.cpu.bucket < 1500 && !Memory.pixelManager?.enabled) return false;
   if (homeRoom) {
@@ -2238,8 +2239,15 @@ global.SDCarry = function (homeRoom, targetRoom) {
  *
  * Body ratio: TOUGH:RANGED_ATTACK:HEAL:MOVE = 1:3:1:5
  * Boosted (eliminate wave) uses lab-boosted components.
+ *
+ * @param homeRoom    Home room name
+ * @param targetRoom  Target room name
+ * @param boosted     Whether to boost (default: false)
+ * @param boostParts  Optional list of body parts to boost.
+ *                    Default: [TOUGH, RANGED_ATTACK, HEAL, MOVE] (all).
+ *                    Example: ['RANGED_ATTACK', 'TOUGH'] to boost only combat parts.
  */
-global.SRE = function (homeRoom, targetRoom, boosted = false): string {
+global.SRE = function (homeRoom, targetRoom, boosted = false, boostParts?: BodyPartConstant[]): string {
     const room = Game.rooms[homeRoom];
     if (!room || room.memory.danger) return "Room not found or danger flag set";
     if (Memory.CPU && Memory.CPU.fiveHundredTickAvg >= Game.cpu.limit - 5) return "CPU too high";
@@ -2273,32 +2281,46 @@ global.SRE = function (homeRoom, targetRoom, boosted = false): string {
         }
     };
 
-    // Apply boost labs for eliminate wave
-    if (boosted && room.memory.labs && room.memory.labs.outputLab2 && room.memory.labs.outputLab7) {
-        spawnOpts.memory.boostlabs = [room.memory.labs.outputLab2, room.memory.labs.outputLab7];
+    // Resolve storage for boost resource checking
+    const storage = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
 
-        // Reserve lab materials
-        if (room.memory.labs.status && !room.memory.labs.status.boost) {
-            room.memory.labs.status.boost = {};
-        }
-        if (room.memory.labs.status.boost) {
-            // zyn alk — boosts RANGED_ATTACK (WORK-like for harvest, but RANGED_ATTACK gets Zyn boost)
-            if (room.memory.labs.status.boost.lab2) {
-                room.memory.labs.status.boost.lab2.amount += 300;
-                room.memory.labs.status.boost.lab2.use += 1;
-            } else {
-                room.memory.labs.status.boost.lab2 = {};
-                room.memory.labs.status.boost.lab2.amount = 300;
-                room.memory.labs.status.boost.lab2.use = 1;
+    // Apply boost labs using BoostUtils (dynamic, downgrade-aware)
+    if (boosted && storage) {
+        // Default: boost all 4 part types; override via boostParts parameter
+        const parts = boostParts || [TOUGH, RANGED_ATTACK, HEAL, MOVE];
+
+        // Map bodyPart → labNum based on BOOST_COMPOUND_TIERS
+        const partToLab: { [part: string]: { labNum: string } } = {
+            [TOUGH]:       { labNum: 'lab7' },  // GHODIUM_ALKALIDE
+            [RANGED_ATTACK]: { labNum: 'lab4' }, // KEANIUM_ALKALIDE
+            [HEAL]:        { labNum: 'lab1' },  // LEMERGIUM_ALKALIDE
+            [MOVE]:        { labNum: 'lab2' },  // ZYNTHIUM_ALKALIDE
+        };
+
+        // Build boostType mapping: { labNum: bodyPart }
+        const boostType: {[key: string]: BodyPartConstant} = {};
+        for (const part of parts) {
+            const mapping = partToLab[part];
+            if (mapping) {
+                boostType[mapping.labNum] = part as BodyPartConstant;
             }
-            // gho alk — boosts HEAL
-            if (room.memory.labs.status.boost.lab7) {
-                room.memory.labs.status.boost.lab7.amount += 270;
-                room.memory.labs.status.boost.lab7.use += 1;
-            } else {
-                room.memory.labs.status.boost.lab7 = {};
-                room.memory.labs.status.boost.lab7.amount = 270;
-                room.memory.labs.status.boost.lab7.use = 1;
+        }
+
+        // Calculate requirements using BoostUtils (supports downgrade)
+        const boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
+
+        if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+            // Collect actual lab IDs from room.memory.labs
+            const boostlabs: string[] = [];
+            for (const [labNum] of Object.entries(boostRequirements)) {
+                const outputKey = `output${labNum.replace('lab', '')}`; // lab2 → outputLab2
+                const labId = room.memory.labs?.[outputKey];
+                if (labId) boostlabs.push(labId);
+            }
+
+            if (boostlabs.length > 0) {
+                spawnOpts.memory.boostlabs = boostlabs;
+                BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
             }
         }
     }

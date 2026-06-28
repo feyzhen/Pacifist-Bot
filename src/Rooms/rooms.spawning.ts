@@ -3212,5 +3212,6 @@ if (Game.time % 1000 === 0) {
 (global as any).getBodyByRatio = getBodyByRatio;
 (global as any).getBodyByRatioWithLimits = getBodyByRatioWithLimits;
 
+export { BoostUtils };
 export {getBody};
 export default spawning;
