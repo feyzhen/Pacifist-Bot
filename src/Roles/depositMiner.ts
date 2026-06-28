@@ -35,7 +35,14 @@ const run = function (creep: any) {
         creep.memory.suicide = true;
         return;
     }
-    if (creep.ticksToLive == creep.body.length * 3 + 5) {
+
+    if (!creep.memory.linearDistance) {
+        creep.memory.linearDistance = Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom)
+    }
+    if (!creep.memory.ticksToReGenerate) {
+        creep.memory.ticksToReGenerate = Math.max(creep.body.length * 3 + 5, creep.memory.linearDistance * 50)
+    }
+    if (creep.ticksToLive <= creep.memory.ticksToReGenerate) {
         if (deposit.lastCooldown <= 100 && creep.room.name == creep.memory.targetRoom) {
             global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom)
         }
@@ -61,24 +68,24 @@ const run = function (creep: any) {
             // 这样 carry 一到房间就能立刻拿到能量，不需要干等（原逻辑必须装满才 transfer）
             const depositType = creep.memory.depositType || deposit.depositType;
             if (creep.store.getUsedCapacity() > 0) {
-                const carriers = creep.pos.findInRange(FIND_MY_CREEPS, 1).filter( c =>
-                        c.memory.role === "depositCarry" &&
-                        c.store.getFreeCapacity() > 0
-                );
+                const carriers = creep.room.find(FIND_MY_CREEPS, {
+                    filter: c => c.memory.role === "depositCarry" && c.memory.targetRoom == creep.memory.targetRoom
+                });
                 if (carriers.length > 0) {
-                    const target = carriers[0]
-                    creep.transfer(target, depositType);
-                    return;
+                    const targets = carriers.filter(c => c.store.getUsedCapacity() > 0 && creep.pos.isNearTo(c))
+                    if (targets.length > 0) {
+                        creep.transfer(targets[0], depositType);
+                        return;
+                    }
                 } else {
                     if (Game.time % 30 == 0) {
                         const { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
                         let carryNeeded = Math.max(0, Math.floor((miners + 1) / 2) - carries);
-                        const lineraDistanceTick = (Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom) + 1) * 50
-                        if (carriers == 0 && creep.ticksToLive <= lineraDistanceTick) {
+                        if (carriers == 0 && creep.ticksToLive <= creep.memory.ticksToReGenerate) {
                             creep.memory.suicide = true
                             return;
                         }
-                        if (carryNeeded > 0 && (creep.ticksToLive <= Math.max(creep.body.length * 3, lineraDistanceTick))){
+                        if (carryNeeded > 0 && creep.ticksToLive <= creep.memory.ticksToReGenerate * 2){
                             global.SDCarry(creep.memory.homeRoom, creep.memory.targetRoom)
                         }
                     }

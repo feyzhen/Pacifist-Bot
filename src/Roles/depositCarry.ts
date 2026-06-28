@@ -23,8 +23,21 @@ const run = function (creep: any) {
         creep.memory.full = false;
     }
 
-    // ── 阶段4：生命末期处理 ───────────────────────────────────────
-    if (creep.ticksToLive <= 300) {
+    if (creep.memory.suicide) {
+        creep.recycle();
+        return; // ← 关键修复：recycle() 后必须 return
+                // 否则继续执行下面的 Phase 1，会被拉回 targetRoom，形成"横跳"
+    }
+
+    if (!creep.memory.linearDistance) {
+        creep.memory.linearDistance = Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom)
+    }
+
+    if (!creep.memory.ticksToReGenerate) {
+        creep.memory.ticksToReGenerate = Math.max(creep.body.length * 3 + 5, creep.memory.linearDistance * 50)
+    }
+
+    if (creep.ticksToLive <= creep.memory.ticksToReGenerate) {
         // 快死了：如果身上有能量，先尝试存回 storage（即使快死了也要尽量带能量回家）
         // 如果不在 home 房间，recycle() 会尝试带能量回家
         if (creep.store.getUsedCapacity() == 0) {
@@ -34,31 +47,19 @@ const run = function (creep: any) {
         }
         creep.memory.suicide = true;
     }
-    if (creep.memory.suicide) {
-        creep.recycle();
-        return; // ← 关键修复：recycle() 后必须 return
-                // 否则继续执行下面的 Phase 1，会被拉回 targetRoom，形成"横跳"
-    }
 
     // ── 阶段1：前往目标房间 ──────────────────────────────────────
     if (creep.room.name !== creep.memory.targetRoom) {
         return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
     }
 
-    // 首次到达 deposit 房间时，识别沉积物类型
-    // if (!creep.memory.depositType) {
-    //     const deposit = creep.findDeposit();
-    //     if (deposit) {
-    //         creep.memory.depositType = deposit.depositType;
-    //     }
-    // }
     const deposit: any = Game.getObjectById(creep.memory.deposit) || creep.findDeposit();
     const depositType = creep.memory.depositType || deposit.depositType;
 
     // ── 阶段2：从 miner 处收集能量 ────────────────────────────────
     if (!creep.memory.full) {
         const dropped = creep.room.find(FIND_DROPPED_RESOURCES, {
-            filter: r => r.resourceType === depositType
+            filter: r => r.resourceType === depositType || r.resourceType != RESOURCE_ENERGY
         });
         if (dropped.length > 0) {
             const target = dropped[0];
@@ -91,10 +92,6 @@ const run = function (creep: any) {
                 let minersNeeded = Math.max(0, maxPairs - miners);
                 if (minersNeeded > 0) {
                     global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom)
-                    if (creep.ticksToLive <= (Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom) + 1) * 50) {
-                        creep.memory.suicide = true
-                        return;
-                    }
                 }
             } else {
                 creep.memory.suicide = true
