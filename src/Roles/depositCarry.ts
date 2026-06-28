@@ -57,34 +57,6 @@ const run = function (creep: any) {
 
     // ── 阶段2：从 miner 处收集能量 ────────────────────────────────
     if (!creep.memory.full) {
-        const miners = creep.room.find(FIND_MY_CREEPS, {
-            filter: c => c.memory.role === "depositMiner" && c.store.getUsedCapacity() >= 0
-        });
-
-        if (miners.length > 0) {
-            const target = creep.pos.findClosestByRange(miners);
-            if (!creep.pos.isNearTo(target)) {
-                creep.moveTo(target);
-            }
-            return;
-        } else {
-            if (deposit.lastCooldown <= 100) {
-                const { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
-                let maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
-                let minersNeeded = Math.max(0, maxPairs - miners);
-                if (minersNeeded > 0) {
-                    global.SDCarry(creep.memory.homeRoom, creep.memory.targetRoom)
-                    if (creep.ticksToLive <= (Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom) + 1) * 50) {
-                        creep.memory.suicide = true
-                        return;
-                    }
-                }
-            } else {
-                creep.memory.suicide = true
-            }
-        }
-
-        // 回退：捡起地上掉落的能量
         const dropped = creep.room.find(FIND_DROPPED_RESOURCES, {
             filter: r => r.resourceType === depositType
         });
@@ -98,19 +70,38 @@ const run = function (creep: any) {
             return;
         }
 
-        // 没找到任何 miner —— 短暂等待后 suicide
-        // 原因：所有 miner 都已满载离开，或 miner 尚未到达
-        // if (!creep.memory.waitStart) {
-        //     creep.memory.waitStart = Game.time;
-        // }
-        // if (Game.time - creep.memory.waitStart > 100) {
-        //     creep.memory.suicide = true;
-        // }
-        return;
-    }
+        const miners = creep.room.find(FIND_MY_CREEPS, {
+            filter: c => c.memory.role === "depositMiner" && c.memory.targetRoom == creep.memory.targetRoom
+        });
 
-    // ── 阶段3：满载返程 ─────────────────────────────────────────
-    if (creep.memory.full) {
+        if (miners.length > 0) {
+            const targets = miners.filter(c => c.store.getUsedCapacity(depositType) > 0);
+            let target = targets[0]
+            if (targets.length > 0) {
+                target = creep.pos.findClosestByRange(targets);
+            }
+            if (!creep.pos.isNearTo(target)) {
+                creep.moveTo(target);
+            }
+            return;
+        } else {
+            if (deposit.lastCooldown <= 100) {
+                const { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
+                let maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
+                let minersNeeded = Math.max(0, maxPairs - miners);
+                if (minersNeeded > 0) {
+                    global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom)
+                    if (creep.ticksToLive <= (Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom) + 1) * 50) {
+                        creep.memory.suicide = true
+                        return;
+                    }
+                }
+            } else {
+                creep.memory.suicide = true
+            }
+        }
+        return;
+    } else {
         if (creep.room.name !== creep.memory.homeRoom) {
             return creep.moveToRoomAvoidEnemyRooms(creep.memory.homeRoom);
         }
