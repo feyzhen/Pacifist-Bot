@@ -90,7 +90,8 @@ const run = function (creep: any) {
                 const { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
                 let maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
                 let minersNeeded = Math.max(0, maxPairs - miners);
-                if (minersNeeded > 0) {
+                if (minersNeeded > 0 && Game.time % 5 == 0) {
+                    console.log(miners, minersNeeded, maxPairs)
                     global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom)
                 }
             } else {
