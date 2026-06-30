@@ -36,41 +36,35 @@ const run = function (creep: any) {
     const hostiles = creep.room.find(FIND_HOSTILE_CREEPS);
 
     if (hostiles.length === 0) {
-        // 没有 hostile：巡逻到房间边缘，保持视野
-        const edgeX = Math.random() < 0.5 ? 1 : 48;
-        const edgeY = Math.random() < 0.5 ? 1 : 48;
-        const targetPos = new RoomPosition(edgeX, edgeY, creep.room.name);
-        if (creep.pos.getRangeTo(targetPos) > 3) {
-            creep.moveTo(targetPos);
+        if(creep.hits != creep.hitsMax) {
+            creep.heal(creep);
+        }
+        const injuredAllies = creep.room.find(FIND_MY_CREEPS, {
+            filter: c => c !== creep && c.hits < c.hitsMax
+        });
+        if (injuredAllies.length > 0) {
+            const injured = injuredAllies[0];
+            if (creep.pos.getRangeTo(injured) <= 3) {
+                if (creep.pos.isNearTo(injured)) {
+                    creep.heal(injured)
+                } else {
+                    creep.rangedHeal(injured);
+                }
+            } else {
+                creep.moveTo(injured);
+            }
         }
         return;
+
     }
 
     const target = creep.pos.findClosestByRange(hostiles);
 
     // 治疗逻辑：先治疗自己，再治疗队友
-    if (creep.hits < creep.hitsMax * 0.8) {
+    if(creep.hits != creep.hitsMax || (hostiles.length > 0 && creep.pos.getRangeTo(target) <= 4)) {
         creep.heal(creep);
-        return;
     }
 
-    const injuredAllies = creep.room.find(FIND_MY_CREEPS, {
-        filter: c => c !== creep && c.hits < c.hitsMax * 0.6
-    });
-    if (injuredAllies.length > 0) {
-        const injured = injuredAllies[0];
-        if (creep.pos.getRangeTo(injured) <= 3) {
-            if (creep.pos.isNearTo(injured)) {
-                creep.heal(injured)
-            } else {
-                creep.rangedHeal(injured);
-            }
-            return;
-        } else {
-            creep.moveTo(injured);
-            return;
-        }
-    }
 
     // ── 攻击 + 拉扯逻辑（参考 RangedAttacker 的距离分层） ────────
     const range = creep.pos.getRangeTo(target);

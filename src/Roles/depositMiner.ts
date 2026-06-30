@@ -43,7 +43,7 @@ const run = function (creep: any) {
         creep.memory.linearDistance = Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom)
     }
     if (!creep.memory.ticksToReGenerate) {
-        creep.memory.ticksToReGenerate = creep.body.length * 3 + creep.memory.linearDistance * 50
+        creep.memory.ticksToReGenerate = creep.body.length * 3 + (creep.memory.linearDistance + 1) * 50
     }
     if (!creep.memory.maxPairs) {
         creep.memory.maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length
@@ -54,7 +54,9 @@ const run = function (creep: any) {
     if (!creep.memory.SDMine) {
         creep.memory.SDMine = false;
     }
-    if (creep.ticksToLive <= creep.memory.ticksToReGenerate && Game.time % 15 == 0 && (creep.memory.SDMine == false || creep.memory.SDCarry == false)) {
+    if ((creep.ticksToLive <= creep.memory.ticksToReGenerate || creep.store.getUsedCapacity() >= creep.store.getCapacity() * 0.5) &&
+        Game.time % 15 == 0 &&
+        (creep.memory.SDMine == false || creep.memory.SDCarry == false)) {
         let maxPairs = creep.memory.maxPairs
         let { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
         let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);

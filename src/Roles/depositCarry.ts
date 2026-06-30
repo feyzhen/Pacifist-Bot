@@ -37,7 +37,7 @@ const run = function (creep: any) {
     }
 
     if (!creep.memory.ticksToReGenerate) {
-        creep.memory.ticksToReGenerate = creep.memory.linearDistance * 50
+        creep.memory.ticksToReGenerate = (creep.memory.linearDistance + 1) * 50
     }
 
     if (creep.ticksToLive <= creep.memory.ticksToReGenerate) {
@@ -53,18 +53,20 @@ const run = function (creep: any) {
     }
 
     // ── 阶段1：前往目标房间 ──────────────────────────────────────
-    if (creep.room.name !== creep.memory.targetRoom) {
-        return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
-    }
 
-    const deposit: any = Game.getObjectById(creep.memory.deposit) || creep.findDeposit();
-    const depositType = creep.memory.depositType || deposit.depositType;
-    if (!creep.memory.maxPairs) {
-        creep.memory.maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
-    }
+
+
 
     // ── 阶段2：从 miner 处收集能量 ────────────────────────────────
     if (!creep.memory.full) {
+        if (creep.room.name !== creep.memory.targetRoom) {
+            return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
+        }
+        const deposit: any = Game.getObjectById(creep.memory.deposit) || creep.findDeposit();
+        const depositType = creep.memory.depositType || deposit.depositType;
+        if (!creep.memory.maxPairs) {
+            creep.memory.maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
+        }
         const dropped = creep.room.find(FIND_DROPPED_RESOURCES, {
             filter: r => r.resourceType === depositType || r.resourceType != RESOURCE_ENERGY
         });
@@ -100,7 +102,7 @@ const run = function (creep: any) {
         });
 
         if (miners.length > 0) {
-            const targets = miners.filter(c => c.store.getUsedCapacity(depositType) > 0);
+            const targets = miners.filter(c => c.store.getUsedCapacity() > 0);
             if (targets.length > 0) {
                 let target = targets[0];
                 // target = creep.pos.findClosestByRange(targets);
@@ -135,23 +137,19 @@ const run = function (creep: any) {
 
         // 优先存入 storage
         let storage: any = Game.getObjectById(creep.memory.storage) || creep.findStorage();
-        if (storage && storage.store.getFreeCapacity(depositType) > 0) {
-            if (creep.pos.isNearTo(storage)) {
-                const result = creep.transfer(storage, depositType);
-                if (result === OK && creep.store[depositType] === 0) {
-                    creep.memory.full = false;
-                    // delete creep.memory.waitStart;
+        if (storage && storage.store.getFreeCapacity() > 0) {
+            for (const res in creep.store) {
+                if (creep.transfer(storage, res) === ERR_NOT_IN_RANGE) {
+                    creep.MoveCostMatrixRoadPrio(storage);
                 }
-            } else {
-                creep.MoveCostMatrixRoadPrio(storage, 1);
             }
             return;
         }
 
         // 其次存入 terminal
-        if (creep.room.terminal && creep.room.terminal.store.getFreeCapacity(depositType) > 0) {
+        if (creep.room.terminal && creep.room.terminal.store.getFreeCapacity() > 0) {
             if (creep.pos.isNearTo(creep.room.terminal)) {
-                creep.transfer(creep.room.terminal, depositType);
+                creep.transfer(creep.room.terminal);
                 creep.memory.full = false;
                 // delete creep.memory.waitStart;
             } else {
