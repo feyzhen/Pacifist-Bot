@@ -43,22 +43,43 @@ const run = function (creep: any) {
         creep.memory.linearDistance = Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom)
     }
     if (!creep.memory.ticksToReGenerate) {
-        creep.memory.ticksToReGenerate = Math.max(creep.body.length * 3 + 5, creep.memory.linearDistance * 50)
+        creep.memory.ticksToReGenerate = creep.body.length * 3 + creep.memory.linearDistance * 50
     }
     if (!creep.memory.maxPairs) {
         creep.memory.maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length
     }
-    if (creep.ticksToLive <= creep.memory.ticksToReGenerate) {
+    if (!creep.memory.SDCarry) {
+        creep.memory.SDCarry = false;
+    }
+    if (!creep.memory.SDMine) {
+        creep.memory.SDMine = false;
+    }
+    if (creep.ticksToLive <= creep.memory.ticksToReGenerate && Game.time % 15 == 0 && (creep.memory.SDMine == false || creep.memory.SDCarry == false)) {
         let maxPairs = creep.memory.maxPairs
         let { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
-        if (deposit.lastCooldown <= 100 && creep.room.name == creep.memory.targetRoom && miners < maxPairs) {
-            while (miners < maxPairs) {
-                global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom)
-                miners++
+        let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);
+        if (deposit.lastCooldown <= 100) {
+            if (creep.memory.SDMine == false) {
+                while (miners < maxPairs) {
+                    global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom, creep.memory.deposit)
+                    miners++
+                }
+                creep.memory.SDMine = true;
             }
-            return;
+            if (creep.memory.SDCarry == false) {
+                while (carryNeeded > 0) {
+                    global.SDCarry(creep.memory.homeRoom, creep.memory.targetRoom);
+                    carryNeeded--;
+                }
+                creep.memory.SDCarry = true;
+            }
+
+        } else {
+            if (carries == 0) {
+                creep.memory.suicide = true;
+                return;
+            }
         }
-        // return;
     }
 
     // ── 阶段2：采集沉积物 ─────────────────────────────────────────
@@ -84,23 +105,10 @@ const run = function (creep: any) {
                     filter: c => c.memory.role === "depositCarry" && c.memory.targetRoom == creep.memory.targetRoom
                 });
                 if (carriers.length > 0) {
-                    const targets = carriers.filter(c => c.store.getUsedCapacity() > 0 && creep.pos.isNearTo(c))
+                    const targets = carriers.filter(c => c.store.getFreeCapacity() > 0 && creep.pos.isNearTo(c))
                     if (targets.length > 0) {
                         creep.transfer(targets[0], depositType);
                         return;
-                    }
-                } else {
-                    if (Game.time % 30 == 0) {
-                        const { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
-                        let carryNeeded = Math.max(0, Math.floor((miners + 1) / 2) - carries);
-                        if (carriers == 0 && creep.ticksToLive <= creep.memory.linearDistance * 50) {
-                            creep.memory.suicide = true
-                            return;
-                        }
-                        if (carryNeeded > 0 && creep.ticksToLive <= creep.memory.ticksToReGenerate * 2){
-                            global.SDCarry(creep.memory.homeRoom, creep.memory.targetRoom)
-                            return;
-                        }
                     }
                 }
             } else {

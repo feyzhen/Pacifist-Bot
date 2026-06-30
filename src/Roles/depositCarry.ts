@@ -32,9 +32,12 @@ const run = function (creep: any) {
     if (!creep.memory.linearDistance) {
         creep.memory.linearDistance = Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom)
     }
+    if (!creep.memory.SDMine) {
+        creep.memory.SDMine = false;
+    }
 
     if (!creep.memory.ticksToReGenerate) {
-        creep.memory.ticksToReGenerate = Math.max(creep.body.length * 3 + 5, creep.memory.linearDistance * 50)
+        creep.memory.ticksToReGenerate = creep.memory.linearDistance * 50
     }
 
     if (creep.ticksToLive <= creep.memory.ticksToReGenerate) {
@@ -46,6 +49,7 @@ const run = function (creep: any) {
             creep.memory.homeRoom = creep.room.name;
         }
         creep.memory.suicide = true;
+        return;
     }
 
     // ── 阶段1：前往目标房间 ──────────────────────────────────────
@@ -55,6 +59,9 @@ const run = function (creep: any) {
 
     const deposit: any = Game.getObjectById(creep.memory.deposit) || creep.findDeposit();
     const depositType = creep.memory.depositType || deposit.depositType;
+    if (!creep.memory.maxPairs) {
+        creep.memory.maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
+    }
 
     // ── 阶段2：从 miner 处收集能量 ────────────────────────────────
     if (!creep.memory.full) {
@@ -71,29 +78,51 @@ const run = function (creep: any) {
             return;
         }
 
+        const tombstones = creep.room.find(FIND_TOMBSTONES, {
+            filter: t => Object.keys(t.store).some(res => res !== RESOURCE_ENERGY && t.store[res] > 0)
+        });
+
+        if (tombstones.length > 0) {
+            const tomb = tombstones[0];
+            for (const res in tomb.store) {
+                if (res !== RESOURCE_ENERGY) {
+                    if (creep.withdraw(tomb, res) === ERR_NOT_IN_RANGE) {
+                        creep.moveTo(tomb);
+                    }
+                    break;
+                }
+            }
+            return;
+        }
+
         const miners = creep.room.find(FIND_MY_CREEPS, {
             filter: c => c.memory.role === "depositMiner" && c.memory.targetRoom == creep.memory.targetRoom
         });
 
         if (miners.length > 0) {
             const targets = miners.filter(c => c.store.getUsedCapacity(depositType) > 0);
-            let target = targets[0]
             if (targets.length > 0) {
-                target = creep.pos.findClosestByRange(targets);
+                let target = targets[0];
+                // target = creep.pos.findClosestByRange(targets);
+                // }
+                if (!creep.pos.isNearTo(target)) {
+                    creep.moveTo(target);
+                } else {
+                    creep.moveTo(deposit, {range: 2})
+                }
+                return;
             }
-            if (!creep.pos.isNearTo(target)) {
-                creep.moveTo(target);
-            }
-            return;
         } else {
             if (deposit.lastCooldown <= 100) {
                 const { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
-                let maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
+                let maxPairs = creep.memory.maxPairs;
                 let minersNeeded = Math.max(0, maxPairs - miners);
-                if (minersNeeded > 0 && Game.time % 5 == 0) {
-                    console.log(miners, minersNeeded, maxPairs)
-                    global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom)
+                while (minersNeeded > 0 && creep.memory.SDMine == false) {
+                    // console.log(miners, minersNeeded, maxPairs)
+                    global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom, creep.memory.deposit);
+                    minersNeeded--;
                 }
+                creep.memory.SDMine = true
             } else {
                 creep.memory.suicide = true
             }

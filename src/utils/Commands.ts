@@ -2307,20 +2307,20 @@ global.SRE = function (homeRoom, targetRoom, boosted = false, boostParts?: BodyP
         }
 
         // Calculate requirements using BoostUtils (supports downgrade)
-        const boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage);
+        const boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(body, boostType, storage as any);
 
-        if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+        if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage as any, boostRequirements)) {
             // Collect actual lab IDs from room.memory.labs
             const boostlabs: string[] = [];
             for (const [labNum] of Object.entries(boostRequirements)) {
-                const outputKey = `output${labNum.replace('lab', '')}`; // lab2 → outputLab2
+                const outputKey = `outputLab${labNum.slice(3)}`; // lab7 → outputLab7
                 const labId = room.memory.labs?.[outputKey];
                 if (labId) boostlabs.push(labId);
             }
 
             if (boostlabs.length > 0) {
                 spawnOpts.memory.boostlabs = boostlabs;
-                BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
+                BoostUtils.allocateBoostResourcesWithDowngrade(room, storage as any, boostRequirements);
             }
         }
     }
