@@ -21,6 +21,7 @@ interface DepositMeta {
     lastDrainSpawned: number | null;
     lastEliminateSpawned: number | null;
     lastAbandoned?: number;
+    lastHostileSpawned?: number; // debounce: last tick we spawned miners during hostile phase
 }
 
 /** Classify hostile threat: military parts / total parts, strong if >= 30% */
@@ -128,14 +129,24 @@ function countAliveMinersCarries(room: any, targetRoom: string, depositId?: stri
 // }
 
 /** Spawn miners/carries for a deposit based on maxPairs and alive count.
- * Alternates between miner and carry to maintain ~2:1 ratio. */
-function spawnMinersCarries(homeRoom: string, targetRoom: string, depId: string, maxPairs: number) {
+ * Debounces: skips spawning if called within 2 ticks of last spawn attempt
+ * to prevent race conditions when multiple deposits/hostile ticks overlap. */
+function spawnMinersCarries(homeRoom: string, targetRoom: string, depId: string, maxPairs: number, depMeta?: DepositMeta) {
+    // Debounce: skip if we just spawned within the last 2 ticks
+    if (depMeta && depMeta.lastHostileSpawned && Game.time - depMeta.lastHostileSpawned < 2) {
+        return;
+    }
+
     const { miners, carries } = countAliveMinersCarries(Game.rooms[homeRoom], targetRoom, depId);
     let minersNeeded = Math.max(0, maxPairs - miners);
     let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);
     while (minersNeeded > 0) {
         if (global.SDMine(homeRoom, targetRoom, depId) !== "Success!") break;
         minersNeeded--;
+    }
+    // Update debounce timestamp
+    if (depMeta) {
+        depMeta.lastHostileSpawned = Game.time;
     }
 }
 
@@ -223,20 +234,20 @@ function processDeposit(
                 const drainResult = global.SRE(homeRoom, targetRoom, false);
                 if (drainResult === "Success!") {
                     console.log(`[deposit] ${targetRoom}/${depId} hostile persistent, spawning drain wave`);
-                    // Drain wave spawned successfully — stop spawning deposits.
-                    // Caller will handle weak-hostile spawn on subsequent ticks.
                     return true;
                 } else {
                     console.log(`[deposit] ${targetRoom}/${depId} drain spawn failed: ${drainResult}`);
-                    // Spawn failed — revert to none so we retry next tick
-                    depMeta.hostilePhase = "none";
+                    // Drain spawn failed — revert to none so we retry next tick.
+                    // CRITICAL: do NOT fall through to normal spawn here.
+                    // Spawning miners while hostiles are present wastes creeps.
+                    depMeta.hostilePhase = "none"; 
                     depMeta.lastDrainSpawned = null;
-                    // Fall through to normal spawn below
+                    return false; // skip spawning entirely
                 }
             }
         }
-        // First hostile sighting (or drain spawn failed) — spawn deposits normally
-        spawnMinersCarries(homeRoom, targetRoom, depId, depMeta.maxPairs);
+        // First hostile sighting (or no hostile history) — spawn deposits normally
+        spawnMinersCarries(homeRoom, targetRoom, depId, depMeta.maxPairs, depMeta);
     }
     // drain/eliminate/abandoned phases: no spawn from here.
     // (weak hostile spawn is handled by caller after processDeposit returns)
@@ -1236,7 +1247,7 @@ function observe(room) {
                                         // Weak hostile under attack wave: allow spawn alongside elite
                                         if (depMeta.hostilePhase === "drain" || depMeta.hostilePhase === "eliminate") {
                                             if (!isStrong) {
-                                                spawnMinersCarries(room.name, adj, depId, depMeta.maxPairs);
+                                                spawnMinersCarries(room.name, adj, depId, depMeta.maxPairs, depMeta);
                                             }
                                         }
                                     }

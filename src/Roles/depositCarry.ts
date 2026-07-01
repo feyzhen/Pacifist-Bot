@@ -124,12 +124,15 @@ const run = function (creep: any) {
                     global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom, creep.memory.deposit);
                     minersNeeded--;
                 }
-                creep.memory.SDMine = true
+                // Only mark SDMine as done if we actually spawned something or reached maxPairs
+                if (minersNeeded <= 0) {
+                    creep.memory.SDMine = true
+                }
             } else {
                 creep.memory.suicide = true
             }
+            return;
         }
-        return;
     } else {
         if (creep.room.name !== creep.memory.homeRoom) {
             return creep.moveToRoomAvoidEnemyRooms(creep.memory.homeRoom);

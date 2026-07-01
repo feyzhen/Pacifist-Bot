@@ -54,9 +54,21 @@ const run = function (creep: any) {
     if (!creep.memory.SDMine) {
         creep.memory.SDMine = false;
     }
+    // ── 再生逻辑：每隔 15 tick 检查是否需要补充矿工/搬运工 ──────────
+    // 关键修复：只在 homeRoom 的 tick % 15 == 0 时由第一个触发的 DM 执行再生，
+    // 避免多个 DM 在同一 tick 内并发触发，导致超量生成。
     if ((creep.ticksToLive <= creep.memory.ticksToReGenerate || creep.store.getUsedCapacity() >= creep.store.getCapacity() * 0.5) &&
         Game.time % 15 == 0 &&
         (creep.memory.SDMine == false || creep.memory.SDCarry == false)) {
+        // 只允许 homeRoom 中 Game.time % 15 == 0 的第一个 creep 执行再生
+        // 用 depositId 作为锁：只有第一个到达的 DM 能触发，其余跳过
+        const regenKey = `regen_${creep.memory.deposit}_${creep.memory.homeRoom}`;
+        if (Memory[regenKey] === Game.time) {
+            // 已经有另一个 DM 在这个 tick 触发了再生，跳过
+            return;
+        }
+        Memory[regenKey] = Game.time;
+
         let maxPairs = creep.memory.maxPairs
         let { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
         let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);
