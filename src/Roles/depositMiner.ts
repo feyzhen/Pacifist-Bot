@@ -35,7 +35,7 @@ const run = function (creep: any) {
         creep.memory.suicide = true;
         return;
     }
-    if (deposit.room.roomName != creep.memory.targetRoom) {
+    if (deposit.room.name != creep.memory.targetRoom) {
         delete creep.memory.deposit
     }
 
@@ -62,18 +62,17 @@ const run = function (creep: any) {
         (creep.memory.SDMine == false || creep.memory.SDCarry == false)) {
         // 只允许 homeRoom 中 Game.time % 15 == 0 的第一个 creep 执行再生
         // 用 depositId 作为锁：只有第一个到达的 DM 能触发，其余跳过
-        const regenKey = `regen_${creep.memory.deposit}_${creep.memory.homeRoom}`;
-        if (Memory[regenKey] === Game.time) {
-            // 已经有另一个 DM 在这个 tick 触发了再生，跳过
-            return;
-        }
-        Memory[regenKey] = Game.time;
 
         let maxPairs = creep.memory.maxPairs
         let { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
         let carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);
         if (deposit.lastCooldown <= 100) {
             if (creep.memory.SDMine == false) {
+                if (Memory.depositMining[creep.memory.targetRoom]?.[creep.memory.deposit]?.["lastSpawnDM"] === Game.time) {
+                    // 已经有另一个 DM 在这个 tick 触发了再生，跳过
+                    return;
+                }
+                Memory.depositMining[creep.memory.targetRoom][creep.memory.deposit]["lastSpawnDM"] = Game.time;
                 while (miners < maxPairs) {
                     global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom, creep.memory.deposit)
                     miners++
@@ -81,6 +80,11 @@ const run = function (creep: any) {
                 creep.memory.SDMine = true;
             }
             if (creep.memory.SDCarry == false) {
+                if (Memory.depositMining[creep.memory.targetRoom]?.[creep.memory.deposit]?.["lastSpawnDC"] === Game.time) {
+                    // 已经有另一个 DM 在这个 tick 触发了再生，跳过
+                    return;
+                }
+                Memory.depositMining[creep.memory.targetRoom][creep.memory.deposit]["lastSpawnDC"] = Game.time;
                 while (carryNeeded > 0) {
                     global.SDCarry(creep.memory.homeRoom, creep.memory.targetRoom);
                     carryNeeded--;

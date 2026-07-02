@@ -826,7 +826,7 @@ Creep.prototype.findDeposit = function () {
     let deposit: any = this.memory.deposit ? Game.getObjectById(this.memory.deposit) : null;
     if (!deposit) {
         let deposits = this.room.find(FIND_DEPOSITS, { filter: (s: any) => s.lastCooldown <= 120 });
-        if (deposits.length) {
+        if (deposits.length > 0) {
             // deposits = deposits.filter((s: any) => s.pos.getOpenPositions().length > 0);
             deposit = this.pos.findClosestByRange(deposits);
         }
