@@ -181,33 +181,52 @@ function market(room):any {
                 return 2; // 默认最低价格
             }
 
-            // 计算加权平均价格
+            // 提取 stddevPrice，用 IQR 法过滤异常日
+            const stdDevs = resourceData.map(d => d.stddevPrice).filter(v => v > 0);
+            let filteredStdDevDays = resourceData;
+            if (stdDevs.length > 0) {
+                const sorted = [...stdDevs].sort((a, b) => a - b);
+                const q1Idx = Math.floor(sorted.length * 0.25);
+                const q3Idx = Math.floor(sorted.length * 0.75);
+                const q1 = sorted[q1Idx];
+                const q3 = sorted[q3Idx];
+                const iqr = q3 - q1;
+                const upperBound = q3 + 1.5 * iqr;
+                filteredStdDevDays = resourceData.filter(d => d.stddevPrice <= upperBound);
+                if (filteredStdDevDays.length === 0) {
+                    // 全部被过滤，回退到原始数据
+                    filteredStdDevDays = resourceData;
+                }
+            }
+
+            // 计算加权平均价格（基于过滤后的数据）
             let totalAverage = 0;
             let totalStDev = 0;
             let weight = 1;
+            const divisor = filteredStdDevDays.length * (filteredStdDevDays.length + 1) / 2;
 
-            for (const day of resourceData) {
+            for (const day of filteredStdDevDays) {
                 totalAverage += day.avgPrice * weight;
                 totalStDev += day.stddevPrice * weight;
                 weight++;
             }
 
-            const average = totalAverage / ((resourceData.length * (resourceData.length + 1)) / 2);
-            const stDev = totalStDev / ((resourceData.length * (resourceData.length + 1)) / 2);
+            const average = totalAverage / divisor;
+            const stDev = totalStDev / divisor;
 
             // 根据库存量调整价格策略
             if (resourceStored >= 5000) {
                 // 高库存：积极销售，价格略低于市场均价
-                return Math.max(2, average - stDev);
+                return Math.max(2, average);
             } else if (resourceStored >= 2000) {
                 // 中等库存：正常销售，按市场均价
-                return Math.max(2, average);
+                return Math.max(2, average + stDev);
             } else if (resourceStored >= 100) {
                 // 低库存：保守销售，价格略高于市场均价
-                return Math.max(2, average + stDev);
+                return Math.max(2, average + stDev * 2, average * 1.2);
             } else {
                 // 极低库存：保守销售，价格更高
-                return Math.max(2, average + (stDev * 1.5));
+                return Math.max(2, average + (stDev * 5));
             }
         }
 //------------------------------------------------------------------------------------------------------------------------------------------------

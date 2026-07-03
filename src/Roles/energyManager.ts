@@ -612,7 +612,6 @@ import { getLabThreshold } from "../constants/constants.labs";
             return;
         }
 
-
         if(Game.time % 50 <= 50) {
 
 
@@ -851,6 +850,40 @@ import { getLabThreshold } from "../constants/constants.labs";
             return;
         }
 
+        }
+
+        // ── 搬运 terminal 中多余的外来基础资源到 storage ──────────────────────
+        // 放在所有高优先级搬运（energy/labs/factory/mineral）之后，
+        // 确保 terminal.ENERGY > 45000 等条件不会把这个逻辑提前截断。
+        // rooms.market.ts 会通过 terminal.send() 从其他房间送来 H/O/U/K/L/Z/Catalyst，
+        // 如果 terminal 中堆积过多会占用容量，需要搬回 storage。
+        // 跳过本房间产出的矿物（MineralType）：market 模块需要它在 terminal 中挂卖单，
+        // 且 L570-581 的逻辑会在 storage > 20000 时主动补到 terminal，两者配合即可。
+        const BaseResources: ResourceConstant[] = [
+            RESOURCE_HYDROGEN, RESOURCE_OXYGEN, RESOURCE_UTRIUM,
+            RESOURCE_KEANIUM, RESOURCE_LEMERGIUM, RESOURCE_ZYNTHIUM, RESOURCE_CATALYST
+        ];
+        if(storage && terminal && storage.store.getFreeCapacity() > MaxStorage * 5) {
+            for(const resource of BaseResources) {
+                if(resource === MineralType) continue;
+                const terminalAmount = terminal.store[resource] || 0;
+                const storageAmount = storage.store[resource] || 0;
+                // terminal 中外来资源 > 3000 且 storage 不足 < 5000 时才搬回，
+                // 搬运时 terminal 保留 3000，避免把 market 需要的原料抢回来
+                if(terminalAmount > 3000 && storageAmount < 5000) {
+                    const amount = Math.min(terminalAmount - 3000, creep.store.getFreeCapacity());
+                    if(amount > 0) {
+                        if(creep.pos.isNearTo(terminal)) {
+                            creep.withdraw(terminal, resource, amount);
+                            creep.memory.target = storage.id;
+                        }
+                        else {
+                            creep.MoveCostMatrixRoadPrio(terminal, 1);
+                        }
+                        return;
+                    }
+                }
+            }
         }
 
 

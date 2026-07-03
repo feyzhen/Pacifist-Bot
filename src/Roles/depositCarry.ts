@@ -46,7 +46,9 @@ const run = function (creep: any) {
         if (creep.store.getUsedCapacity() == 0) {
             // 在异地：标记 homeRoom 为当前房间，让 recycle() 直接在此回收
             // （recycle 的 homeRoom 判断会跳过跨房间逻辑，直接在 bin/spawn 处回收）
-            creep.memory.homeRoom = creep.room.name;
+            if (creep.memory.homeRoom != creep.room.name) {
+                creep.memory.homeRoom = creep.room.name;
+            }
         }
         creep.memory.suicide = true;
         return;
