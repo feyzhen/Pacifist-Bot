@@ -345,7 +345,7 @@ function market(room):any {
 
                 // 优雅的销售逻辑：只使用该资源的销售阈值
                 if(room.terminal.store[resource] >= sellThreshold) {
-                    const result = sell_resource(resource, undefined, 1000);
+                    const result = sell_resource(resource, null, 1000);
                     if(result == 0) {
                         return;
                     }
@@ -414,13 +414,37 @@ function market(room):any {
             }
         }
 
-        function sell_resource(resource:ResourceConstant, minPrice:number=5, OrderAmount=100):any | void {
-            // 如果没有指定最低价格，使用动态价格计算
-            const dynamicPrice = minPrice || CalcPriceForSale(resource, room.terminal.store[resource]);
+        function sell_resource(resource:ResourceConstant, minPrice:number|null=5, OrderAmount=100):any | void {
+            // 如果没有指定最低价格（null或undefined），使用动态价格计算
+            // 注意：JS默认参数对 undefined 会用默认值，所以传 undefined 时 minPrice=5
+            // 要用 null 来表示"不传最低价，使用动态定价"
+            const terminalStore = room.terminal.store[resource];
+            const dynamicPrice = (minPrice !== null && minPrice !== undefined) ? minPrice : CalcPriceForSale(resource, terminalStore);
+            console.log("Dynamic Price:", dynamicPrice);
 
             const OrderMaxEnergy = OrderAmount * SALES_CONFIG.BASE_SALES.ENERGY_COST_MULTIPLIER;
             let orders = Game.market.getAllOrders({type: ORDER_BUY, resourceType: resource});
-            orders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price >= dynamicPrice );
+            const filteredOrders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price >= dynamicPrice );
+            orders = filteredOrders;
+
+            // Debug: notify when a deal is about to happen or when price is suspiciously low
+            if (orders.length > 0) {
+                const history = Game.market.getHistory(resource) || [];
+                const debugMsg = [
+                    `[MarketDebug] DEAL`,
+                    `room=${room.name}`,
+                    `res=${resource}`,
+                    `termStore=${terminalStore}`,
+                    `dynPrice=${dynamicPrice.toFixed(2)}`,
+                    `calDynPrice=${CalcPriceForSale(resource, terminalStore).toFixed(2)}`,
+                    `amt=${OrderAmount}`,
+                    `matched=${orders.length}`,
+                    `best={id:${orders[0].id},price:${orders[0].price},amt:${orders[0].amount},from:${orders[0].roomName}}`,
+                    `histLen=${history.length}`
+                ].join('|');
+                // Game.notify(debugMsg);
+                console.log(JSON.stringify(debugMsg))
+            }
             if(orders.length > 0) {
                 orders.sort((a,b) => b.price - a.price);
 
@@ -443,7 +467,7 @@ function market(room):any {
                 }
             }
             else {
-                console.log("no order found above price of", minPrice, "for", resource, room.name)
+                console.log("no order found above price of", dynamicPrice, "for", resource, room.name)
             }
         }
 
