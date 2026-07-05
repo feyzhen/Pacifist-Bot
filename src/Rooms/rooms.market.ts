@@ -345,7 +345,7 @@ function market(room):any {
 
                 // 优雅的销售逻辑：只使用该资源的销售阈值
                 if(room.terminal.store[resource] >= sellThreshold) {
-                    const result = sell_resource(resource, null, 1000);
+                    const result = sell_resource(resource, null, 1000, sellThreshold);
                     if(result == 0) {
                         return;
                     }
@@ -414,7 +414,7 @@ function market(room):any {
             }
         }
 
-        function sell_resource(resource:ResourceConstant, minPrice:number|null=5, OrderAmount=100):any | void {
+        function sell_resource(resource:ResourceConstant, minPrice:number|null=5, OrderAmount=100, sellThreshold:number=1000):any | void {
             // 如果没有指定最低价格（null或undefined），使用动态价格计算
             // 注意：JS默认参数对 undefined 会用默认值，所以传 undefined 时 minPrice=5
             // 要用 null 来表示"不传最低价，使用动态定价"
@@ -422,12 +422,79 @@ function market(room):any {
             const dynamicPrice = (minPrice !== null && minPrice !== undefined) ? minPrice : CalcPriceForSale(resource, terminalStore);
             console.log("Dynamic Price:", dynamicPrice);
 
+            // ====== Step 1: 检查是否有自己的 sell order ======
+            if(!room.memory.market) room.memory.market = {};
+            if(!room.memory.market.sellOrders) room.memory.market.sellOrders = {};
+            if(!room.memory.market.sellOrders[resource]) room.memory.market.sellOrders[resource] = {};
+
+            const sellOrderKey = room.memory.market.sellOrders[resource];
+            const mySellOrderID = sellOrderKey.ID;
+            const mySellOrder = mySellOrderID && Game.market.orders[mySellOrderID] ? Game.market.orders[mySellOrderID] : null;
+            const SELL_ORDER_EXPIRE_THRESHOLD = 500; // 卖单过期阈值（ticks）
+
+            if (mySellOrder) {
+                // ====== Step 2: 有卖单 ======
+                const ticksSinceUpdate = Game.time - (sellOrderKey.lastUpdate || Game.time);
+
+                if (ticksSinceUpdate <= SELL_ORDER_EXPIRE_THRESHOLD) {
+                    // 卖单未过期：补充量（如果需要）
+                    let didExtend = false;
+                    if (mySellOrder.remainingAmount < OrderAmount) {
+                        const needAmount = Math.min(terminalStore - sellThreshold, 2000) - mySellOrder.remainingAmount;
+                        if (needAmount > 0) {
+                            Game.market.extendOrder(mySellOrder.id, needAmount);
+                            didExtend = true;
+                        }
+                    }
+                    // 只有在扩充订单时才更新 lastUpdate 和重置 resurrectCount
+                    // 否则卖单会一直"活着"，永远不会进入过期逻辑
+                    if (didExtend) {
+                        sellOrderKey.lastUpdate = Game.time;
+                        sellOrderKey.resurrectCount = 0;
+                    }
+                    // 定期检查价格是否需要调整，防止市场价变动后卖单价格滞后
+                    if (Game.time % 400 === 0) {
+                        const recPrice = CalcPriceForSale(resource, terminalStore);
+                        if (Math.abs(mySellOrder.price - recPrice) > 2) {
+                            Game.market.changeOrderPrice(mySellOrder.id, recPrice);
+                            console.log(`[SellOrder] Periodic price adjust for ${resource}: ${mySellOrder.price.toFixed(2)} -> ${recPrice.toFixed(2)}`);
+                        }
+                    }
+                    // 跳过 deal，优先卖单（省运费）
+                    return;
+                }
+                else {
+                    // 卖单过期：更新价格（复活1次），记录更新次数
+                    if (!sellOrderKey.resurrectCount) sellOrderKey.resurrectCount = 0;
+                    sellOrderKey.resurrectCount++;
+
+                    if (sellOrderKey.resurrectCount <= 1) {
+                        // 第一次复活：更新价格为 dynamicPrice，重置时间
+                        Game.market.changeOrderPrice(mySellOrder.id, dynamicPrice);
+                        sellOrderKey.lastUpdate = Game.time;
+                        sellOrderKey.resurrectCount = 1; // 标记已复活1次
+                        console.log(`[SellOrder] Revived sell order for ${resource} @ ${dynamicPrice.toFixed(2)}, count=${sellOrderKey.resurrectCount}`);
+                        // 复活后仍然跳过 deal，给卖单最后一次机会
+                        return;
+                    }
+                    else {
+                        // 第二次过期：取消卖单，继续往下走 deal 逻辑
+                        console.log(`[SellOrder] Cancelling expired sell order for ${resource}`);
+                        Game.market.cancelOrder(mySellOrder.id);
+                        delete room.memory.market.sellOrders[resource].ID;
+                        delete room.memory.market.sellOrders[resource].lastUpdate;
+                        sellOrderKey.resurrectCount = 0;
+                    }
+                }
+            }
+
+            // ====== Step 3: 无卖单 ======
             const OrderMaxEnergy = OrderAmount * SALES_CONFIG.BASE_SALES.ENERGY_COST_MULTIPLIER;
             let orders = Game.market.getAllOrders({type: ORDER_BUY, resourceType: resource});
             const filteredOrders = _.filter(orders, (order) => order.amount >= OrderAmount && Game.market.calcTransactionCost(OrderAmount, room.name, order.roomName) <= OrderMaxEnergy && order.price >= dynamicPrice );
             orders = filteredOrders;
 
-            // Debug: notify when a deal is about to happen or when price is suspiciously low
+            // Debug: notify when a deal is about to happen
             if (orders.length > 0) {
                 const history = Game.market.getHistory(resource) || [];
                 const debugMsg = [
@@ -445,17 +512,12 @@ function market(room):any {
                 // Game.notify(debugMsg);
                 console.log(JSON.stringify(debugMsg))
             }
-            if(orders.length > 0) {
+
+            if (orders.length > 0) {
+                // 有合适订单：deal 买单
                 orders.sort((a,b) => b.price - a.price);
-
-                // if(!price_checker(orders[0].price, resource)) {
-                //     return false;
-                // }
-
                 const orderID = orders[0].id;
-
-                console.log(JSON.stringify(orders[0]))
-                console.log(Game.market.calcTransactionCost(OrderAmount, room.name, orders[0].roomName))
+                console.log(JSON.stringify(orders[0]));
 
                 const result = Game.market.deal(orderID, OrderAmount, room.name);
                 if(result == 0) {
@@ -467,7 +529,25 @@ function market(room):any {
                 }
             }
             else {
-                console.log("no order found above price of", dynamicPrice, "for", resource, room.name)
+                // 无合适订单：挂 sell order
+                console.log("no order found above price of", dynamicPrice, "for", resource, room.name);
+                const orderAmount = Math.min(terminalStore - sellThreshold + 1000, 2000);
+                const createResult = Game.market.createOrder({
+                    type: ORDER_SELL,
+                    resourceType: resource,
+                    price: dynamicPrice,
+                    totalAmount: Math.max(orderAmount, 1000),
+                    roomName: room.name
+                });
+                if (createResult == 0) {
+                    // createOrder 返回 0 表示成功，但订单 ID 需要从 orders 对象中获取
+                    const newOrderID = Object.keys(Game.market.orders).find(k => Game.market.orders[k].roomName === room.name && Game.market.orders[k].resourceType === resource && Game.market.orders[k].type === ORDER_SELL);
+                    if (newOrderID) {
+                        room.memory.market.sellOrders[resource].ID = newOrderID;
+                        room.memory.market.sellOrders[resource].lastUpdate = Game.time;
+                    }
+                    console.log(`[FallbackSell] Created sell order for ${resource} @ ${dynamicPrice.toFixed(2)}, amount=${Math.max(orderAmount, 1000)}`);
+                }
             }
         }
 
