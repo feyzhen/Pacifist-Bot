@@ -118,23 +118,23 @@ const run = function (creep: any) {
             }
         } else {
             if (deposit.lastCooldown <= 100) {
-                if (Memory.depositMining[creep.memory.targetRoom]?.[creep.memory.deposit]?.["lastSpawnDM"] === Game.time) {
-                    // 已经有另一个 DM/DC 在这个 tick 触发了矿工再生，跳过
-                    return;
-                }
-                Memory.depositMining[creep.memory.targetRoom][creep.memory.deposit]["lastSpawnDM"] = Game.time;
+                if (creep.memory.SDMine == false) {
+                    if (Memory.depositMining[creep.memory.targetRoom]?.[creep.memory.deposit]?.["lastSpawnDM"] === Game.time) {
+                        // 已经有另一个 DM/DC 在这个 tick 触发了矿工再生，跳过
+                        return;
+                    }
+                    Memory.depositMining[creep.memory.targetRoom][creep.memory.deposit]["lastSpawnDM"] = Game.time;
 
-                const { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
-                let maxPairs = creep.memory.maxPairs;
-                let minersNeeded = Math.max(0, maxPairs - miners);
-                while (minersNeeded > 0 && creep.memory.SDMine == false) {
-                    // console.log(miners, minersNeeded, maxPairs)
-                    global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom, creep.memory.deposit);
-                    minersNeeded--;
-                }
-                // Only mark SDMine as done if we actually spawned something or reached maxPairs
-                if (minersNeeded <= 0) {
-                    creep.memory.SDMine = true
+                    let { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
+                    let maxPairs = creep.memory.maxPairs;
+                    let minersNeeded = Math.max(0, maxPairs - miners);
+                    while (minersNeeded > 0) {
+                        // console.log(miners, minersNeeded, maxPairs)
+                        if (global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom, creep.memory.deposit) !== "Success!") break;
+                        // ({ miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit));
+                        creep.memory.SDMine = true
+                        minersNeeded--;
+                    }
                 }
             } else {
                 creep.memory.suicide = true

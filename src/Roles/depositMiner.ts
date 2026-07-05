@@ -74,10 +74,12 @@ const run = function (creep: any) {
                 }
                 Memory.depositMining[creep.memory.targetRoom][creep.memory.deposit]["lastSpawnDM"] = Game.time;
                 while (miners < maxPairs) {
-                    global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom, creep.memory.deposit)
+                    if (global.SDMine(creep.memory.homeRoom, creep.memory.targetRoom, creep.memory.deposit) !== "Success!") break;
+                    creep.memory.SDMine = true;
                     miners++
+                    // ({ miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit));
                 }
-                creep.memory.SDMine = true;
+
             }
             if (creep.memory.SDCarry == false) {
                 if (Memory.depositMining[creep.memory.targetRoom]?.[creep.memory.deposit]?.["lastSpawnDC"] === Game.time) {
@@ -86,10 +88,13 @@ const run = function (creep: any) {
                 }
                 Memory.depositMining[creep.memory.targetRoom][creep.memory.deposit]["lastSpawnDC"] = Game.time;
                 while (carryNeeded > 0) {
-                    global.SDCarry(creep.memory.homeRoom, creep.memory.targetRoom);
+                    if (global.SDCarry(creep.memory.homeRoom, creep.memory.targetRoom) !== "Success!") break;
+                    creep.memory.SDCarry = true;
+                    // ({ miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit));
+                    // carryNeeded = Math.max(0, Math.floor((maxPairs + 1) / 2) - carries);
                     carryNeeded--;
                 }
-                creep.memory.SDCarry = true;
+
             }
 
         } else {
