@@ -3,7 +3,7 @@
  * @param {Creep} creep
  **/
 const run = function (creep) {
-    
+
 
 
     if(creep.memory.targetRoom && creep.memory.targetRoom !== creep.room.name) {
@@ -37,7 +37,10 @@ const run = function (creep) {
                 filter: object => object.structureType != STRUCTURE_CONTROLLER});}
         else {
             Structures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
-                filter: object => object.structureType != STRUCTURE_CONTROLLER && object.structureType != STRUCTURE_KEEPER_LAIR});
+                filter: object => object.structureType != STRUCTURE_CONTROLLER &&
+                    object.structureType != STRUCTURE_KEEPER_LAIR &&
+                    object.structureType != STRUCTURE_POWER_BANK
+            });
         }
 
         if(lowHitWalls.length > 0) {

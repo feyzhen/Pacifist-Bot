@@ -15,7 +15,7 @@ const run = function (creep: any) {
     // ── 撤离与危险检测 ──────────────────────────────────────────
     if (creep.evacuate()) return;
     if (creep.fleeHomeIfInDanger() == "timeOut") return;
-
+    creep.notifyWhenAttacked(false)
 
     if (creep.memory.suicide) {
         creep.recycle();

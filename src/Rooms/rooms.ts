@@ -11,6 +11,7 @@ import powerSpawning from "./rooms.powerSpawning";
 import supportOtherRooms from "./rooms.supportOtherRooms";
 import layoutManager, { manageRoomLayout } from "./rooms.layoutManager";
 import { isObserveEnabled } from "../Misc/observeManager";
+import {visuals} from "../utils/monitor.js";
 
 function rooms() {
   /* */
@@ -24,6 +25,7 @@ function rooms() {
 
   let roomsIController = 0;
   _.forEach(Game.rooms, function (room: any) {
+      // visuals(room);
     // if(!room.controller) {
     //     delete room.memory;
     // }
