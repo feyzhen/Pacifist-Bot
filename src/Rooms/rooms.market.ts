@@ -312,7 +312,7 @@ function market(room):any {
             //     }
             // }
 
-            if(Game.market.credits > CREDIT_REQUIREMENTS.BASE_RESOURCE_PURCHASE.SHARD3 && Game.shard.name == "shard3" || Game.shard.name !== "shard3" && Game.market.credits >= CREDIT_REQUIREMENTS.BASE_RESOURCE_PURCHASE.OTHER) {
+            if(room.controller.level >= 7 && Game.market.credits > CREDIT_REQUIREMENTS.BASE_RESOURCE_PURCHASE.SHARD3 && Game.shard.name == "shard3" || Game.shard.name !== "shard3" && Game.market.credits >= CREDIT_REQUIREMENTS.BASE_RESOURCE_PURCHASE.OTHER) {
                 if(room.terminal.store.getFreeCapacity() > 1000) {
                     // 使用常量定义的分层购买策略
                     for(const tier of PURCHASE_CONFIG.BASE_RESOURCES.PRICE_TIERS) {
@@ -331,7 +331,7 @@ function market(room):any {
                         }
                     }
 
-                    if(Game.market.credits > CREDIT_REQUIREMENTS.POWER_PURCHASE) {
+                    if(room.controller.level >= 8 && Game.market.credits > CREDIT_REQUIREMENTS.POWER_PURCHASE) {
                         // check if terminal + storage have less than power threshold
                         // if so, buy power
                         if(room.terminal.store[RESOURCE_POWER] + room.storage.store[RESOURCE_POWER] < STORAGE_THRESHOLDS.RESOURCE_STOCK.POWER_TOTAL) {

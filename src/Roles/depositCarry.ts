@@ -65,12 +65,11 @@ const run = function (creep: any) {
             return creep.moveToRoomAvoidEnemyRooms(creep.memory.targetRoom);
         }
         const deposit: any = Game.getObjectById(creep.memory.deposit) || creep.findDeposit();
-        const depositType = creep.memory.depositType || deposit.depositType;
-        if (!creep.memory.maxPairs) {
+        if (!creep.memory.maxPairs && deposit) {
             creep.memory.maxPairs = deposit.pos.getOpenPositionsIgnoreCreepsCheckStructs().length;
         }
         const dropped = creep.room.find(FIND_DROPPED_RESOURCES, {
-            filter: r => r.resourceType === depositType || r.resourceType != RESOURCE_ENERGY
+            filter: r => r.resourceType != RESOURCE_ENERGY
         });
         if (dropped.length > 0) {
             const target = dropped[0];

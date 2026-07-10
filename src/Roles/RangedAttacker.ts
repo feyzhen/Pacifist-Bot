@@ -19,14 +19,11 @@ const run = function (creep) {
     const enemyCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
     let Structures;
 
-    if(creep.hits != creep.hitsMax || (enemyCreeps.length > 0 && creep.pos.getRangeTo(creep.pos.findClosestByRange(enemyCreeps)) <= 4)) {
-        creep.heal(creep);
-    }
-
     if(creep.notifyWhenAttacked == true) {
         creep.notifyWhenAttacked(false);
     }
 
+    // ── 前往目标房间 ──────────────────────────────────────────────
     if(creep.memory.targetRoom && creep.memory.targetRoom !== creep.room.name) {
         if(!creep.memory.ignore) {
             if(enemyCreeps.length > 0) {
@@ -61,90 +58,114 @@ const run = function (creep) {
 
         return creep.moveToRoom(creep.memory.targetRoom);
     }
-    else {
 
+    // ── 到达目标房间后的驻扎逻辑 ──────────────────────────────────
+    // 治疗：先自己，再队友
+    if(creep.hits != creep.hitsMax || (enemyCreeps.length > 0 && creep.pos.getRangeTo(creep.pos.findClosestByRange(enemyCreeps)) <= 4)) {
+        creep.heal(creep);
+    }
 
-        if(enemyCreeps.length > 0) {
-            const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
-
-            let isMelee = false;
-            for(const part of closestEnemyCreep.body) {
-                if(part.type == ATTACK) {
-                    isMelee = true;
+    // 无敌人时，寻找受伤队友进行治疗
+    if(enemyCreeps.length === 0) {
+        const injuredAllies = creep.room.find(FIND_MY_CREEPS, {
+            filter: c => c !== creep && c.hits < c.hitsMax
+        });
+        if (injuredAllies.length > 0) {
+            const injured = injuredAllies[0];
+            if (creep.pos.getRangeTo(injured) <= 3) {
+                if (creep.pos.isNearTo(injured)) {
+                    creep.heal(injured);
+                } else {
+                    creep.rangedHeal(injured);
                 }
+            } else {
+                creep.moveTo(injured);
             }
+        }
+        return;
+    }
+
+    if(enemyCreeps.length > 0) {
+        const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
+
+        let isMelee = false;
+        for(const part of closestEnemyCreep.body) {
+            if(part.type == ATTACK) {
+                isMelee = true;
+            }
+        }
 
 
-            if(creep.pos.getRangeTo(closestEnemyCreep) == 1) {
-                creep.rangedMassAttack()
-            }
-            else if(creep.pos.getRangeTo(closestEnemyCreep) == 2 || creep.pos.getRangeTo(closestEnemyCreep) == 3) {
-                creep.rangedAttack(closestEnemyCreep)
-            }
+        if(creep.pos.getRangeTo(closestEnemyCreep) == 1) {
+            creep.rangedMassAttack()
+        }
+        else if(creep.pos.getRangeTo(closestEnemyCreep) == 2 || creep.pos.getRangeTo(closestEnemyCreep) == 3) {
+            creep.rangedAttack(closestEnemyCreep)
+        }
 
-            if(isMelee && creep.pos.getRangeTo(closestEnemyCreep) <= 2) {
-                if(closestEnemyCreep.fatigue == 0) {
-                    creep.RangedAttackFleeFromMelee(closestEnemyCreep);
-                }
-                else {
-                    creep.moveTo(creep);
-                }
-            }
-            else if(isMelee && creep.pos.getRangeTo(closestEnemyCreep) == 3) {
-
-            }
-            else if(!isMelee) {
-                creep.moveTo(closestEnemyCreep);
+        if(isMelee && creep.pos.getRangeTo(closestEnemyCreep) <= 2) {
+            if(closestEnemyCreep.fatigue == 0) {
+                creep.RangedAttackFleeFromMelee(closestEnemyCreep);
             }
             else {
-                creep.moveTo(closestEnemyCreep);
-            }
-
-            if((creep.pos.x == 1 || creep.pos.x == 48 || creep.pos.y == 1 || creep.pos.y == 48) && !isMelee) {
                 creep.moveTo(creep);
             }
-
-            return;
         }
+        else if(isMelee && creep.pos.getRangeTo(closestEnemyCreep) == 3) {
 
-        if(creep.room.controller && creep.room.controller.my) {
-            Structures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
-                filter: object => object.structureType != STRUCTURE_CONTROLLER && object.structureType != STRUCTURE_ROAD && object.structureType != STRUCTURE_WALL && object.structureType != STRUCTURE_CONTAINER &&  !object.my
-            });
+        }
+        else if(!isMelee) {
+            creep.moveTo(closestEnemyCreep);
         }
         else {
-            Structures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
-                filter: object => object.structureType != STRUCTURE_CONTROLLER && object.structureType != STRUCTURE_ROAD && object.structureType !== STRUCTURE_CONTAINER});
+            creep.moveTo(closestEnemyCreep);
         }
 
-
-        if(Structures.length > 0) {
-            const closestStructure = creep.pos.findClosestByRange(Structures);
-            if(creep.pos.isNearTo(closestStructure)) {
-                creep.rangedAttack(closestStructure);
-
-            }
-            else{
-                creep.MoveCostMatrixRoadPrio(closestStructure, 1);
-            }
-            return;
+        if((creep.pos.x == 1 || creep.pos.x == 48 || creep.pos.y == 1 || creep.pos.y == 48) && !isMelee) {
+            creep.moveTo(creep);
         }
 
-        const myConstructionSites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
-        if(myConstructionSites.length > 0) {
-            if(myConstructionSites[0].structureType == STRUCTURE_CONTAINER || myConstructionSites[0].structureType == STRUCTURE_ROAD) {
-                creep.MoveCostMatrixRoadPrio(myConstructionSites[0], 2);
-            }
-            else {
-                creep.MoveCostMatrixRoadPrio(myConstructionSites[0], 3);
-            }
+        return;
+    }
+
+    if(creep.room.controller && creep.room.controller.my) {
+        Structures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
+            filter: object => object.structureType != STRUCTURE_CONTROLLER && object.structureType != STRUCTURE_ROAD && object.structureType != STRUCTURE_WALL && object.structureType != STRUCTURE_CONTAINER &&  !object.my
+        });
+    }
+    else {
+        Structures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
+            filter: object => object.structureType != STRUCTURE_CONTROLLER && object.structureType != STRUCTURE_ROAD && object.structureType !== STRUCTURE_CONTAINER});
+    }
+
+
+    if(Structures.length > 0) {
+        const closestStructure = creep.pos.findClosestByRange(Structures);
+        if(creep.pos.isNearTo(closestStructure)) {
+            creep.rangedAttack(closestStructure);
+
         }
+        else{
+            creep.MoveCostMatrixRoadPrio(closestStructure, 1);
+        }
+        return;
+    }
 
-
-        if(enemyCreeps.length == 0 && Structures.length == 0 && creep.ticksToLive % 50 == 0 && creep.memory.sticky == false) {
-            creep.memory.targetRoom = false;
+    const myConstructionSites = creep.room.find(FIND_MY_CONSTRUCTION_SITES);
+    if(myConstructionSites.length > 0) {
+        if(myConstructionSites[0].structureType == STRUCTURE_CONTAINER || myConstructionSites[0].structureType == STRUCTURE_ROAD) {
+            creep.MoveCostMatrixRoadPrio(myConstructionSites[0], 2);
+        }
+        else {
+            creep.MoveCostMatrixRoadPrio(myConstructionSites[0], 3);
         }
     }
+
+
+    if(enemyCreeps.length == 0 && Structures.length == 0 && creep.ticksToLive % 50 == 0 && creep.memory.sticky == false) {
+        creep.memory.targetRoom = false;
+    }
+
 
 
     // if you are afraid of death, look away.
@@ -157,10 +178,6 @@ const run = function (creep) {
         return;
 	}
     // suicide section
-
-
-
-
 
 
 
