@@ -23,8 +23,14 @@ const run = function (creep: any) {
 
     // ── 阶段5：boosted creep 生命末期处理 ────────────────────────
     // 仅消灭波（使用了 boost）在生命到期时 suicide + recycle
-    if (creep.memory.wave === "eliminate" && creep.ticksToLive <= 300) {
-        creep.memory.homeRoom = creep.room.name;
+    if (!creep.memory.linearDistance) {
+        creep.memory.linearDistance = Game.map.getRoomLinearDistance(creep.memory.targetRoom, creep.memory.homeRoom)
+    }
+    if (!creep.memory.ticksToReGenerate) {
+        creep.memory.ticksToReGenerate = (creep.memory.linearDistance + 1) * 50
+    }
+    if (creep.memory.wave === "eliminate" && creep.ticksToLive <= creep.memory.ticksToReGenerate) {
+        // creep.memory.homeRoom = creep.room.name;
         creep.memory.suicide = true;
     }
     if (creep.memory.suicide) {
