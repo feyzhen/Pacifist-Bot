@@ -454,6 +454,7 @@ function establishMemory(room) {
       if (!room.memory.roomData) {
         room.memory.roomData = {};
       }
+      room.memory.roomData.lastChecked = Game.time
 
       if (HostileStructures.length > 0) {
         if (!Memory.tasks.wipeRooms.destroyStructures.includes(room.name)) {

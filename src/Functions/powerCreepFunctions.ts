@@ -39,7 +39,9 @@ PowerCreep.prototype.fortifyRampartWithEnemyNextToIt = function() {
   };
 
 PowerCreep.prototype.moveToRoom = function moveToRoom(roomName, travelTarget_x = 25, travelTarget_y = 25, ignoreRoadsBool = false, swampCostValue = 5, rangeValue = 20) {
-    this.moveTo(new RoomPosition(travelTarget_x, travelTarget_y, roomName), {range:rangeValue, reusePath:200, ignoreRoads: ignoreRoadsBool, swampCost: swampCostValue});
+    // reusePath removed — 超级移动优化 doesn't support it.
+    // ignoreRoads and swampCost are still supported.
+    this.moveTo(new RoomPosition(travelTarget_x, travelTarget_y, roomName), {range:rangeValue, ignoreRoads: ignoreRoadsBool, swampCost: swampCostValue});
 }
 
 PowerCreep.prototype.evacuate = function evacuate():any {
@@ -278,43 +280,21 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
 
 
 
+// ── PowerCreep MoveCostMatrixRoadPrio — migrated to moveTo + costCallback ──
+// Old: manual PathFinder.search + SwapPositionWithCreep + memory.path.shift()
+// New: delegates to 超级移动优化's moveTo with costCallback.
 PowerCreep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(target, range) {
-    if(target && this.pos.getRangeTo(target) > range) {
-        if(this.memory.path && this.memory.path.length > 0 && (Math.abs(this.pos.x - this.memory.path[0].x) > 1 || Math.abs(this.pos.y - this.memory.path[0].y) > 1)) {
-            this.memory.path = false;
+    if (!target || this.fatigue !== 0 || this.pos.getRangeTo(target) <= range) return;
+
+    this.moveTo(target, {
+        range,
+        maxRooms: 3,
+        maxOps: 1000,
+        costCallback: (roomName, defaultCM) => {
+            const result = roomCallbackRoadPrioPower(roomName);
+            return result instanceof PathFinder.CostMatrix ? result : defaultCM;
         }
-
-        if(!this.memory.path || this.memory.path.length == 0 || !this.memory.MoveTargetId || this.memory.MoveTargetId != target.id) {
-            const costMatrix = roomCallbackRoadPrioPower;
-
-            const path = PathFinder.search(
-                this.pos, {pos:target.pos, range:range},
-                {
-                    maxOps: 1000,
-                    maxRooms: 3,
-                    roomCallback: (roomName) => costMatrix(roomName)
-                }
-                );
-
-            const pos = path.path[0];
-            const direction = this.pos.getDirectionTo(pos);
-
-            this.SwapPositionWithCreep(direction);
-            this.memory.path = path.path;
-            this.memory.MoveTargetId = target.id;
-        }
-
-
-
-        const pos = this.memory.path[0];
-        const direction = this.pos.getDirectionTo(pos);
-
-        this.move(direction);
-        this.memory.moving = true;
-        this.memory.path.shift();
-        // this.moveByPath(this.memory.path);
-     }
-
+    });
 }
 
 const roomCallbackRoadPrioPower = (roomName: string): boolean | CostMatrix => {

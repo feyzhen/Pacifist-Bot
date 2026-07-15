@@ -17,19 +17,28 @@ export function isWorkTile(creep: Creep, pos: RoomPosition): boolean {
 
     const role = creep.memory.role;
     const roomName = creep.room.name;
+    const targetRoom = creep.memory.targetRoom;
 
     // Check if position is in the same room as creep's work
     if (pos.roomName !== roomName) {
+        // For cross-room creeps, also check if pos is in targetRoom
+        if (targetRoom && pos.roomName === targetRoom) {
+            return isWorkTileInRoom(creep, pos, targetRoom);
+        }
         return false;
     }
 
+    // Local check for roles that only work in their home room
     switch (role) {
         case 'harvester':
         case 'EnergyMiner':
             // Harvesters work near sources
             const sources = creep.room.find(FIND_SOURCES);
             return sources.some(source => source.pos.getRangeTo(pos) <= 1);
-
+        case 'mineralMiner':
+            // Mineral miners work near minerals
+            const minerals = creep.room.find(FIND_MINERALS);
+            return minerals.some(mineral => mineral.pos.getRangeTo(pos) <= 1);
         case 'upgrader':
             // Upgraders work near controller
             return creep.room.controller && creep.room.controller.pos.getRangeTo(pos) <= 3;
@@ -48,22 +57,48 @@ export function isWorkTile(creep: Creep, pos: RoomPosition): boolean {
                                   structure.structureType !== STRUCTURE_RAMPART &&
                                   structure.hits < structure.hitsMax
             });
-            return structuresNeedingRepair.some(structure => structure.pos.getRangeTo(pos) <= 1);
+            return structuresNeedingRepair.some(structure => structure.pos.getRangeTo(pos) <= 3);
 
         case 'carry':
-        case 'EnergyManager':
-        case 'filler':
-        case 'ControllerLinkFiller':
-            // Transport creeps work near storage, containers, or spawn
-            const storage = creep.room.storage;
+            // Carry creeps work near storage, containers, or spawn
+            const storage_carry = creep.room.storage;
             const terminal = creep.room.terminal;
-            const spawns = creep.room.find(FIND_MY_SPAWNS);
+            const spawns_carry = creep.room.find(FIND_MY_SPAWNS);
             const containers = creep.room.find(FIND_STRUCTURES, {
                 filter: (s) => s.structureType === STRUCTURE_CONTAINER
             });
 
-            const workTargets = [storage, terminal, ...spawns, ...containers].filter(Boolean);
+            const workTargets = [storage_carry, terminal, ...spawns_carry, ...containers].filter(Boolean);
             return workTargets.some(target => target.pos.getRangeTo(pos) <= 2);
+
+        case 'EnergyManager':
+            // EnergyManager has no fixed work tile — it shuttles between many targets (labs, storage, terminal, power spawn, etc.)
+            return true;
+
+        case 'filler':
+        case 'controllerLinkFiller':
+            if (!(creep.memory as Record<string, any>).full) {
+                const storage = Game.getObjectById(creep.room.memory.Structures?.storage) || creep.room.findStorage();
+                const containers = creep.room.find(FIND_STRUCTURES, {
+                    filter: (s) => s.structureType === STRUCTURE_CONTAINER
+                });
+                const loadTargets = [storage, ...containers].filter(Boolean) as any;
+                if (loadTargets.some(t => t.pos.getRangeTo(pos) <= 1)) {
+                    return true;
+                }
+                const dropped = creep.room.find(FIND_DROPPED_RESOURCES);
+                return !!dropped.some(d => d.pos.getRangeTo(pos) <= 1);
+
+            }
+            {
+                const mem = creep.memory as Record<string, any>;
+                const target = mem.t ? Game.getObjectById(mem.t) as any : null;
+                if (target) {
+                    return target.pos.getRangeTo(pos) <= 1;
+                }
+                // Full but no target — creep is moving to find a new target, allow movement everywhere
+                return true;
+            }
 
         case 'defender':
         case 'attacker':
@@ -79,13 +114,90 @@ export function isWorkTile(creep: Creep, pos: RoomPosition): boolean {
             return creep.room.controller && creep.room.controller.pos.getRangeTo(pos) <= 1;
 
         case 'dismantler':
-        case 'RemoteDismantler':
-            // Dismantlers work near structures to dismantle
+            // Local dismantlers work near structures to dismantle
             const structures = creep.room.find(FIND_STRUCTURES);
             return structures.some(structure => structure.pos.getRangeTo(pos) <= 1);
 
         default:
-            // For unknown roles, treat all positions as work tiles
+            // For roles with targetRoom, delegate to cross-room check
+            if (targetRoom && pos.roomName === targetRoom) {
+                return isWorkTileInRoom(creep, pos, targetRoom);
+            }
+            // Unknown role without targetRoom: treat all positions as work tiles
+            return true;
+    }
+}
+
+/**
+ * Helper to check work tiles when a creep is in its targetRoom (cross-room creep)
+ */
+function isWorkTileInRoom(creep: Creep, pos: RoomPosition, targetRoom: string): boolean {
+    const role = creep.memory.role;
+
+    switch (role) {
+        case 'remoteBuilder':
+        case 'remoteRepair':
+        case 'SpecialRepair':
+            // Remote builders/repairers work near construction sites or damaged structures
+            const sites = Game.rooms[targetRoom]?.find(FIND_CONSTRUCTION_SITES);
+            if (sites?.some(site => site.pos.getRangeTo(pos) <= 2)) {
+                return true;
+            }
+            const structs = Game.rooms[targetRoom]?.find(FIND_STRUCTURES, {
+                filter: (s) => s.structureType !== STRUCTURE_WALL &&
+                              s.structureType !== STRUCTURE_RAMPART &&
+                              s.hits < s.hitsMax
+            });
+            return !!structs?.some(s => s.pos.getRangeTo(pos) <= 3);
+
+        case 'remoteDismantler':
+        case 'RemoteDismantler':
+            // Remote dismantlers work near structures to dismantle
+            const rStructs = Game.rooms[targetRoom]?.find(FIND_STRUCTURES);
+            return !!rStructs?.some(s => s.pos.getRangeTo(pos) <= 1);
+
+        case 'wallClearer':
+            // Wall clearers work near walls or controller
+            const walls = Game.rooms[targetRoom]?.find(FIND_STRUCTURES, {
+                filter: (s) => s.structureType === STRUCTURE_WALL
+            });
+            if (walls?.some(w => w.pos.getRangeTo(pos) <= 1)) {
+                return true;
+            }
+            const ctrl = Game.rooms[targetRoom]?.controller;
+            return !!ctrl && ctrl.pos.getRangeTo(pos) <= 1;
+
+        case 'depositCarry':
+        case 'depositMiner':
+            // Deposit creeps work near the deposit resource
+            const deposit = Game.getObjectById(creep.memory.deposit) as Source | Mineral | Deposit | null;
+            return deposit && deposit.pos.getRangeTo(pos) <= 1;
+
+        case 'resourceHauler':
+            // Resource haulers work near storage/terminal in target room
+            const room_haul = Game.rooms[targetRoom];
+            if (!room_haul) return false;
+            const storage_haul = room_haul.storage;
+            const terminal_haul = room_haul.terminal;
+            const haulTargets = [storage_haul, terminal_haul].filter(Boolean);
+            return haulTargets.some(t => t.pos.getRangeTo(pos) <= 2);
+
+        case 'DrainTower':
+            // Drain tower creeps work near controller for ranged mass attack
+            const drainCtrl = Game.rooms[targetRoom]?.controller;
+            return !!drainCtrl && drainCtrl.pos.getRangeTo(pos) <= 3;
+
+        case 'signifer':
+            // Signifer follows ram — no fixed work tile
+            return true;
+
+        case 'powerMelee':
+        case 'powerHeal':
+            // Power creeps are combat-oriented, no fixed work tile
+            return true;
+
+        default:
+            // Unknown cross-room role: allow in target room
             return true;
     }
 }

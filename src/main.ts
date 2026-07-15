@@ -2,7 +2,7 @@ import "./utils/Commands";
 import { ErrorMapper } from "./utils/ErrorMapper";
 import { memHack } from "utils/MemHack";
 import global from "./utils/Global";
-import { preTickBetterMove, endTickResolve} from "./超级移动优化.js";
+import { preTickBetterMove, endTickResolve} from "./超级移动优化";
 import { isWorkTile } from "./utils/superMoveUtils";
 
 // import TerrainDataExporter from "./utils/TerrainDataExporter";
@@ -19,7 +19,7 @@ import "./utils/Whitelist"; // registers global.addAlly / global.removeAlly / gl
 import rooms from "./Rooms/rooms";
 
 import "./Functions/powerCreepFunctions"
-import "./Functions/creepFunctions2";
+import "./Functions/creepFunctions3";
 import "./Functions/roomFunctions";
 import "./Functions/roomPositionFunctions";
 
@@ -166,7 +166,7 @@ global.ROLES = {
 export const loop = ErrorMapper.wrapLoop(() => {
 
   // Initialize super move optimization for this tick
-  // preTickBetterMove();
+  preTickBetterMove();
 
   const startTotal = Game.cpu.getUsed();
 
@@ -195,7 +195,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
   // console.log(JSON.stringify(Memory.roomStatuses))
 
   // Resolve all queued movements at the end of the tick
-  // endTickResolve(isWorkTile);
+  endTickResolve(isWorkTile);
 
   const tickTotal = (Game.cpu.getUsed() - startTotal).toFixed(2);
   console.log(tickTotal + "ms", "on this tick");
