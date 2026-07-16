@@ -2836,8 +2836,12 @@ class RemoteDefenseGenerator {
         _.forEach(Game.rooms, function(thisRoom: Room) {
             _.forEach(resourceData, function(data: any, targetRoomName: string) {
                 if (thisRoom.name == targetRoomName && !room.memory.danger && activeRemotes.includes(targetRoomName) && room.storage && room.storage.store[RESOURCE_ENERGY] > 10000) {
-                    if (thisRoom.memory.roomData && (thisRoom.memory.roomData.has_hostile_structures || thisRoom.memory.roomData.has_hostile_creeps) && !thisRoom.memory.roomData.has_attacker && attackers < 1) {
-                        if (thisRoom.memory.roomData.has_hostile_structures && attackers < 1 || thisRoom.memory.roomData.has_hostile_creeps && !thisRoom.memory.roomData.has_attacker && attackers < 1 && thisRoom.memory.roomData.has_only_invader) {
+                    // 使用目标房间本地的攻击者数量，而非全局总数
+                    const targetAttackers = _.filter(Game.creeps, (c: any) => c.memory.role === 'attacker' && c.room?.name === thisRoom.name).length;
+                    const targetRangedAttackers = _.filter(Game.creeps, (c: any) => c.memory.role === 'RangedAttacker' && c.room?.name === thisRoom.name).length;
+
+                    if (thisRoom.memory.roomData && (thisRoom.memory.roomData.has_hostile_structures || thisRoom.memory.roomData.has_hostile_creeps) && !thisRoom.memory.roomData.has_attacker && targetAttackers < 1) {
+                        if (thisRoom.memory.roomData.has_hostile_structures && targetAttackers < 1 || thisRoom.memory.roomData.has_hostile_creeps && !thisRoom.memory.roomData.has_attacker && targetAttackers < 1 && thisRoom.memory.roomData.has_only_invader) {
                             let body = [];
                             if (thisRoom.memory.roomData.has_hostile_structures) {
                                 thisRoom.memory.roomData.has_hostile_structures = false;
@@ -2861,7 +2865,7 @@ class RemoteDefenseGenerator {
                             room.memory.spawn_list.push(body, newName, {memory: {role: 'attacker', targetRoom: thisRoom.name, homeRoom: room.name}});
                             console.log('Adding Defending-Attacker to Spawn List: ' + newName);
                         }
-                        else if (thisRoom.memory.roomData.has_hostile_creeps && !thisRoom.memory.roomData.has_only_invader && thisRoom.memory.roomData.hostile_body_type && !thisRoom.memory.roomData.has_attacker && RangedAttackers < 1) {
+                        else if (thisRoom.memory.roomData.has_hostile_creeps && !thisRoom.memory.roomData.has_only_invader && thisRoom.memory.roomData.hostile_body_type && !thisRoom.memory.roomData.has_attacker && targetRangedAttackers < 1) {
                             const data = thisRoom.memory.roomData.hostile_body_type;
                             const healAmount = data.heal * 12;
                             const attackAmount = data.attack * 30;
@@ -2889,7 +2893,7 @@ class RemoteDefenseGenerator {
                             }
                         }
                     }
-                    if (room.controller.level <= 4 && thisRoom.memory.roomData && thisRoom.memory.roomData.has_safe_creeps && !thisRoom.memory.roomData.has_attacker && thisRoom.controller && !thisRoom.controller.my && thisRoom.controller.level === 0 && attackers < 1 && thisRoom.find(FIND_HOSTILE_CREEPS).length >= 1) {
+                    if (room.controller.level <= 4 && thisRoom.memory.roomData && thisRoom.memory.roomData.has_safe_creeps && !thisRoom.memory.roomData.has_attacker && thisRoom.controller && !thisRoom.controller.my && thisRoom.controller.level === 0 && targetAttackers < 1 && thisRoom.find(FIND_HOSTILE_CREEPS).length >= 1) {
                         const newName = 'Attacker-' + Math.floor(Math.random() * Game.time) + "-" + room.name;
                         room.memory.spawn_list.push([MOVE, ATTACK], newName, {memory: {role: 'attacker', targetRoom: thisRoom.name, homeRoom: room.name}});
                         console.log('Adding Annoying-Attacker to Spawn List: ' + newName);

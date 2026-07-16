@@ -94,7 +94,7 @@ export function isWorkTile(creep: Creep, pos: RoomPosition): boolean {
                 const mem = creep.memory as Record<string, any>;
                 const target = mem.t ? Game.getObjectById(mem.t) as any : null;
                 if (target) {
-                    return target.pos.getRangeTo(pos) <= 1;
+                    return target.pos.getRangeTo(pos) <= 1 && target.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
                 }
                 // Full but no target — creep is moving to find a new target, allow movement everywhere
                 return true;
