@@ -106,6 +106,7 @@ declare global {
     SP: (roomName: string) => void;
     // Deposit defense
     SRE: (homeRoom: string, targetRoom: string, boosted?: boolean) => string;
+    SARA: (homeRoom: string, targetRoom: string) => string;
   }
 }
 

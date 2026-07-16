@@ -167,7 +167,7 @@ function isWorkTileInRoom(creep: Creep, pos: RoomPosition, targetRoom: string): 
             const ctrl = Game.rooms[targetRoom]?.controller;
             return !!ctrl && ctrl.pos.getRangeTo(pos) <= 1;
 
-        case 'depositCarry':
+        // case 'depositCarry':
         case 'depositMiner':
             // Deposit creeps work near the deposit resource
             const deposit = Game.getObjectById(creep.memory.deposit) as Source | Mineral | Deposit | null;

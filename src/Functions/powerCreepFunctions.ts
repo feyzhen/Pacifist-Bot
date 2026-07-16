@@ -284,7 +284,7 @@ PowerCreep.prototype.SwapPositionWithCreep = function SwapPositionWithCreep(dire
 // Old: manual PathFinder.search + SwapPositionWithCreep + memory.path.shift()
 // New: delegates to 超级移动优化's moveTo with costCallback.
 PowerCreep.prototype.MoveCostMatrixRoadPrio = function MoveCostMatrixRoadPrio(target, range) {
-    if (!target || this.fatigue !== 0 || this.pos.getRangeTo(target) <= range) return;
+    if (!target || this.pos.getRangeTo(target) <= range) return;
 
     this.moveTo(target, {
         range,

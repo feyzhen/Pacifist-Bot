@@ -2329,3 +2329,184 @@ global.SRE = function (homeRoom, targetRoom, boosted = false, boostParts?: BodyP
     console.log(`Adding RangedElite (${wave}) to Spawn List: ${newName}`);
     return "Success!";
 };
+
+/**
+ * SARA — Spawn a RangedAttacker creep for remote room defense.
+ * Analyzes target room's hostile_body_type and generates a creep that
+ * outclasses the enemy force. Uses boost to reduce body size when needed.
+ *
+ * Body composition: HEAL + RANGED_ATTACK + MOVE
+ * Ratio calculation from hostile_body_type:
+ *   healAmount = data.heal * 12
+ *   attackAmount = data.attack * 30
+ *   rangedAttackAmount = data.ranged_attack * 10
+ *   myNeededHeal = floor((attackAmount + rangedAttackAmount) / 12) - 2
+ *   myNeededRangedAttack = floor(healAmount / 10) + 5
+ *
+ * When body exceeds 50 parts, boost (catalyzed compounds) is used to
+ * amplify individual component effectiveness, allowing fewer parts.
+ *
+ * @param homeRoom    Home room name (must be controller.my)
+ * @param targetRoom  Target room name to defend against
+ */
+global.SARA = function (homeRoom: string, targetRoom: string): string {
+    const room = Game.rooms[homeRoom];
+    if (!room || !room.controller?.my) return "Home room not found or not controlled";
+
+    const targetRoomObj = Game.rooms[targetRoom];
+    if (!targetRoomObj) return "Target room not loaded";
+
+    // Check roomData availability
+    if (!targetRoomObj.memory?.roomData) {
+        console.log(`[SARA] Warning: ${targetRoom} has no roomData, cannot analyze hostile threat.`);
+        return "Missing roomData for target room";
+    }
+
+    const roomData = targetRoomObj.memory.roomData;
+    if (!roomData.hostile_body_type) {
+        console.log(`[SARA] Warning: ${targetRoom} has no hostile_body_type data.`);
+        return "Missing hostile_body_type for target room";
+    }
+
+    const data = roomData.hostile_body_type;
+
+    // Calculate required combat power
+    const healAmount = data.heal * 12;
+    const attackAmount = data.attack * 30;
+    const rangedAttackAmount = data.ranged_attack * 10;
+    const myNeededHeal = Math.floor((attackAmount + rangedAttackAmount) / 12) - 2;
+    const myNeededRangedAttack = Math.floor(healAmount / 10) + 5;
+
+    if (myNeededHeal < 0) {
+        console.log(`[SARA] Warning: ${targetRoom} threat too weak, skip spawn.`);
+        return "Threat too weak, skipping";
+    }
+
+    // Build base body without boost
+    const baseBody: BodyPartConstant[] = [];
+    for (let i = 0; i < myNeededHeal; i++) baseBody.push(HEAL);
+    for (let i = 0; i < myNeededRangedAttack; i++) baseBody.push(RANGED_ATTACK);
+    const moveCount = myNeededHeal + myNeededRangedAttack;
+    for (let i = 0; i < moveCount; i++) baseBody.push(MOVE);
+
+    // If body fits, spawn directly
+    if (baseBody.length <= 50) {
+        const newName = `SARA-${Math.floor(Math.random() * Game.time)}-${homeRoom}-${targetRoom}`;
+        room.memory.spawn_list.push(baseBody, newName, {
+            memory: { role: 'RangedAttacker', targetRoom, homeRoom }
+        });
+        console.log(`[SARA] Spawned RangedAttacker (${baseBody.length} parts) for ${targetRoom}`);
+        roomData.has_hostile_creeps = false;
+        delete roomData.hostile_body_type;
+        roomData.has_attacker = true;
+        return "Success!";
+    }
+
+    // Body too large — try boost to reduce component count
+    // Catalyzed compounds give +300% effect (4x multiplier)
+    // With boost: effective_heal = boosted_heal * 4, effective_ra = boosted_ra * 4
+    // Strategy: boost all HEAL and RANGED_ATTACK parts, then recalculate needed count
+    const storage: any = Game.getObjectById(room.memory.Structures.storage) || room.findStorage();
+    if (!storage) {
+        console.log(`[SARA] Warning: No storage in ${homeRoom}, cannot boost. Body: ${baseBody.length} parts`);
+        return `Body too large (${baseBody.length}) and no storage for boost`;
+    }
+
+    // Calculate boosted body: each boosted part does 4x work
+    // Effective needed (with 4x boost): ceil(count / 4)
+    const boostedHealCount = Math.ceil(myNeededHeal / 4);
+    const boostedRACount = Math.ceil(myNeededRangedAttack / 4);
+
+    // Check if we have enough catalyzed compounds for boost
+    const catalyzedKeaniumAlkalide = storage.store[RESOURCE_CATALYZED_KEANIUM_ALKALIDE] || 0;
+    const catalyzedLemeriumAlkalide = storage.store[RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE] || 0;
+
+    const neededKaanium = boostedRACount * 30;  // 30 per boosted RA
+    const neededLemerium = boostedHealCount * 30; // 30 per boosted HEAL
+
+    // Try full catalyzed boost first, then degrade to tier2/tier1
+    function findAvailable(compound: ResourceConstant, base: ResourceConstant, lower: ResourceConstant, needed: number): {resource: ResourceConstant; amount: number} | null {
+        if (compound && storage.store[compound] >= needed) return {resource: compound, amount: needed};
+        if (base && storage.store[base] >= needed) return {resource: base, amount: needed};
+        if (lower && storage.store[lower] >= needed) return {resource: lower, amount: needed};
+        return null;
+    }
+
+    const kaaniumBoost = findAvailable(
+        RESOURCE_CATALYZED_KEANIUM_ALKALIDE,
+        RESOURCE_KEANIUM_ALKALIDE,
+        RESOURCE_KEANIUM_OXIDE,
+        neededKaanium
+    );
+    const lemeriumBoost = findAvailable(
+        RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE,
+        RESOURCE_LEMERGIUM_ALKALIDE,
+        RESOURCE_LEMERGIUM_OXIDE,
+        neededLemerium
+    );
+
+    // Check if we can afford at least partial boost
+    if (!kaaniumBoost && !lemeriumBoost) {
+        console.log(`[SARA] Warning: Insufficient boost resources for ${targetRoom}. Need ${neededKaanium} keanium + ${neededLemerium} lemerium. Body: ${baseBody.length} parts`);
+        return `Insufficient boost resources for ${targetRoom}`;
+    }
+
+    // Build boosted body
+    const boostedBody: BodyPartConstant[] = [];
+    for (let i = 0; i < boostedHealCount; i++) boostedBody.push(HEAL);
+    for (let i = 0; i < boostedRACount; i++) boostedBody.push(RANGED_ATTACK);
+    const boostedMoveCount = boostedHealCount + boostedRACount;
+    for (let i = 0; i < boostedMoveCount; i++) boostedBody.push(MOVE);
+
+    // Prepare boost labs
+    const boostlabs: string[] = [];
+    const labMapping: {[part: string]: string} = {
+        [HEAL]: 'outputLab5',
+        [RANGED_ATTACK]: 'outputLab4'
+    };
+
+    if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
+        room.memory.labs.status.boost = {};
+    }
+
+    // Allocate boost resources
+    if (kaaniumBoost && room.memory.labs?.outputLab4) {
+        boostlabs.push(room.memory.labs.outputLab4);
+        if (room.memory.labs.status.boost.lab4) {
+            room.memory.labs.status.boost.lab4.amount = (room.memory.labs.status.boost.lab4.amount || 0) + kaaniumBoost.amount;
+            room.memory.labs.status.boost.lab4.use += 1;
+        } else {
+            room.memory.labs.status.boost.lab4 = {amount: kaaniumBoost.amount, use: 1};
+        }
+    }
+    if (lemeriumBoost && room.memory.labs?.outputLab5) {
+        boostlabs.push(room.memory.labs.outputLab5);
+        if (room.memory.labs.status.boost.lab5) {
+            room.memory.labs.status.boost.lab5.amount = (room.memory.labs.status.boost.lab5.amount || 0) + lemeriumBoost.amount;
+            room.memory.labs.status.boost.lab5.use += 1;
+        } else {
+            room.memory.labs.status.boost.lab5 = {amount: lemeriumBoost.amount, use: 1};
+        }
+    }
+
+    const newName = `SARA-${Math.floor(Math.random() * Game.time)}-${homeRoom}-${targetRoom}`;
+    const spawnOpts: any = {
+        memory: {
+            role: 'RangedAttacker',
+            targetRoom,
+            homeRoom,
+            boosted: true
+        }
+    };
+
+    if (boostlabs.length > 0) {
+        spawnOpts.memory.boostlabs = boostlabs;
+    }
+
+    room.memory.spawn_list.push(boostedBody, newName, spawnOpts);
+    console.log(`[SARA] Spawned boosted RangedAttacker (${boostedBody.length} parts, ${boostlabs.length} labs) for ${targetRoom}`);
+    roomData.has_hostile_creeps = false;
+    delete roomData.hostile_body_type;
+    roomData.has_attacker = true;
+    return "Success (boosted)!";
+};

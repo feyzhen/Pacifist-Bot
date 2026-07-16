@@ -228,7 +228,7 @@ function processDeposit(
         // Transition to drain on 2nd consecutive hostile sighting
         if (isHostile && prevLastHostileSeen !== null) {
             const ticksSince = Game.time - prevLastHostileSeen;
-            if (ticksSince >= 64 && ticksSince < 130) {
+            if (ticksSince >= 64) {
                 depMeta.hostilePhase = "drain";
                 depMeta.lastDrainSpawned = Game.time;
                 const drainResult = global.SRE(homeRoom, targetRoom, false);
@@ -240,7 +240,7 @@ function processDeposit(
                     // Drain spawn failed — revert to none so we retry next tick.
                     // CRITICAL: do NOT fall through to normal spawn here.
                     // Spawning miners while hostiles are present wastes creeps.
-                    depMeta.hostilePhase = "none"; 
+                    depMeta.hostilePhase = "none";
                     depMeta.lastDrainSpawned = null;
                     return false; // skip spawning entirely
                 }

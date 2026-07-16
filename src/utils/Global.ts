@@ -180,6 +180,7 @@ declare global {
           SDMine: any;
           SDCarry: any;
           SRE: any;
+          SARA: any;
           getBodyByRatio: any;
           getBodyByRatioWithLimits: any;
           SCCK: any;
