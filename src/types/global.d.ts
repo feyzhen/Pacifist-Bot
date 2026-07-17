@@ -86,6 +86,14 @@ declare global {
     // RangedElite fields
     wave?: string;
     timeOut?: number;
+    // Party (Leader/Follower) fields
+    squadId?: string;
+    meetPos?: { x: number; y: number };
+    squadReady?: boolean;
+    atMeetPoint?: boolean;
+    // followMove cache
+    __followCache__?: any;
+    __squadId__?: string[];
   }
 // 布局管理全局函数
   interface Global {
@@ -107,6 +115,8 @@ declare global {
     // Deposit defense
     SRE: (homeRoom: string, targetRoom: string, boosted?: boolean) => string;
     SARA: (homeRoom: string, targetRoom: string) => string;
+    TCT: (homeRoom: string, targetRoom: string) => string;
+    followMove: (leader: Creep, followers: Creep[], target: RoomPosition, opts?: any) => number;
   }
 }
 

@@ -73,31 +73,31 @@ export function isWorkTile(creep: Creep, pos: RoomPosition): boolean {
 
         case 'EnergyManager':
             // EnergyManager has no fixed work tile — it shuttles between many targets (labs, storage, terminal, power spawn, etc.)
-            return true;
+            return creep.store.getUsedCapacity() > 0;
 
         case 'filler':
         case 'controllerLinkFiller':
             if (!(creep.memory as Record<string, any>).full) {
                 const storage = Game.getObjectById(creep.room.memory.Structures?.storage) || creep.room.findStorage();
                 const containers = creep.room.find(FIND_STRUCTURES, {
-                    filter: (s) => s.structureType === STRUCTURE_CONTAINER
+                    filter: (s) => s.structureType === STRUCTURE_CONTAINER && s.store.getUsedCapacity(RESOURCE_ENERGY) > 0
                 });
                 const loadTargets = [storage, ...containers].filter(Boolean) as any;
-                if (loadTargets.some(t => t.pos.getRangeTo(pos) <= 1)) {
+                if (loadTargets.some(t => creep.pos.getRangeTo(t) <= 1)) {
                     return true;
                 }
                 const dropped = creep.room.find(FIND_DROPPED_RESOURCES);
-                return !!dropped.some(d => d.pos.getRangeTo(pos) <= 1);
+                return !!dropped.some(d => creep.pos.getRangeTo(d) <= 1);
 
             }
             {
                 const mem = creep.memory as Record<string, any>;
                 const target = mem.t ? Game.getObjectById(mem.t) as any : null;
                 if (target) {
-                    return target.pos.getRangeTo(pos) <= 1 && target.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+                    return creep.pos.isNearTo(target) && target.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
                 }
                 // Full but no target — creep is moving to find a new target, allow movement everywhere
-                return true;
+                return false;
             }
 
         case 'defender':

@@ -181,6 +181,8 @@ declare global {
           SDCarry: any;
           SRE: any;
           SARA: any;
+          TCT: (homeRoom: string, targetRoom: string) => string;
+          followMove: (leader: Creep, followers: Creep[], target: RoomPosition, opts?: any) => number;
           getBodyByRatio: any;
           getBodyByRatioWithLimits: any;
           SCCK: any;

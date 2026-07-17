@@ -84,6 +84,9 @@ import roleSafeModer from "Roles/SafeModer";
 import roleCCKparty from "Roles/Party/CCKparty";
 import roleFreedomFighter from "Roles/Party/FreedomFighter";
 
+import roleFollower from "./Roles/Party/Follower";
+import roleLeader from "./Roles/Party/Leader";
+
 import roleRoomLocker from "Roles/RoomLocker";
 import roleEscort from "Roles/Escort";
 
@@ -157,6 +160,8 @@ global.ROLES = {
   SafeModer: roleSafeModer,
   CCKparty: roleCCKparty,
   FreedomFighter: roleFreedomFighter,
+  Leader: roleLeader,
+  Follower: roleFollower,
   RoomLocker: roleRoomLocker,
   Escort: roleEscort,
   mosquito: mosquito,
@@ -202,7 +207,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
 
   CPUmanager(tickTotal);
-  global.buildRemoteRoads = function(roomName: string) {
-    Build_Remote_Roads(Game.rooms[roomName]);
-  };
+  // global.buildRemoteRoads = function(roomName: string) {
+  //   Build_Remote_Roads(Game.rooms[roomName]);
+  // };
 });

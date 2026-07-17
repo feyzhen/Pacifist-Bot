@@ -2510,3 +2510,94 @@ global.SARA = function (homeRoom: string, targetRoom: string): string {
     roomData.has_attacker = true;
     return "Success (boosted)!";
 };
+
+/**
+ * TCT — Spawn a Leader + Follower duo and send them to targetRoom.
+ *
+ * Usage: TCT(homeRoom, targetRoom)
+ *
+ * Flow:
+ *  1. Validate homeRoom (owned, loaded) and targetRoom (loaded).
+ *  2. Pick a random meeting spot in homeRoom (4×4 clear area away from spawn).
+ *  3. Spawn Leader (MOVE+CARRY) and Follower (MOVE+CARRY) with a shared squadId.
+ *  4. Leader moves to meeting spot → waits for Follower → both use followMove
+ *     to travel to targetRoom.
+ *
+ * Body (both): MOVE×10 + CARRY×5 (20 parts, cheap to spawn)
+ */
+global.TCT = function (homeRoom: string, targetRoom: string): string {
+    const room = Game.rooms[homeRoom];
+    if (!room) return `Home room "${homeRoom}" not loaded`;
+    if (!room.controller?.my) return `Home room "${homeRoom}" is not yours`;
+    // if (!Game.rooms[targetRoom]) return `Target room "${targetRoom}" not loaded`;
+
+    // Check for existing squad in this room
+    const existing = room.find(FIND_MY_CREEPS, {
+        filter: (c) => c.memory.role === 'Leader' && c.memory.squadId === 'tct'
+    });
+    if (existing.length > 0) return 'A TCT squad already exists in this room';
+
+    const squadId = 'tct-' + Math.floor(Math.random() * 100000);
+    const meetPos = findTctMeetPoint(room);
+    if (!meetPos) return 'No suitable meeting point found in ' + homeRoom;
+
+    // Shared memory
+    const baseMemory = {
+        role: '' as string,
+        targetRoom: targetRoom,
+        homeRoom: homeRoom,
+        squadId: squadId,
+        meetPos: meetPos,
+        squadReady: false,
+        atMeetPoint: false,
+    };
+
+    // Spawn Leader
+    const leaderBody = [MOVE];
+    const leaderName = 'TCT-Leader-' + Math.floor(Math.random() * Game.time) + '-' + homeRoom;
+    room.memory.spawn_list.push(
+        leaderBody,
+        leaderName,
+        { memory: { ...baseMemory, role: 'Leader' } }
+    );
+    console.log(`[TCT] Spawning Leader: ${leaderName} (meetPos: ${meetPos.x},${meetPos.y})`);
+
+    // Spawn Follower
+    const followerBody = [MOVE];
+    const followerName = 'TCT-Follower-' + Math.floor(Math.random() * Game.time) + '-' + homeRoom;
+    room.memory.spawn_list.push(
+        followerBody,
+        followerName,
+        { memory: { ...baseMemory, role: 'Follower' } }
+    );
+    console.log(`[TCT] Spawning Follower: ${followerName}`);
+
+    return `Success! Leader + Follower spawned (squadId: ${squadId}), meeting at (${meetPos.x},${meetPos.y})`;
+};
+
+/**
+ * 找一个合适的 TCT 集合点：远离 spawn 的 4×4 空地
+ */
+function findTctMeetPoint(room: Room): { x: number; y: number } | null {
+    const spawns = room.find(FIND_MY_SPAWNS);
+    const center = spawns.length > 0 ? spawns[0].pos : { x: 25, y: 25 } as RoomPosition;
+
+    for (let dist = 8; dist <= 40; dist += 2) {
+        for (let angle = 0; angle < 360; angle += 30) {
+            const rad = (angle * Math.PI) / 180;
+            const cx = Math.round(center.x + dist * Math.cos(rad));
+            const cy = Math.round(center.y + dist * Math.sin(rad));
+            if (cx < 2 || cx > 47 || cy < 2 || cy > 47) continue;
+
+            const terrain = room.getTerrain();
+            let ok = true;
+            for (let dx = 0; dx < 4 && ok; dx++) {
+                for (let dy = 0; dy < 4 && ok; dy++) {
+                    if (terrain.get(cx + dx, cy + dy) & TERRAIN_MASK_WALL) ok = false;
+                }
+            }
+            if (ok) return { x: cx, y: cy };
+        }
+    }
+    return null;
+}
