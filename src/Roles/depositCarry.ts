@@ -123,7 +123,8 @@ const run = function (creep: any) {
                         return;
                     }
                     Memory.depositMining[creep.memory.targetRoom][creep.memory.deposit]["lastSpawnDM"] = Game.time;
-
+                    let spawn_list_len = Game.rooms[creep.memory.homeRoom].memory.spawn_list?.length || 0
+                    if (spawn_list_len > 0) return;
                     let { miners, carries } = countAliveMinersCarries(Game.rooms[creep.memory.homeRoom], creep.memory.targetRoom, creep.memory.deposit);
                     let maxPairs = creep.memory.maxPairs;
                     let minersNeeded = Math.max(0, maxPairs - miners);

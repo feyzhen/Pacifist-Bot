@@ -1,7 +1,13 @@
+import * as stream from "stream";
+
 const run = function (creep) {
     creep.memory.moving = false;
+    const storage:any = creep.room.storage;
+    const terminal = creep.room.terminal;
+    const powerSpawn:any = Game.getObjectById(creep.room.memory.Structures.powerSpawn);
+    const danger = creep.room.memory.danger;
 
-    if(creep.room.memory.danger && creep.powers[PWR_GENERATE_OPS] && creep.powers[PWR_GENERATE_OPS].cooldown == 0 && creep.store.getFreeCapacity() > 0) creep.usePower(PWR_GENERATE_OPS);
+    if(danger && creep.powers[PWR_GENERATE_OPS] && creep.powers[PWR_GENERATE_OPS].cooldown == 0 && creep.store.getFreeCapacity() > 0) creep.usePower(PWR_GENERATE_OPS);
     if(creep.room.controller && !creep.room.controller.isPowerEnabled) {
         if(creep.pos.isNearTo(creep.room.controller)) {
             creep.enableRoom(creep.room.controller);
@@ -11,8 +17,7 @@ const run = function (creep) {
         }
         return;
     }
-    if(creep.ticksToLive < 120) {
-        const powerSpawn:any = Game.getObjectById(creep.room.memory.Structures.powerSpawn);
+    if(creep.ticksToLive < 1250) {
         if(powerSpawn) {
             if(creep.pos.isNearTo(powerSpawn)) {
                 creep.renew(powerSpawn);
@@ -24,12 +29,14 @@ const run = function (creep) {
         }
     }
 
-    const storage:any = creep.room.storage;
-    const terminal = creep.room.terminal;
-
-    const danger = creep.room.memory.danger;
-
-
+    if (creep.ticksToLive < 30) {
+        if (creep.pos.isNearTo(storage)) {
+            creep.transfer(storage, RESOURCE_OPS);
+        } else {
+            creep.MoveCostMatrixRoadPrio(storage, 1);
+            return;
+        }
+    }
 
     if(creep.store.getFreeCapacity() === 0) {
         creep.memory.full = true;

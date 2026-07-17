@@ -7,7 +7,7 @@
 // }
 
 const run = function (creep) {
-
+    creep.notifyWhenAttacked(false)
 
     creep.memory.moving = false;
     if(creep.memory.boostlabs && creep.memory.boostlabs.length > 0) {
@@ -61,7 +61,7 @@ const run = function (creep) {
 
     // ── 到达目标房间后的驻扎逻辑 ──────────────────────────────────
     // 治疗：先自己，再队友
-    if(creep.hits != creep.hitsMax || (enemyCreeps.length > 0 && creep.pos.getRangeTo(creep.pos.findClosestByRange(enemyCreeps)) <= 4)) {
+    if(creep.hits != creep.hitsMax) {
         creep.heal(creep);
     }
 
@@ -86,6 +86,16 @@ const run = function (creep) {
     }
 
     if(enemyCreeps.length > 0) {
+        const injuredAllies = creep.pos.lookFor(LOOK_CREEPS, {
+            filter: c => c.my && c !== creep && c.hits < c.hitsMax
+        });
+        if (injuredAllies.length > 0) {
+            const injured = injuredAllies[0];
+            if (creep.pos.isNearTo(injured)) {
+                creep.heal(injured);
+            }
+        }
+
         const closestEnemyCreep = creep.pos.findClosestByRange(enemyCreeps);
 
         let isMelee = false;

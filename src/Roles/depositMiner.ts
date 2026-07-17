@@ -134,18 +134,18 @@ const run = function (creep: any) {
                         return;
                     }
                 }
-            } else {
-                const droppedDeposits = creep.pos.lookFor(LOOK_RESOURCES).filter(r => r.resourceType === depositType);
-                if (droppedDeposits.length > 0) {
-                    creep.pickup(droppedDeposits[0]);
-                    return;
-                }
-                const tombstones = creep.pos.lookFor(LOOK_TOMBSTONES).filter(s => s.store.getUsedCapacity(depositType) > 0)
-                if (tombstones.length > 0) {
-                    creep.withdraw(tombstones[0], depositType)
-                    return;
-                }
             }
+            const droppedDeposits = creep.pos.findInRange(FIND_DROPPED_RESOURCES, 1).filter(r => r.resourceType === depositType);
+            if (droppedDeposits.length > 0) {
+                creep.pickup(droppedDeposits[0]);
+                return;
+            }
+            const tombstones = creep.pos.lookFor(LOOK_TOMBSTONES).filter(s => s.store.getUsedCapacity(depositType) > 0)
+            if (tombstones.length > 0) {
+                creep.withdraw(tombstones[0], depositType)
+                return;
+            }
+
         }
     } else {
         creep.moveTo(deposit);
