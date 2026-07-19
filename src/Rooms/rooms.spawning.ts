@@ -2836,9 +2836,9 @@ class RemoteDefenseGenerator {
         _.forEach(Game.rooms, function(thisRoom: Room) {
             _.forEach(resourceData, function(data: any, targetRoomName: string) {
                 if (thisRoom.name == targetRoomName && !room.memory.danger && activeRemotes.includes(targetRoomName) && room.storage && room.storage.store[RESOURCE_ENERGY] > 10000) {
-                    // 使用目标房间本地的攻击者数量，而非全局总数
-                    const targetAttackers = _.filter(Game.creeps, (c: any) => c.memory.role === 'attacker' && c.room?.name === thisRoom.name).length;
-                    const targetRangedAttackers = _.filter(Game.creeps, (c: any) => c.memory.role === 'RangedAttacker' && c.room?.name === thisRoom.name).length;
+                    // 使用指向目标房间的 attacker 数量，而非仅统计已到达的
+                    const targetAttackers = _.filter(Game.creeps, (c: any) => c.memory.role === 'attacker' && c.memory.targetRoom === thisRoom.name).length;
+                    const targetRangedAttackers = _.filter(Game.creeps, (c: any) => c.memory.role === 'RangedAttacker' && c.memory.targetRoom === thisRoom.name).length;
 
                     if (thisRoom.memory.roomData && (thisRoom.memory.roomData.has_hostile_structures || thisRoom.memory.roomData.has_hostile_creeps) && !thisRoom.memory.roomData.has_attacker && targetAttackers < 1) {
                         if (thisRoom.memory.roomData.has_hostile_structures && targetAttackers < 1 || thisRoom.memory.roomData.has_hostile_creeps && !thisRoom.memory.roomData.has_attacker && targetAttackers < 1 && thisRoom.memory.roomData.has_only_invader) {
