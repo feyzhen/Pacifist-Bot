@@ -164,6 +164,10 @@ function processDeposit(
     targetRoom: string,
     isStrong: boolean
 ): boolean {
+    // Always sync lastCooldown from the live deposit so Memory stays current,
+    // even when the deposit is in cooldown and we should not spawn miners.
+    depMeta.lastCooldown = deposit.lastCooldown;
+
     if (deposit.lastCooldown > 100) return false;
 
     // Update tracking
