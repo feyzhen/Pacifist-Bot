@@ -20,7 +20,7 @@
  * @param opts         可选参数
  */
 
-import { squadMove } from '../超级移动优化';
+import { squadMove, getSquadCostMatrix } from '../超级移动优化';
 
 const FOLLOW_CACHE_KEY = '__followCache__';
 
@@ -75,12 +75,36 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
     let path = cache.path;
     let idx = cache.idx;
 
-    // 验证路径仍然畅通（检查当前房间路径段）
+    // 验证路径仍然畅通
     if (idx < path.posArray.length - 1) {
         const nextPos = path.posArray[idx + 1];
+
+        // 检查当前房间的下一个格子
         if (nextPos && nextPos.roomName === leader.room.name) {
-            // 检查是否有新建筑挡路
             if (isObstacleAt(leader.room, nextPos)) {
+                cache = createCache(leader, target, squad, opts);
+                path = cache.path;
+                idx = cache.idx;
+            }
+        }
+
+        // 检查新进入的房间：遍历该房间内的所有路径段
+        if (nextPos && nextPos.roomName !== path.posArray[idx]?.roomName) {
+            const newRoom = Game.rooms[nextPos.roomName];
+            if (newRoom && !validatePathInRoom(newRoom, path, idx + 1, !!opts.ignoreDestructibleStructures)) {
+                cache = createCache(leader, target, squad, opts);
+                path = cache.path;
+                idx = cache.idx;
+            }
+        }
+
+        // 卡住检测：如果在同一位置停留超过 4 tick，重新寻路
+        if (cache.lastMoveTick && Game.time - cache.lastMoveTick >= 4) {
+            const currentPos = path.posArray[idx];
+            if (currentPos &&
+                currentPos.x === leader.pos.x &&
+                currentPos.y === leader.pos.y &&
+                currentPos.roomName === leader.room.name) {
                 cache = createCache(leader, target, squad, opts);
                 path = cache.path;
                 idx = cache.idx;
@@ -91,6 +115,7 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
     // 前进到下一格
     idx++;
     cache.idx = idx;
+    cache.lastMoveTick = Game.time;
     leader.memory[FOLLOW_CACHE_KEY] = cache;
 
     const leaderNextPos = path.posArray[idx];
@@ -100,8 +125,13 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
         return OK;
     }
 
-    // 计算每个 follower 的目标位置
-    const targets = computeFollowTargets(squad, leaderNextPos);
+    // 用 formal 坐标计算 follower 目标位置（支持跨房）
+    const leaderFormalPos = toFormal(leader.pos);
+    const { targets, wait } = computeFollowTargetsFormal(squad, leader, leaderNextPos, leaderFormalPos);
+
+    if (wait) {
+        return OK;
+    }
 
     // 调用 squadMove
     const ret = squadMove(squad, targets);
@@ -124,6 +154,8 @@ function createCache(leader: Creep, target: RoomPosition, squad: Creep[], opts: 
         path: null,
         dst: target,
         idx: -1,
+        lastMoveTick: 0,
+        ignoreStructures: !!opts.ignoreDestructibleStructures,
     };
 
     try {
@@ -150,7 +182,7 @@ function createCache(leader: Creep, target: RoomPosition, squad: Creep[], opts: 
 }
 
 /**
- * 模拟 squad 寻路：比普通 creep 寻路更宽松（允许穿过非敌方 creep）
+ * 模拟 squad 寻路：使用 squad CostMatrix 或 fallback 到 chain-aware matrix
  */
 function findSquadLikePath(fromPos: RoomPosition, toPos: RoomPosition, opts: FollowOpts): { path: RoomPosition[]; incomplete: boolean } {
     const ignoreStructures = !!opts.ignoreDestructibleStructures;
@@ -175,18 +207,21 @@ function findSquadLikePath(fromPos: RoomPosition, toPos: RoomPosition, opts: Fol
             if (avoidRooms.has(rName)) return false;
             if (avoidExits.has(rName) && avoidExits.get(rName).has(toPos.roomName)) return false;
 
+            // 优先使用 super module 的 squad CostMatrix
+            const squadCost = getSquadCostMatrix(rName, ignoreStructures);
+            if (squadCost) return squadCost;
+
             const room = Game.rooms[rName];
-            if (room) {
-                return buildSimpleCostMatrix(room, ignoreStructures, costCallback);
-            }
+            if (room) return buildChainAwareCostMatrix(room, ignoreStructures, costCallback);
             return new PathFinder.CostMatrix();
         };
     } else {
         pfOpts.roomCallback = (rName: string): boolean | CostMatrix => {
+            const squadCost = getSquadCostMatrix(rName, ignoreStructures);
+            if (squadCost) return squadCost;
+
             const room = Game.rooms[rName];
-            if (room) {
-                return buildSimpleCostMatrix(room, ignoreStructures, costCallback);
-            }
+            if (room) return buildChainAwareCostMatrix(room, ignoreStructures, costCallback);
             return false;
         };
     }
@@ -195,12 +230,13 @@ function findSquadLikePath(fromPos: RoomPosition, toPos: RoomPosition, opts: Fol
 }
 
 /**
- * 构建简单的 cost matrix
+ * 构建 chain-aware cost matrix：比普通 creep 更宽松，但保证链式队形能放下
  */
-function buildSimpleCostMatrix(room: Room, ignoreStructures: boolean, costCallback: any): CostMatrix {
+function buildChainAwareCostMatrix(room: Room, ignoreStructures: boolean, costCallback: any): CostMatrix {
     const costs = new PathFinder.CostMatrix();
     const terrain = room.getTerrain();
 
+    // 基础地形
     for (let y = 0; y < 50; y++) {
         for (let x = 0; x < 50; x++) {
             const tile = terrain.get(x, y);
@@ -265,6 +301,25 @@ function buildSimpleCostMatrix(room: Room, ignoreStructures: boolean, costCallba
         }
     });
 
+    // Chain footprint check: 确保每个格子至少有一个相邻的可通行格子
+    for (let y = 0; y < 50; y++) {
+        for (let x = 0; x < 50; x++) {
+            if (costs.get(x, y) === 255) continue;
+
+            let hasNeighbor = false;
+            for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+                const nx = x + dx, ny = y + dy;
+                if (nx >= 0 && nx < 50 && ny >= 0 && ny < 50 && costs.get(nx, ny) !== 255) {
+                    hasNeighbor = true;
+                    break;
+                }
+            }
+            if (!hasNeighbor) {
+                costs.set(x, y, 255);
+            }
+        }
+    }
+
     // border cost
     for (let y = 0; y < 50; y++) {
         for (let x = 0; x < 50; x++) {
@@ -283,26 +338,93 @@ function buildSimpleCostMatrix(room: Room, ignoreStructures: boolean, costCallba
 }
 
 /**
- * 计算每个 follower 的目标位置
- * 策略：follower[i] 保持与 follower[i-1] 的相对偏移，随 leader 一起前进
+ * 用 formal 坐标计算每个 follower 的目标位置，支持跨房队形保持
+ *
+ * 策略：follower[i] 保持与 leader 的 formal 相对偏移。当跨越房间边界时，
+ * 如果 follower 会被出口隔开，则原地等待下一 tick 再一起跳房。
+ *
+ * 参考 superMove 的 squadStepToPos 逻辑。
+ *
+ * @returns { targets: RoomPosition[], wait: boolean }
+ *   - targets: 每个 creep 的目标位置（leader 的第一个）
+ *   - wait: true 表示需要原地等待（已调用 squadMove(squad)）
  */
-function computeFollowTargets(squad: Creep[], leaderNext: RoomPosition): RoomPosition[] {
+function computeFollowTargetsFormal(
+    squad: Creep[],
+    leader: Creep,
+    leaderNext: RoomPosition,
+    leaderFormalPos: { x: number; y: number }
+): { targets: RoomPosition[]; wait: boolean } {
     const targets: RoomPosition[] = [leaderNext];
 
+    // 将 leaderNext 转为 formal 坐标进行比较
+    const leaderNextFormal = toFormal(leaderNext);
+
     for (let i = 1; i < squad.length; i++) {
-        const prevTarget = targets[i - 1];
         const prevCreep = squad[i - 1];
         const currentCreep = squad[i];
 
-        const dx = currentCreep.pos.x - prevCreep.pos.x;
-        const dy = currentCreep.pos.y - prevCreep.pos.y;
+        const currentFormal = toFormal(currentCreep.pos);
 
-        const nx = Math.max(0, Math.min(49, prevTarget.x + dx));
-        const ny = Math.max(0, Math.min(49, prevTarget.y + dy));
-        targets.push(new RoomPosition(nx, ny, prevTarget.roomName));
+        // 计算当前 creep 相对于 leader 的 formal 偏移（follower - leader）
+        let xdiff = currentFormal.x - leaderFormalPos.x;
+        let ydiff = currentFormal.y - leaderFormalPos.y;
+
+        // 跨房等待逻辑（x 方向，参考 squadStepToPos）
+        if (xdiff === -2) {
+            // follower 在 leader 后方 2 格
+            if (leader.pos.x === 1) {
+                // leader 在 x=1，下一步向右移动（formal x 增加）→ 需要等待跳房
+                if (leaderNextFormal.x > leaderFormalPos.x) {
+                    squadMove(squad);
+                    return { targets, wait: true };
+                }
+            } else if (leaderNext.x === 49 && leader.pos.x === 0) {
+                // leader 从 x=0 跳到 x=49 → follower 的相对偏移调整为 -1
+                xdiff = -1;
+            }
+        } else if (xdiff === -1) {
+            // follower 在 leader 后方 1 格
+            if ((leader.pos.x === 1 && leaderNextFormal.x < leaderFormalPos.x) ||
+                (leader.pos.x === 49 && leaderNextFormal.x > leaderFormalPos.x)) {
+                // leader 正在跨越边界 → 等待
+                squadMove(squad);
+                return { targets, wait: true };
+            }
+        }
+
+        // 跨房等待逻辑（y 方向，参考 squadStepToPos）
+        if (ydiff === -2) {
+            if (leader.pos.y === 1) {
+                if (leaderNextFormal.y > leaderFormalPos.y) {
+                    squadMove(squad);
+                    return { targets, wait: true };
+                }
+            } else if (leaderNext.y === 49 && leader.pos.y === 0) {
+                ydiff = -1;
+            }
+        } else if (ydiff === -1) {
+            if ((leader.pos.y === 1 && leaderNextFormal.y < leaderFormalPos.y) ||
+                (leader.pos.y === 49 && leaderNextFormal.y > leaderFormalPos.y)) {
+                squadMove(squad);
+                return { targets, wait: true };
+            }
+        }
+
+        // 计算 follower 的目标 formal 坐标
+        const px = leaderFormalPos.x + xdiff;
+        const py = leaderFormalPos.y + ydiff;
+
+        // 将 formal 坐标转为 RoomPosition（自动处理跨房）
+        // 注意：这里不能直接用 leaderNext.roomName，因为 follower 可能在不同的房间
+        const targetRoomName = getRoomNameFromFormal(px, py);
+        const localX = px - parseRoomName(targetRoomName)!.baseX;
+        const localY = py - parseRoomName(targetRoomName)!.baseY;
+
+        targets.push(new RoomPosition(localX, localY, targetRoomName));
     }
 
-    return targets;
+    return { targets, wait: false };
 }
 
 /**
@@ -336,6 +458,30 @@ function isUnwalkableStructure(type: any): boolean {
 }
 
 /**
+ * 验证路径在新房间中是否仍然畅通
+ */
+function validatePathInRoom(room: Room, path: MyPath, startIdx: number, ignoreDestructibleStructures: boolean): boolean {
+    // 优先使用 squad CostMatrix
+    const squadCost = getSquadCostMatrix(room.name, ignoreDestructibleStructures);
+    if (squadCost) {
+        for (let i = startIdx; i + 1 < path.posArray.length && path.posArray[i].roomName === room.name; i++) {
+            if (squadCost.get(path.posArray[i].x, path.posArray[i].y) === 255) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Fallback: 逐个检查障碍物
+    for (let i = startIdx; i + 1 < path.posArray.length && path.posArray[i].roomName === room.name; i++) {
+        if (isObstacleAt(room, path.posArray[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * 简化的 isEqual
  */
 function isEqualPos(a: RoomPosition, b: RoomPosition): boolean {
@@ -351,6 +497,40 @@ function toFormal(pos: RoomPosition): { x: number; y: number } {
         return { x: parsed.baseX + pos.x, y: parsed.baseY + pos.y };
     }
     return { x: 0, y: 0 };
+}
+
+/**
+ * 将 formal 坐标转为房间名
+ */
+function getRoomNameFromFormal(formalX: number, formalY: number): string {
+    const halfWorldSize = 255 >> 1;
+
+    // 计算房间坐标
+    const roomX = Math.floor(formalX / 50);
+    const roomY = Math.floor(formalY / 50);
+
+    // 转换为 W/E 和 N/S 格式
+    let ewCode: string;
+    let ewNum: number;
+    if (roomX <= halfWorldSize) {
+        ewCode = 'W';
+        ewNum = halfWorldSize - roomX;
+    } else {
+        ewCode = 'E';
+        ewNum = roomX - halfWorldSize - 1;
+    }
+
+    let nsCode: string;
+    let nsNum: number;
+    if (roomY <= halfWorldSize) {
+        nsCode = 'N';
+        nsNum = halfWorldSize - roomY;
+    } else {
+        nsCode = 'S';
+        nsNum = roomY - halfWorldSize - 1;
+    }
+
+    return `${ewCode}${ewNum}${nsCode}${nsNum}`;
 }
 
 /**
@@ -410,6 +590,8 @@ interface FollowCache {
     path: MyPath | null;
     dst: RoomPosition;
     idx: number;
+    lastMoveTick: number;      // Game.time of last successful move
+    ignoreStructures: boolean; // mirror of opts.ignoreDestructibleStructures
 }
 
 interface MyPath {
