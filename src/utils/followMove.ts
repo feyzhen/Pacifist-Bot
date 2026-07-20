@@ -58,7 +58,10 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
     // 获取 follow cache
     /** @type {FollowCache} */
     let cache = leader.memory[FOLLOW_CACHE_KEY];
-    if (!cache || !cache.path || !cache.dst || !cache.path.posArray) {
+    if (!cache || !cache.path || !cache.dst || !cache.path.posArray ||
+        cache.ignoreStructures !== !!opts.ignoreDestructibleStructures ||
+        cache.path.ignoreRoads !== !!opts.ignoreRoads ||
+        cache.path.ignoreSwamps !== !!opts.ignoreSwamps) {
         cache = createCache(leader, target, squad, opts);
     }
 
@@ -142,38 +145,94 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
 
     // 用 formal 坐标计算 follower 目标位置（支持跨房）
     const leaderFormalPos = toFormal(leader.pos);
-    const { targets, wait, dxRoom, dyRoom, leaderRoomIdx } = computeFollowTargetsFormal(squad, leader, leaderNextPos, leaderFormalPos);
+    const leaderNextFormal = toFormal(leaderNextPos);
+    const { targets, wait, waitReason, dxRoom, dyRoom, leaderRoomIdx } = computeFollowTargetsFormal(squad, leader, leaderNextPos, leaderFormalPos);
 
     if (wait) {
-        // 等待时：leader 原地不动，follower 继续向 leader 当前位置或出口方向移动
-        const waitTargets: RoomPosition[] = [leader.pos];
+        // 等待时：根据等待原因决定 leader 是否前进
+        // - lagging / unreachable：leader 原地等待，follower 追赶
+        // - crossRoom：leader 继续沿路径前进，follower 保持在出口内侧
+        let leaderShouldWait = (waitReason === 'lagging' || waitReason === 'unreachable');
+
+        // 更新等待计数
+        if (leaderShouldWait) {
+            cache.waitTickCount++;
+        } else {
+            cache.waitTickCount = 0;
+        }
+
+        // 等待超时检测：如果 leader 等待超过 10 tick 且 follower 没有靠近，继续前进
+        const MAX_WAIT_TICKS = 10;
+        if (cache.waitTickCount >= MAX_WAIT_TICKS) {
+            // 检查 follower 是否在靠近 leader
+            let followerGettingCloser = false;
+            for (let i = 1; i < squad.length; i++) {
+                const c = squad[i];
+                const dist = c.pos.getRangeTo(leader.pos);
+                // 简化：如果任何 follower 与 leader 的距离 <= 2，认为在靠近
+                if (dist <= 2) {
+                    followerGettingCloser = true;
+                    break;
+                }
+            }
+            if (!followerGettingCloser) {
+                console.log(`[followMove] wait timeout (${MAX_WAIT_TICKS} ticks), continuing without followers`);
+                cache.waitTickCount = 0;
+                leaderShouldWait = false; // 超时，不再等待
+            }
+        }
+
+        const waitTargets: RoomPosition[] = [leaderShouldWait ? leader.pos : leaderNextPos];
         for (let i = 1; i < squad.length; i++) {
             const currentCreep = squad[i];
             const currentFormal = toFormal(currentCreep.pos);
+
+            // 同房间落后太多 → follower 直接向 leader 当前位置移动
             let xdiff = currentFormal.x - leaderFormalPos.x;
             let ydiff = currentFormal.y - leaderFormalPos.y;
-
-            // 同房间落后太多 → 向 leader 当前位置追
-            if (currentCreep.room.name === leader.room.name &&
-                Math.abs(xdiff) > 3 && xdiff < 0) {
-                waitTargets.push(leader.pos);
-                continue;
-            }
-            if (currentCreep.room.name === leader.room.name &&
-                Math.abs(ydiff) > 3 && ydiff < 0) {
-                waitTargets.push(leader.pos);
-                continue;
+            if (currentCreep.room.name === leader.room.name && waitReason === 'lagging') {
+                if (Math.abs(xdiff) > 3 && xdiff < 0) {
+                    waitTargets.push(leader.pos);
+                    continue;
+                }
+                if (Math.abs(ydiff) > 3 && ydiff < 0) {
+                    waitTargets.push(leader.pos);
+                    continue;
+                }
             }
 
-            // 同房间出口边界等待：follower 在 leader 后方，应向出口方向移动
-            if (currentCreep.room.name === leader.room.name && (dxRoom !== 0 || dyRoom !== 0)) {
-                let tx = currentCreep.pos.x;
-                let ty = currentCreep.pos.y;
-                if (dxRoom > 0 && xdiff < 0) tx = 48;       // 向右跨房，出口内侧 x=48
-                else if (dxRoom < 0 && xdiff > 0) tx = 1;    // 向左跨房，出口内侧 x=1
-                if (dyRoom > 0 && ydiff < 0) ty = 48;       // 向南跨房，出口内侧 y=48
-                else if (dyRoom < 0 && ydiff > 0) ty = 1;    // 向北跨房，出口内侧 y=1
-                waitTargets.push(new RoomPosition(tx, ty, currentCreep.room.name));
+            // 目标不可达 → follower 向 leader 当前位置移动（如果同房间）或用位移法靠拢
+            if (waitReason === 'unreachable') {
+                if (currentCreep.room.name === leader.room.name) {
+                    // 同房间：follower 向 leader 方向移动 1 格（避免与 leader 碰撞）
+                    const dx = Math.sign(leader.pos.x - currentCreep.pos.x);
+                    const dy = Math.sign(leader.pos.y - currentCreep.pos.y);
+                    if (dx !== 0 || dy !== 0) {
+                        const newTarget = new RoomPosition(
+                            Math.max(0, Math.min(49, currentCreep.pos.x + dx)),
+                            Math.max(0, Math.min(49, currentCreep.pos.y + dy)),
+                            currentCreep.room.name
+                        );
+                        // 检查新目标是否可通行
+                        if (isTileWalkable(currentCreep.room, newTarget)) {
+                            waitTargets.push(newTarget);
+                        } else {
+                            waitTargets.push(currentCreep.pos); // 无法移动，原地等待
+                        }
+                    } else {
+                        waitTargets.push(currentCreep.pos); // 已经在 leader 位置，原地等待
+                    }
+                    continue;
+                }
+                // 跨房间但目标不可达：follower 用位移法向 leader 靠拢
+                const dispX = leaderNextFormal.x - leaderFormalPos.x;
+                const dispY = leaderNextFormal.y - leaderFormalPos.y;
+                const px = currentFormal.x + dispX;
+                const py = currentFormal.y + dispY;
+                const targetRoomName = getRoomNameFromFormal(px, py);
+                const localX = px - parseRoomName(targetRoomName)!.baseX;
+                const localY = py - parseRoomName(targetRoomName)!.baseY;
+                waitTargets.push(new RoomPosition(localX, localY, targetRoomName));
                 continue;
             }
 
@@ -198,7 +257,15 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
                 }
             }
 
-            waitTargets.push(targets[i]);
+            // 默认：等待时 follower 用位移法向 leader 靠拢
+            const dispX = leaderNextFormal.x - leaderFormalPos.x;
+            const dispY = leaderNextFormal.y - leaderFormalPos.y;
+            const px = currentFormal.x + dispX;
+            const py = currentFormal.y + dispY;
+            const targetRoomName = getRoomNameFromFormal(px, py);
+            const localX = px - parseRoomName(targetRoomName)!.baseX;
+            const localY = py - parseRoomName(targetRoomName)!.baseY;
+            waitTargets.push(new RoomPosition(localX, localY, targetRoomName));
         }
         const ret = squadMove(squad, waitTargets);
         if (ret !== OK) {
@@ -234,6 +301,7 @@ function createCache(leader: Creep, target: RoomPosition, squad: Creep[], opts: 
         lastMoveTick: 0,
         ignoreStructures: !!opts.ignoreDestructibleStructures,
         startFormal: toFormal(leader.pos),
+        waitTickCount: 0,
     };
 
     try {
@@ -418,14 +486,21 @@ function buildChainAwareCostMatrix(room: Room, ignoreStructures: boolean, costCa
 /**
  * 用 formal 坐标计算每个 follower 的目标位置，支持跨房队形保持
  *
- * 策略：follower[i] 保持与 leader 的 formal 相对偏移。当跨越房间边界时，
- * 如果 follower 会被出口隔开，则原地等待下一 tick 再一起跳房。
+ * 策略：follower 跟随 leader 的移动向量（位移法），而非保持对 leader 当前位置的固定偏移。
+ * 这样跨房时 follower 会自然流过边界：先到出口内侧，下一 tick 再跳房。
  *
- * 参考 superMove 的 squadStepToPos 逻辑。
+ * 等待条件：
+ * - 同房间 follower 落后超过 3 格 → leader 等待，follower 追赶
+ * - follower 在 leader 移动方向的后方房间且 leader 在出口 → 等待 follower 跟上
+ * - follower 目标位置不可达（地形/建筑阻挡或无法跨房）→ leader 等待
+ * - leader 即将跨房且同房间 follower 未到达边界 → 等待 follower 跟上
  *
- * @returns { targets: RoomPosition[], wait: boolean, dxRoom: number, dyRoom: number, leaderRoomIdx: object|null }
+ * 参考 superMove 的 squadStepToPos 逻辑，但使用位移法替代偏移法。
+ *
+ * @returns { targets: RoomPosition[], wait: boolean, waitReason: 'lagging' | 'crossRoom' | 'unreachable', dxRoom: number, dyRoom: number, leaderRoomIdx: object|null }
  *   - targets: 每个 creep 的目标位置（leader 的第一个）
- *   - wait: true 表示需要原地等待（已调用 squadMove(squad)）
+ *   - wait: true 表示需要特殊处理（已返回 targets，由调用方构建 waitTargets）
+ *   - waitReason: 'lagging' = 同房间落后太多, 'crossRoom' = 跨房边界等待/follower 未准备好, 'unreachable' = follower 目标不可达
  *   - dxRoom/dyRoom: leader 跨房方向的房间索引变化量
  *   - leaderRoomIdx: leader 房间的解析结果
  */
@@ -434,7 +509,7 @@ function computeFollowTargetsFormal(
     leader: Creep,
     leaderNext: RoomPosition,
     leaderFormalPos: { x: number; y: number }
-): { targets: RoomPosition[]; wait: boolean; dxRoom: number; dyRoom: number; leaderRoomIdx: ReturnType<typeof parseRoomName> } {
+): { targets: RoomPosition[]; wait: boolean; waitReason: 'lagging' | 'crossRoom' | 'unreachable'; dxRoom: number; dyRoom: number; leaderRoomIdx: ReturnType<typeof parseRoomName> } {
     const targets: RoomPosition[] = [leaderNext];
 
     // 将 leaderNext 转为 formal 坐标进行比较
@@ -458,30 +533,24 @@ function computeFollowTargetsFormal(
         let ydiff = currentFormal.y - leaderFormalPos.y;
 
         // ── 同房间落后太多 → leader 等待，让 follower 追上来 ──
+        // 仅当 follower 很近（1-2 格）且被临时阻挡时才等待；距离太远则不等待，让位移法自然处理
         if (currentCreep.room.name === leader.room.name) {
-            if (Math.abs(xdiff) > 3 && xdiff < 0) {
-                squadMove(squad);
-                return { targets, wait: true };
-            }
-            if (Math.abs(ydiff) > 3 && ydiff < 0) {
-                squadMove(squad);
-                return { targets, wait: true };
-            }
-        }
+            const manhattanDist = Math.abs(xdiff) + Math.abs(ydiff);
+            // 判断 follower 是否在 leader 移动方向的反方向落后
+            const behindInMovementDir = (dxRoom > 0 && xdiff < 0) || (dxRoom < 0 && xdiff > 0) ||
+                                         (dyRoom > 0 && ydiff < 0) || (dyRoom < 0 && ydiff > 0);
 
-        // ── 同房间出口边界等待 ──
-        // leader 正在跨房且 follower 在同房间、在 leader 后方 → 等待跳房
-        // 注意：不能用 baseX 比较判断 follower 是否在同房间后方，因为同房间时 baseX 相等
-        // 应该用 xdiff/ydiff 的方向判断：follower 的偏移方向与 leader 移动方向相反
-        if ((dxRoom !== 0 || dyRoom !== 0) && currentCreep.room.name === leader.room.name) {
-            const followerBehindInMovement =
-                (dxRoom > 0 && xdiff < 0) ||
-                (dxRoom < 0 && xdiff > 0) ||
-                (dyRoom > 0 && ydiff < 0) ||
-                (dyRoom < 0 && ydiff > 0);
-            if (followerBehindInMovement) {
-                squadMove(squad);
-                return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
+            // 仅当 follower 很近（曼哈顿距离 <= 2）且在移动方向反方向落后时，才等待
+            if (manhattanDist <= 2 && behindInMovementDir) {
+                return { targets, wait: true, waitReason: 'lagging', dxRoom, dyRoom, leaderRoomIdx };
+            }
+
+            // ── 边界准备检查：leader 即将跨房时，检查同房间 follower 是否已到达边界 ──
+            // 仅当 follower 在 leader 移动方向上紧邻边界（距离 <= 1 格）时才等待
+            if ((dxRoom !== 0 || dyRoom !== 0) && isFollowerNearBoundary(currentCreep, leader, dxRoom, dyRoom)) {
+                if (!isFollowerReadyForCrossRoom(currentCreep, leader, dxRoom, dyRoom)) {
+                    return { targets, wait: true, waitReason: 'crossRoom', dxRoom, dyRoom, leaderRoomIdx };
+                }
             }
         }
 
@@ -494,12 +563,10 @@ function computeFollowTargetsFormal(
 
             if (followerBehind) {
                 if (dxRoom > 0 && (leader.pos.x === 0 || leader.pos.x === 1)) {
-                    squadMove(squad);
-                    return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
+                    return { targets, wait: true, waitReason: 'crossRoom', dxRoom, dyRoom, leaderRoomIdx };
                 }
                 if (dxRoom < 0 && (leader.pos.x === 48 || leader.pos.x === 49)) {
-                    squadMove(squad);
-                    return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
+                    return { targets, wait: true, waitReason: 'crossRoom', dxRoom, dyRoom, leaderRoomIdx };
                 }
             }
         }
@@ -512,113 +579,123 @@ function computeFollowTargetsFormal(
 
             if (followerBehind) {
                 if (dyRoom > 0 && (leader.pos.y === 0 || leader.pos.y === 1)) {
-                    squadMove(squad);
-                    return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
+                    return { targets, wait: true, waitReason: 'crossRoom', dxRoom, dyRoom, leaderRoomIdx };
                 }
                 if (dyRoom < 0 && (leader.pos.y === 48 || leader.pos.y === 49)) {
-                    squadMove(squad);
-                    return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
+                    return { targets, wait: true, waitReason: 'crossRoom', dxRoom, dyRoom, leaderRoomIdx };
                 }
             }
         }
 
-        // ── 未跨房时的边界等待（原 squadStepToPos 逻辑）──
-        if (dxRoom === 0 && dyRoom === 0) {
-            if (xdiff === -2) {
-                if (leader.pos.x === 1 && leaderNextFormal.x > leaderFormalPos.x) {
-                    squadMove(squad);
-                    return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
-                } else if (leaderNext.x === 49 && leader.pos.x === 0) {
-                    xdiff = -1;
-                }
-            } else if (xdiff === -1) {
-                if ((leader.pos.x === 1 && leaderNextFormal.x < leaderFormalPos.x) ||
-                    (leader.pos.x === 49 && leaderNextFormal.x > leaderFormalPos.x)) {
-                    squadMove(squad);
-                    return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
-                }
-            }
-
-            if (ydiff === -2) {
-                if (leader.pos.y === 1 && leaderNextFormal.y > leaderFormalPos.y) {
-                    squadMove(squad);
-                    return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
-                } else if (leaderNext.y === 49 && leader.pos.y === 0) {
-                    ydiff = -1;
-                }
-            } else if (ydiff === -1) {
-                if ((leader.pos.y === 1 && leaderNextFormal.y < leaderFormalPos.y) ||
-                    (leader.pos.y === 49 && leaderNextFormal.y > leaderFormalPos.y)) {
-                    squadMove(squad);
-                    return { targets, wait: true, dxRoom, dyRoom, leaderRoomIdx };
-                }
-            }
-        }
-
-        // ── 跨房偏移修正 ──
-        // 当 leader 和 follower 在不同房间时，xdiff/ydiff 会包含 ±50 的跳变。
-        // 处理两种情况：
-        // 1. follower 在旧房间（leader 移动方向后方）→ 发送到旧房间出口内侧
-        // 2. follower 在新房间（leader 移动方向前方）→ 保持跟随
-        {
-            const curRoomIdx = parseRoomName(currentCreep.room.name);
-            if (curRoomIdx && leaderRoomIdx) {
-                // x 方向
-                if (curRoomIdx.baseX !== leaderRoomIdx.baseX) {
-                    if (xdiff < -25) {
-                        // follower 在旧房间（leader 移动方向后方）
-                        // 目标：旧房间出口内侧
-                        if (curRoomIdx.baseX < leaderRoomIdx.baseX) {
-                            // follower 在左，leader 向右 → 目标为 follower 房间 x=49
-                            // targetFormal = curRoomIdx.baseX + 49
-                            xdiff = (curRoomIdx.baseX + 49) - leaderFormalPos.x;
-                        } else {
-                            // follower 在右，leader 向左 → 目标为 follower 房间 x=0
-                            // targetFormal = curRoomIdx.baseX + 0
-                            xdiff = curRoomIdx.baseX - leaderFormalPos.x;
-                        }
-                    } else if (xdiff > 25) {
-                        // follower 在新房间（leader 移动方向前方）
-                        // 目标：leader 当前位置后方 1 格
-                        if (curRoomIdx.baseX > leaderRoomIdx.baseX) {
-                            xdiff = -1;
-                        } else {
-                            xdiff = 1;
-                        }
-                    }
-                }
-                // y 方向
-                if (curRoomIdx.baseY !== leaderRoomIdx.baseY) {
-                    if (ydiff < -25) {
-                        if (curRoomIdx.baseY < leaderRoomIdx.baseY) {
-                            ydiff = (curRoomIdx.baseY + 49) - leaderFormalPos.y;
-                        } else {
-                            ydiff = curRoomIdx.baseY - leaderFormalPos.y;
-                        }
-                    } else if (ydiff > 25) {
-                        if (curRoomIdx.baseY > leaderRoomIdx.baseY) {
-                            ydiff = -1;
-                        } else {
-                            ydiff = 1;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 计算 follower 的目标 formal 坐标（基于 leader 的 formal 坐标 + 相对偏移）
-        const px = leaderFormalPos.x + xdiff;
-        const py = leaderFormalPos.y + ydiff;
+        // ── 计算 follower 目标位置（位移法）──
+        // 参考 squadStepToPos：follower 跟随 leader 的移动向量，而非保持对 leader 当前位置的固定偏移。
+        // 这样跨房时 follower 会自然流过边界：先到出口内侧，下一 tick 再跳房。
+        const dispX = leaderNextFormal.x - leaderFormalPos.x;
+        const dispY = leaderNextFormal.y - leaderFormalPos.y;
+        const px = currentFormal.x + dispX;
+        const py = currentFormal.y + dispY;
 
         // 将 formal 坐标转为 RoomPosition（自动处理跨房）
         const targetRoomName = getRoomNameFromFormal(px, py);
         const localX = px - parseRoomName(targetRoomName)!.baseX;
         const localY = py - parseRoomName(targetRoomName)!.baseY;
+        const followerTarget = new RoomPosition(localX, localY, targetRoomName);
 
-        targets.push(new RoomPosition(localX, localY, targetRoomName));
+        // ── 目标可达性检查：如果 follower 无法到达目标，leader 必须等待 ──
+        if (!isTargetReachable(currentCreep, followerTarget)) {
+            return { targets: [leaderNext], wait: true, waitReason: 'unreachable', dxRoom, dyRoom, leaderRoomIdx };
+        }
+
+        targets.push(followerTarget);
     }
 
-    return { targets, wait: false, dxRoom, dyRoom, leaderRoomIdx };
+    return { targets, wait: false, waitReason: 'lagging', dxRoom, dyRoom, leaderRoomIdx };
+}
+
+/**
+ * 检查 follower 是否能到达目标位置
+ * - 同房间：目标格子必须可通行（地形 + 建筑）
+ * - 跨房间：follower 必须在出口边界上，且目标房间（如有视野）的入口格子也可通行
+ */
+function isTargetReachable(follower: Creep, target: RoomPosition): boolean {
+    if (follower.room.name === target.roomName) {
+        // 同房间：检查目标格子是否可通行
+        return isTileWalkable(follower.room, target);
+    }
+
+    // 跨房间：follower 必须在出口边界
+    const followerFormal = toFormal(follower.pos);
+    const targetFormal = toFormal(target);
+    const dispX = targetFormal.x - followerFormal.x;
+    const dispY = targetFormal.y - followerFormal.y;
+
+    // follower 必须在当前房间的边界上才能跨房
+    if (dispX > 0 && follower.pos.x !== 49) return false;
+    if (dispX < 0 && follower.pos.x !== 0) return false;
+    if (dispY > 0 && follower.pos.y !== 49) return false;
+    if (dispY < 0 && follower.pos.y !== 0) return false;
+
+    // 如果 follower 不在边界但位移方向要求跨房，说明路径被阻断
+    if (dispX !== 0 && follower.pos.x !== 0 && follower.pos.x !== 49) return false;
+    if (dispY !== 0 && follower.pos.y !== 0 && follower.pos.y !== 49) return false;
+
+    // 检查目标房间的入口格子是否可通行（如果有视野）
+    const targetRoom = Game.rooms[target.roomName];
+    if (targetRoom) {
+        if (!isTileWalkable(targetRoom, target)) {
+            return false;
+        }
+    }
+    // 如果没有视野，假设目标可通行
+
+    return true;
+}
+
+/**
+ * 检查房间内的格子是否可通行
+ */
+function isTileWalkable(room: Room, pos: RoomPosition): boolean {
+    // 检查地形
+    const terrain = room.getTerrain();
+    const tile = terrain.get(pos.x, pos.y);
+    if (tile & TERRAIN_MASK_WALL) return false;
+
+    // 检查建筑
+    if (isObstacleAt(room, pos)) return false;
+
+    return true;
+}
+
+/**
+ * 检查 follower 是否已准备好跨房
+ * - 如果 leader 正在跨房，follower 需要到达边界或已经在新房间
+ * - 如果 follower 距离边界 > 1 格，返回 false（需要等待）
+ */
+function isFollowerReadyForCrossRoom(follower: Creep, leader: Creep, dxRoom: number, dyRoom: number): boolean {
+    // 如果 follower 已经在不同房间，不需要检查（由其他逻辑处理）
+    if (follower.room.name !== leader.room.name) {
+        return true;
+    }
+
+    // 检查 follower 是否在 leader 移动方向的后方且距离边界 > 1 格
+    if (dxRoom > 0 && follower.pos.x < leader.pos.x - 1) return false;  // 向右跨房，follower 在 leader 左边超过 1 格
+    if (dxRoom < 0 && follower.pos.x > leader.pos.x + 1) return false;  // 向左跨房，follower 在 leader 右边超过 1 格
+    if (dyRoom > 0 && follower.pos.y < leader.pos.y - 1) return false;  // 向下跨房，follower 在 leader 上边超过 1 格
+    if (dyRoom < 0 && follower.pos.y > leader.pos.y + 1) return false;  // 向上跨房，follower 在 leader 下边超过 1 格
+
+    return true;
+}
+
+/**
+ * 检查 follower 是否在 leader 移动方向的紧邻边界（距离 <= 1 格）
+ * 仅当 follower 靠近边界时才进行跨房准备检查，避免 leader 因 follower 太远而无限等待
+ */
+function isFollowerNearBoundary(follower: Creep, leader: Creep, dxRoom: number, dyRoom: number): boolean {
+    if (dxRoom > 0 && follower.pos.x >= leader.pos.x - 1) return true;   // 向右跨房，follower 在 leader 左侧 0-1 格
+    if (dxRoom < 0 && follower.pos.x <= leader.pos.x + 1) return true;   // 向左跨房，follower 在 leader 右侧 0-1 格
+    if (dyRoom > 0 && follower.pos.y >= leader.pos.y - 1) return true;   // 向下跨房，follower 在 leader 上侧 0-1 格
+    if (dyRoom < 0 && follower.pos.y <= leader.pos.y + 1) return true;   // 向上跨房，follower 在 leader 下侧 0-1 格
+    return false;
 }
 
 /**
@@ -787,6 +864,7 @@ interface FollowCache {
     lastMoveTick: number;      // Game.time of last successful move
     ignoreStructures: boolean; // mirror of opts.ignoreDestructibleStructures
     startFormal: { x: number; y: number }; // 路径起点的 formal 坐标，用于传送回退检测
+    waitTickCount: number;     // 连续等待的 tick 数，超过阈值后 leader 继续前进
 }
 
 interface MyPath {
