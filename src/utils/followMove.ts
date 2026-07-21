@@ -1,7 +1,7 @@
 /**
  * followMove — 通用跟随移动工具
  *
- * 基于 超级移动优化 的 squadMove，实现 leader 规划路径、follower 跟随的效果。
+ * 基于 超级移动优化 的 squadMove，实现 leader 规划路径、follower 跟随的移动效果。
  * 支持 2~9 人的链式跟随：creeps[0]=leader, creeps[1] 跟随 creeps[0],
  * creeps[2] 跟随 creeps[1]，以此类推。
  *
@@ -20,6 +20,7 @@
  * @param opts         可选参数
  */
 
+// @ts-ignore
 import { squadMove } from '../超级移动优化';
 
 const FOLLOW_CACHE_KEY = '__followCache__';
@@ -41,12 +42,16 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
         return ERR_INVALID_ARGS;
     }
 
-    // 检查疲劳
-    const tired = squad.find((c) => c.fatigue);
-    if (tired) {
-        // 疲劳时先注册不动的小队，防止被推走
-        squadMove(squad);
-        return ERR_TIRED;
+    // 检查 fatigue / spawning
+    for (const creep of squad) {
+        if (creep.spawning) {
+            squadMove(squad);
+            return ERR_BUSY;
+        }
+        if (creep.fatigue) {
+            squadMove(squad);
+            return ERR_TIRED;
+        }
     }
 
     // 检查是否已到达
@@ -88,6 +93,12 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
         }
     }
 
+    // 路径已走完（idx 指向最后一个有效格），或 leader 已到目标范围 → 锁住不动，不再修改 idx
+    if (idx >= path.posArray.length - 1 || leader.pos.getRangeTo(target) <= 1) {
+        squadMove(squad);
+        return OK;
+    }
+
     // 前进到下一格
     idx++;
     cache.idx = idx;
@@ -95,25 +106,63 @@ export function followMove(leader: Creep, followers: Creep[] = [], target: RoomP
 
     const leaderNextPos = path.posArray[idx];
     if (!leaderNextPos) {
-        // 路径走完但还没到目标范围
+        // 防御性分支：理论上上面已拦截，若仍触发则直接返回，不进入后续逻辑
         squadMove(squad);
         return OK;
     }
 
+    // 首次需要计算 offsets（用 formalize 全局坐标记录固定偏移）
+    if (!cache.offsets || cache.offsets.length !== squad.length) {
+        cache.offsets = computeOffsets(squad);
+        leader.memory[FOLLOW_CACHE_KEY] = cache;
+    }
+
     // 计算每个 follower 的目标位置
-    const targets = computeFollowTargets(squad, leaderNextPos);
+    const targets = computeFollowTargets(squad, leaderNextPos, cache.offsets!);
 
     // 调用 squadMove
     const ret = squadMove(squad, targets);
     if (ret !== OK) {
         // squadMove 失败（如队形散掉），重新注册不动
-        if (ret === ERR_INVALID_ARGS || ret === 70) { // ERR_INVALID_ARGS or ERR_NOT_IN_RANGE
+        if (ret === ERR_INVALID_ARGS || ret === ERR_NOT_IN_RANGE) {
             squadMove(squad);
             return ret;
         }
     }
 
     return ret;
+}
+
+/**
+ * 在新小队初始化时，用 formalize 全局坐标计算每个 creep 相对 leader 的固定偏移
+ */
+function computeOffsets(squad: Creep[]): { dx: number; dy: number }[] {
+    const leaderFormal = formalize(squad[0].pos);
+    const offsets: { dx: number; dy: number }[] = [];
+    for (const creep of squad) {
+        const p = formalize(creep.pos);
+        offsets.push({ dx: p.x - leaderFormal.x, dy: p.y - leaderFormal.y });
+    }
+    return offsets;
+}
+
+/**
+ * 根据 leader 下一步位置和预计算的固定偏移，算出每个 creep 的目标 RoomPosition
+ * 使用 formalize 全局坐标，跨房时 offset 保持不变，由 tile2Pos 反解出正确的 roomName
+ */
+function computeFollowTargets(squad: Creep[], leaderNext: RoomPosition, offsets: { dx: number; dy: number }[]): RoomPosition[] {
+    const leaderFormal = formalize(leaderNext);
+    const targets: RoomPosition[] = [];
+
+    for (let i = 0; i < squad.length; i++) {
+        const ox = offsets[i].dx;
+        const oy = offsets[i].dy;
+        const globalX = leaderFormal.x + ox;
+        const globalY = leaderFormal.y + oy;
+        targets.push(tile2Pos(globalY << 14 | globalX));
+    }
+
+    return targets;
 }
 
 /**
@@ -124,17 +173,18 @@ function createCache(leader: Creep, target: RoomPosition, squad: Creep[], opts: 
         path: null,
         dst: target,
         idx: -1,
+        offsets: computeOffsets(squad),
     };
 
     try {
-        const result = findSquadLikePath(leader.pos, target, opts);
+        const result = findSquadLikePath(leader.pos, target, opts, squad);
 
         if (result && result.path && result.path.length > 0) {
             // 把 path 包成 MyPath 格式
             const posArray: RoomPosition[] = [leader.pos, ...result.path];
             cache.path = {
-                start: toFormal(posArray[0]),
-                end: toFormal(posArray[posArray.length - 1]),
+                start: formalize(posArray[0]),
+                end: formalize(posArray[posArray.length - 1]),
                 posArray,
                 ignoreStructures: !!opts.ignoreDestructibleStructures,
                 ignoreRoads: !!opts.ignoreRoads,
@@ -150,11 +200,12 @@ function createCache(leader: Creep, target: RoomPosition, squad: Creep[], opts: 
 }
 
 /**
- * 模拟 squad 寻路：比普通 creep 寻路更宽松（允许穿过非敌方 creep）
+ * 模拟 squad 寻路：比普通 creep 寻路更宽松（允许穿过非敌方 creep），同时避开本 squad 的 follower
  */
-function findSquadLikePath(fromPos: RoomPosition, toPos: RoomPosition, opts: FollowOpts): { path: RoomPosition[]; incomplete: boolean } {
+function findSquadLikePath(fromPos: RoomPosition, toPos: RoomPosition, opts: FollowOpts, squad: Creep[]): { path: RoomPosition[]; incomplete: boolean } {
     const ignoreStructures = !!opts.ignoreDestructibleStructures;
     const costCallback = opts.costCallback || null;
+    const followerPositions = squad.slice(1).map(c => c.pos); // 排除 leader
 
     /** @type {PathFinderOpts} */
     const pfOpts: any = {
@@ -177,7 +228,9 @@ function findSquadLikePath(fromPos: RoomPosition, toPos: RoomPosition, opts: Fol
 
             const room = Game.rooms[rName];
             if (room) {
-                return buildSimpleCostMatrix(room, ignoreStructures, costCallback);
+                const costs = buildSimpleCostMatrix(room, ignoreStructures, costCallback);
+                applyFollowerAvoidance(costs, followerPositions, rName);
+                return costs;
             }
             return new PathFinder.CostMatrix();
         };
@@ -185,13 +238,26 @@ function findSquadLikePath(fromPos: RoomPosition, toPos: RoomPosition, opts: Fol
         pfOpts.roomCallback = (rName: string): boolean | CostMatrix => {
             const room = Game.rooms[rName];
             if (room) {
-                return buildSimpleCostMatrix(room, ignoreStructures, costCallback);
+                const costs = buildSimpleCostMatrix(room, ignoreStructures, costCallback);
+                applyFollowerAvoidance(costs, followerPositions, rName);
+                return costs;
             }
             return false;
         };
     }
 
     return PathFinder.search(fromPos, { pos: toPos, range: 1 }, pfOpts);
+}
+
+/**
+ * 在 cost matrix 中把 follower 的位置标记为不可通行，防止 leader 路径穿过 follower 的脸
+ */
+function applyFollowerAvoidance(costs: CostMatrix, followerPositions: RoomPosition[], roomName: string): void {
+    for (const pos of followerPositions) {
+        if (pos.roomName === roomName) {
+            costs.set(pos.x, pos.y, 255);
+        }
+    }
 }
 
 /**
@@ -283,29 +349,6 @@ function buildSimpleCostMatrix(room: Room, ignoreStructures: boolean, costCallba
 }
 
 /**
- * 计算每个 follower 的目标位置
- * 策略：follower[i] 保持与 follower[i-1] 的相对偏移，随 leader 一起前进
- */
-function computeFollowTargets(squad: Creep[], leaderNext: RoomPosition): RoomPosition[] {
-    const targets: RoomPosition[] = [leaderNext];
-
-    for (let i = 1; i < squad.length; i++) {
-        const prevTarget = targets[i - 1];
-        const prevCreep = squad[i - 1];
-        const currentCreep = squad[i];
-
-        const dx = currentCreep.pos.x - prevCreep.pos.x;
-        const dy = currentCreep.pos.y - prevCreep.pos.y;
-
-        const nx = Math.max(0, Math.min(49, prevTarget.x + dx));
-        const ny = Math.max(0, Math.min(49, prevTarget.y + dy));
-        targets.push(new RoomPosition(nx, ny, prevTarget.roomName));
-    }
-
-    return targets;
-}
-
-/**
  * 检查位置是否有障碍物
  */
 function isObstacleAt(room: Room, pos: RoomPosition): boolean {
@@ -345,12 +388,25 @@ function isEqualPos(a: RoomPosition, b: RoomPosition): boolean {
 /**
  * 将 RoomPosition 转为大地图坐标
  */
-function toFormal(pos: RoomPosition): { x: number; y: number } {
+function formalize(pos: RoomPosition): { x: number; y: number } {
     const parsed = parseRoomName(pos.roomName);
     if (parsed) {
         return { x: parsed.baseX + pos.x, y: parsed.baseY + pos.y };
     }
     return { x: 0, y: 0 };
+}
+
+/**
+ * 将大地图坐标转回 RoomPosition
+ */
+function tile2Pos(tile: number): RoomPosition {
+    const y = tile >> 14;
+    const x = tile & 0x3fff;
+    const rx = x / 50 | 0, ry = y / 50 | 0;
+    const halfWorldSize = 255 >> 1;
+    const roomName = (rx <= halfWorldSize ? 'W' + (halfWorldSize - rx) : 'E' + (rx - halfWorldSize - 1)) +
+        (ry <= halfWorldSize ? 'N' + (halfWorldSize - ry) : 'S' + (ry - halfWorldSize - 1));
+    return new RoomPosition(x % 50, y % 50, roomName);
 }
 
 /**
@@ -410,6 +466,7 @@ interface FollowCache {
     path: MyPath | null;
     dst: RoomPosition;
     idx: number;
+    offsets?: { dx: number; dy: number }[];
 }
 
 interface MyPath {
