@@ -853,6 +853,8 @@ function market(room):any {
       delete Memory.targetRampRoom;
       targetRampRoom = undefined;
     }
+
+    // 支援逻辑：每 20 tick 执行一次
     if(targetRampRoom && Game.time % 20 == 0 && room.name != targetRampRoom && Game.rooms[targetRampRoom] && Game.rooms[targetRampRoom].controller && Game.rooms[targetRampRoom].controller.my && Game.rooms[targetRampRoom].controller.level >= 6 &&
         Game.rooms[targetRampRoom].terminal && Game.rooms[targetRampRoom].terminal.store[RESOURCE_ENERGY] < 80000 && Game.rooms[targetRampRoom].terminal.store.getFreeCapacity() > 50000 && Game.rooms[targetRampRoom].memory.Structures.spawn && Game.getObjectById(Game.rooms[targetRampRoom].memory.Structures.spawn) && Game.rooms[targetRampRoom].storage) {
             const theirRoom:any = Game.rooms[targetRampRoom];
@@ -865,7 +867,7 @@ function market(room):any {
     // Game.time % 10 == 0 && targetRampRoom && targetRampRoom == room.name && room.terminal.store[RESOURCE_ENERGY] < 150000 && Game.market.credits > 100000000 ||
 
 
-    if(Game.time % 1000 === 0 && storage && storage.store[RESOURCE_ENERGY] > 430000 && room.terminal.store[RESOURCE_ENERGY] > 30000) {
+    if(Game.time % 1000 === 0 && room.controller?.level == 8 && !targetRampRoom && storage && storage.store[RESOURCE_ENERGY] > 430000 && room.terminal.store[RESOURCE_ENERGY] > 30000) {
         const orderID = ensureSingleSellOrder(RESOURCE_ENERGY, CalcPriceForOrder(RESOURCE_ENERGY), 20000);
 
         if (orderID) {
