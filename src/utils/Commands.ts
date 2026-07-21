@@ -2262,9 +2262,9 @@ global.SRE = function (homeRoom, targetRoom, boosted = false, boostParts?: BodyP
     // Build body: TOUGH:RANGED_ATTACK:HEAL:MOVE = 1:3:1:5
     const body = (global as any).getBodyByRatio([
         { part: TOUGH, count: 1 },
-        { part: RANGED_ATTACK, count: 3 },
-        { part: HEAL, count: 1 },
-        { part: MOVE, count: 5 }
+      { part: MOVE, count: 5 },
+      { part: RANGED_ATTACK, count: 3 },
+      { part: HEAL, count: 1 }
     ], room, 50);
 
     if (body.length === 0) return "Cannot build body (not enough energy)";
@@ -2291,10 +2291,10 @@ global.SRE = function (homeRoom, targetRoom, boosted = false, boostParts?: BodyP
 
         // Map bodyPart → labNum based on BOOST_COMPOUND_TIERS
         const partToLab: { [part: string]: { labNum: string } } = {
-            [TOUGH]:       { labNum: 'lab7' },  // GHODIUM_ALKALIDE
-            [RANGED_ATTACK]: { labNum: 'lab4' }, // KEANIUM_ALKALIDE
-            [HEAL]:        { labNum: 'lab1' },  // LEMERGIUM_ALKALIDE
-            [MOVE]:        { labNum: 'lab2' },  // ZYNTHIUM_ALKALIDE
+            [TOUGH]:       { labNum: 'lab7' },  // GHO2 → GHODIUM_ALKALIDE
+            [RANGED_ATTACK]: { labNum: 'lab4' }, // KHO2 → KEANIUM_ALKALIDE
+            [HEAL]:        { labNum: 'lab5' },   // XHO2 → LEMERGIUM_ALKALIDE (was lab1/XLH2O)
+            [MOVE]:        { labNum: 'lab2' },   // ZHO2 → ZYNTHIUM_ALKALIDE
         };
 
         // Build boostType mapping: { labNum: bodyPart }

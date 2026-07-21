@@ -2116,7 +2116,25 @@ class BoostUtils {
     ): void {
         Object.entries(requirements).forEach(([labName, info]) => {
             this.handleBoostAllocationWithDowngrade(room, storage, labName, info.resourceType, info.amount, info.tier);
+            // Also tell rooms.labs to skip this outputLab while boosting
+            if (room.memory.labs && !this.hasPauseEntry(room, labName)) {
+                const outputNum = labName.replace('lab', '');
+                const outputLabId = room.memory.labs[`outputLab${outputNum}`];
+                if (outputLabId) {
+                    room.memory.labs.paused = room.memory.labs.paused || [];
+                    room.memory.labs.paused.push({ id: outputLabId, timer: 20000 });
+                }
+            }
         });
+    }
+
+    /** Check whether a pause entry for the same outputLab already has an active timer. */
+    private static hasPauseEntry(room: Room, labName: string): boolean {
+        if (!room.memory.labs?.paused) return false;
+        const outputNum = labName.replace('lab', '');
+        const outputLabId = room.memory.labs[`outputLab${outputNum}`];
+        if (!outputLabId) return false;
+        return room.memory.labs.paused.some((p: any) => p.id === outputLabId && p.timer > 0);
     }
 
     /**
