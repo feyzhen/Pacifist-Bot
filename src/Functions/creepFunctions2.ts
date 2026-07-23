@@ -726,12 +726,6 @@ Creep.prototype.Boost = function Boost(): any {
             const labNum = `lab${i + 1}`;
             if (this.room.memory.labs?.[key] === closestLab.id && this.room.memory.labs?.status?.boost?.[labNum]?.use) {
                 this.room.memory.labs.status.boost[labNum].use -= 1;
-                if (
-                    i === 7 &&
-                    this.room.memory.labs.status.boost[labNum].use === 0 &&
-                    this.memory.role === "EnergyMiner"
-                )
-                    this.room.memory.labs.lab8reserved = false;
                 break;
             }
         }

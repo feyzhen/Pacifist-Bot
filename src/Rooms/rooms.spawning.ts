@@ -1289,31 +1289,31 @@ class EnergyRoleGenerator {
 
                             if (room.energyCapacityAvailable >= 750) {
                                 if (room.controller.level >= 6) {
-                                    if (room.memory.labs && room.memory.labs.status && !room.memory.labs.status.boost) {
-                                        room.memory.labs.status.boost = {};
+                                    let boostEligible = false;
+
+                                    const boostBody = danger
+                                        ? [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
+                                        : [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE];
+
+                                    if (Memory.CPU.reduce && storage && room.memory.labs?.outputLab8) {
+                                        const boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(
+                                            boostBody, { lab8: WORK }, storage, 'harvest'
+                                        );
+
+                                        if (BoostUtils.hasEnoughBoostResourcesWithDowngrade(storage, boostRequirements)) {
+                                            BoostUtils.allocateBoostResourcesWithDowngrade(room, storage, boostRequirements);
+                                            boostEligible = true;
+                                        }
                                     }
-                                    if (Memory.CPU.reduce && storage && (storage as any).store[RESOURCE_UTRIUM_OXIDE] >= 720 && room.memory.labs && room.memory.labs.outputLab8) {
-                                        room.memory.labs.lab8reserved = true;
-                                        if (room.memory.labs.status.boost) {
-                                            if (room.memory.labs.status.boost.lab8) {
-                                                room.memory.labs.status.boost.lab8.amount = room.memory.labs.status.boost.lab8.amount + 360;
-                                                room.memory.labs.status.boost.lab8.use += 1;
-                                            } else {
-                                                room.memory.labs.status.boost.lab8 = {};
-                                                room.memory.labs.status.boost.lab8.amount = 360;
-                                                room.memory.labs.status.boost.lab8.use = 1;
-                                            }
-                                        }
-                                        let body;
-                                        if (danger) {
-                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE];
-                                        } else {
-                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE];
-                                        }
-                                        room.memory.spawn_list.unshift(body, newName,
+
+                                    if (boostEligible) {
+                                        room.memory.spawn_list.unshift(boostBody, newName,
                                             {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name, danger: danger, boostlabs: [room.memory.labs.outputLab8]}});
                                     } else {
-                                        if (room.memory.labs && room.memory.labs.status && room.memory.labs.status.boost && room.memory.labs.status.boost.lab8) room.memory.labs.status.boost.lab8 = undefined;
+                                        if (room.memory.labs?.status?.boost?.lab8) {
+                                            room.memory.labs.status.boost.lab8 = undefined;
+                                        }
+
                                         let body;
                                         if (danger) {
                                             body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, CARRY, MOVE];

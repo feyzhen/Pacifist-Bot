@@ -170,7 +170,7 @@ import { getLabThreshold } from "../constants/constants.labs";
                 lab5: RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE,// HEAL
                 lab6: RESOURCE_CATALYZED_ZYNTHIUM_ACID,     // WORK-dismantle
                 lab7: RESOURCE_CATALYZED_GHODIUM_ALKALIDE,  // TOUGH
-                lab8: RESOURCE_CATALYZED_KEANIUM_ACID       // CARRY / lab8reserved overrides to UTROXIDE-like
+                lab8: RESOURCE_CATALYZED_KEANIUM_ACID
             };
             const BOOST_OUTPUT_ORDER: Array<{labName: string; outputIdKey: string}> = [
                 {labName: 'lab1', outputIdKey: 'outputLab1'},
@@ -193,14 +193,8 @@ import { getLabThreshold } from "../constants/constants.labs";
                 if (boostRecord.amount == 0) continue;
 
                 // Determine which compound this lab needs.
-                // Priority: recorded resourceType (supports downgrade to tier1/tier2) > lab8reservation override > tier3 default.
-                let resource: ResourceConstant | null = boostRecord.resourceType || null;
-                if (resource == null && labName == 'lab8') {
-                    resource = creep.room.memory.labs.lab8reserved ? RESOURCE_UTRIUM_OXIDE : RESOURCE_CATALYZED_KEANIUM_ACID;
-                }
-                if (resource == null) {
-                    resource = LAB_TO_TIER3[labName];
-                }
+                // Priority: recorded resourceType (supports downgrade to tier1/tier2).
+                const resource: ResourceConstant | null = boostRecord.resourceType ?? null;
                 if (!resource) continue;
 
                 // 1) If outputLab still contains old/different mineral: extract it first
