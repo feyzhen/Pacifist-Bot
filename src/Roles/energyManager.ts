@@ -161,326 +161,80 @@ import { getLabThreshold } from "../constants/constants.labs";
                 }
                 return;
             }
-            let number = 0;
-            for(const outputLab of outputLabs) {
-                number += 1;
+            let boostHandled = false;
+            const LAB_TO_TIER3: {[key: string]: ResourceConstant} = {
+                lab1: RESOURCE_CATALYZED_LEMERGIUM_ACID,    // WORK-repair/build
+                lab2: RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE, // MOVE
+                lab3: RESOURCE_CATALYZED_UTRIUM_ACID,       // ATTACK
+                lab4: RESOURCE_CATALYZED_KEANIUM_ALKALIDE,  // RANGED_ATTACK
+                lab5: RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE,// HEAL
+                lab6: RESOURCE_CATALYZED_ZYNTHIUM_ACID,     // WORK-dismantle
+                lab7: RESOURCE_CATALYZED_GHODIUM_ALKALIDE,  // TOUGH
+                lab8: RESOURCE_CATALYZED_KEANIUM_ACID       // CARRY / lab8reserved overrides to UTROXIDE-like
+            };
+            const BOOST_OUTPUT_ORDER: Array<{labName: string; outputIdKey: string}> = [
+                {labName: 'lab1', outputIdKey: 'outputLab1'},
+                {labName: 'lab2', outputIdKey: 'outputLab2'},
+                {labName: 'lab3', outputIdKey: 'outputLab3'},
+                {labName: 'lab4', outputIdKey: 'outputLab4'},
+                {labName: 'lab5', outputIdKey: 'outputLab5'},
+                {labName: 'lab6', outputIdKey: 'outputLab6'},
+                {labName: 'lab7', outputIdKey: 'outputLab7'},
+                {labName: 'lab8', outputIdKey: 'outputLab8'},
+            ];
 
-                if(number == 1 && creep.room.memory.labs.outputLab1 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab1 && creep.room.memory.labs.status.boost.lab1.use > 0) {
-                    if(creep.room.memory.labs.status.boost.lab1.amount == 0) {
-                        // do nothing
-                    }
-                    else {
-                        if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != RESOURCE_CATALYZED_LEMERGIUM_ACID)) {
-                            if(creep.pos.isNearTo(outputLab)) {
-                                creep.withdraw(outputLab, outputLab.mineralType);
-                                creep.memory.target = storage.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(outputLab, 1);
-                            }
-                            return;
-                        }
-                        else if(outputLab && (outputLab.mineralType == undefined || outputLab.mineralType == RESOURCE_CATALYZED_LEMERGIUM_ACID) && storage && storage.store[RESOURCE_CATALYZED_LEMERGIUM_ACID] >= creep.room.memory.labs.status.boost.lab1.amount) {
-                            if(creep.pos.isNearTo(storage)) {
-                                if(creep.room.memory.labs.status.boost.lab1.amount >= MaxStorage) {
-                                    creep.room.memory.labs.status.boost.lab1.amount -= MaxStorage;
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_LEMERGIUM_ACID);
-                                }
-                                else {
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_LEMERGIUM_ACID, creep.room.memory.labs.status.boost.lab1.amount);
-                                    creep.room.memory.labs.status.boost.lab1.amount = 0;
-                                }
-                                creep.memory.target = outputLab.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(storage, 1);
-                            }
-                            return;
-                        }
+            for (const {labName, outputIdKey} of BOOST_OUTPUT_ORDER) {
+                if (!creep.room.memory.labs[outputIdKey]) continue;
+                const outputLab = Game.getObjectById(creep.room.memory.labs[outputIdKey]) as any;
+                if (!outputLab) continue;
 
-                    }
+                const boostRecord = creep.room.memory.labs.status?.boost?.[labName];
+                if (!boostRecord || boostRecord.use <= 0) continue;
+                if (boostRecord.amount == 0) continue;
+
+                // Determine which compound this lab needs.
+                // Priority: recorded resourceType (supports downgrade to tier1/tier2) > lab8reservation override > tier3 default.
+                let resource: ResourceConstant | null = boostRecord.resourceType || null;
+                if (resource == null && labName == 'lab8') {
+                    resource = creep.room.memory.labs.lab8reserved ? RESOURCE_UTRIUM_OXIDE : RESOURCE_CATALYZED_KEANIUM_ACID;
                 }
-
-
-                else if(number == 2 && creep.room.memory.labs.outputLab2 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab2 && creep.room.memory.labs.status.boost.lab2.use > 0) {
-                    if(creep.room.memory.labs.status.boost.lab2.amount == 0) {
-                        // do nothing
-                    }
-                    else {
-                        if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE)) {
-                            if(creep.pos.isNearTo(outputLab)) {
-                                creep.withdraw(outputLab, outputLab.mineralType);
-                                creep.memory.target = storage.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(outputLab, 1);
-                            }
-                            return;
-                        }
-                        else if(outputLab && (outputLab.mineralType == undefined || outputLab.mineralType == RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE) && storage && storage.store[RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE] >= creep.room.memory.labs.status.boost.lab2.amount) {
-                            if(creep.pos.isNearTo(storage)) {
-                                if(creep.room.memory.labs.status.boost.lab2.amount >= MaxStorage) {
-                                    creep.room.memory.labs.status.boost.lab2.amount -= MaxStorage;
-
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE);
-                                }
-                                else {
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE, creep.room.memory.labs.status.boost.lab2.amount);
-                                    creep.room.memory.labs.status.boost.lab2.amount = 0;
-
-                                }
-                                creep.memory.target = outputLab.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(storage, 1);
-                            }
-                            return;
-                        }
-                    }
+                if (resource == null) {
+                    resource = LAB_TO_TIER3[labName];
                 }
+                if (!resource) continue;
 
-                else if(number == 3 && creep.room.memory.labs.outputLab3 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab3 && creep.room.memory.labs.status.boost.lab3.use > 0) {
-                    if(creep.room.memory.labs.status.boost.lab3.amount == 0) {
-                        // do nothing
-                    }
-                    else {
-                        if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != RESOURCE_CATALYZED_UTRIUM_ACID)) {
-                            if(creep.pos.isNearTo(outputLab)) {
-                                creep.withdraw(outputLab, outputLab.mineralType);
-                                creep.memory.target = storage.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(outputLab, 1);
-                            }
-                            return;
-                        }
-                        else if(outputLab && (outputLab.mineralType == undefined || outputLab.mineralType == RESOURCE_CATALYZED_UTRIUM_ACID) && storage && storage.store[RESOURCE_CATALYZED_UTRIUM_ACID] >= creep.room.memory.labs.status.boost.lab3.amount) {
-                            if(creep.pos.isNearTo(storage)) {
-                                if(creep.room.memory.labs.status.boost.lab3.amount >= MaxStorage) {
-                                    creep.room.memory.labs.status.boost.lab3.amount -= MaxStorage;
-
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_UTRIUM_ACID);
-                                }
-                                else {
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_UTRIUM_ACID, creep.room.memory.labs.status.boost.lab3.amount);
-                                    creep.room.memory.labs.status.boost.lab3.amount = 0;
-
-                                }
-                                creep.memory.target = outputLab.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(storage, 1);
-                            }
-                            return;
-                        }
-                    }
-                }
-
-
-                else if(number == 4 && creep.room.memory.labs.outputLab4 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab4 && creep.room.memory.labs.status.boost.lab4.use > 0) {
-                    if(creep.room.memory.labs.status.boost.lab4.amount == 0) {
-                        // do nothing
-                    }
-                    else {
-                        if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != RESOURCE_CATALYZED_KEANIUM_ALKALIDE)) {
-                            if(creep.pos.isNearTo(outputLab)) {
-                                creep.withdraw(outputLab, outputLab.mineralType);
-                                creep.memory.target = storage.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(outputLab, 1);
-                            }
-                            return;
-                        }
-                        else if(outputLab && (outputLab.mineralType == undefined || outputLab.mineralType == RESOURCE_CATALYZED_KEANIUM_ALKALIDE) && storage && storage.store[RESOURCE_CATALYZED_KEANIUM_ALKALIDE] >= creep.room.memory.labs.status.boost.lab4.amount) {
-                            if(creep.pos.isNearTo(storage)) {
-                                if(creep.room.memory.labs.status.boost.lab4.amount >= MaxStorage) {
-                                    creep.room.memory.labs.status.boost.lab4.amount -= MaxStorage;
-
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_KEANIUM_ALKALIDE);
-                                }
-                                else {
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_KEANIUM_ALKALIDE, creep.room.memory.labs.status.boost.lab4.amount);
-                                    creep.room.memory.labs.status.boost.lab4.amount = 0;
-
-                                }
-                                creep.memory.target = outputLab.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(storage, 1);
-                            }
-                            return;
-                        }
-                    }
-                }
-
-
-                else if(number == 5 && creep.room.memory.labs.outputLab5 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab5 && creep.room.memory.labs.status.boost.lab5.use > 0) {
-                    if(creep.room.memory.labs.status.boost.lab5.amount == 0) {
-                        // do nothing
-                    }
-                    else {
-                        if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE)) {
-                            if(creep.pos.isNearTo(outputLab)) {
-                                creep.withdraw(outputLab, outputLab.mineralType);
-                                creep.memory.target = storage.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(outputLab, 1);
-                            }
-                            return;
-                        }
-                        else if(outputLab && (outputLab.mineralType == undefined || outputLab.mineralType == RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE) && storage && storage.store[RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE] >= creep.room.memory.labs.status.boost.lab5.amount) {
-                            if(creep.pos.isNearTo(storage)) {
-                                if(creep.room.memory.labs.status.boost.lab5.amount >= MaxStorage) {
-                                    creep.room.memory.labs.status.boost.lab5.amount -= MaxStorage;
-
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE);
-                                }
-                                else {
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_LEMERGIUM_ALKALIDE, creep.room.memory.labs.status.boost.lab5.amount);
-                                    creep.room.memory.labs.status.boost.lab5.amount = 0;
-
-                                }
-                                creep.memory.target = outputLab.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(storage, 1);
-                            }
-                            return;
-                        }
-                    }
-                }
-
-                else if(number == 6 && creep.room.memory.labs.outputLab6 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab6 && creep.room.memory.labs.status.boost.lab6.use > 0) {
-                    if(creep.room.memory.labs.status.boost.lab6.amount == 0) {
-                        // do nothing
-                    }
-                    else {
-                        if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != RESOURCE_CATALYZED_ZYNTHIUM_ACID)) {
-                            if(creep.pos.isNearTo(outputLab)) {
-                                creep.withdraw(outputLab, outputLab.mineralType);
-                                creep.memory.target = storage.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(outputLab, 1);
-                            }
-                            return;
-                        }
-                        else if(outputLab && (outputLab.mineralType == undefined || outputLab.mineralType == RESOURCE_CATALYZED_ZYNTHIUM_ACID) && storage && storage.store[RESOURCE_CATALYZED_ZYNTHIUM_ACID] >= creep.room.memory.labs.status.boost.lab6.amount) {
-                            if(creep.pos.isNearTo(storage)) {
-                                if(creep.room.memory.labs.status.boost.lab6.amount >= MaxStorage) {
-                                    creep.room.memory.labs.status.boost.lab6.amount -= MaxStorage;
-
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_ZYNTHIUM_ACID);
-                                }
-                                else {
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_ZYNTHIUM_ACID, creep.room.memory.labs.status.boost.lab6.amount);
-                                    creep.room.memory.labs.status.boost.lab6.amount = 0;
-
-                                }
-                                creep.memory.target = outputLab.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(storage, 1);
-                            }
-                            return;
-                        }
-                    }
-                }
-
-                else if(number == 7 && creep.room.memory.labs.outputLab7 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab7 && creep.room.memory.labs.status.boost.lab7.use > 0) {
-                    if(creep.room.memory.labs.status.boost.lab7.amount == 0) {
-                        // do nothing
-                    }
-                    else {
-                        if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != RESOURCE_CATALYZED_GHODIUM_ALKALIDE)) {
-                            if(creep.pos.isNearTo(outputLab)) {
-                                creep.withdraw(outputLab, outputLab.mineralType);
-                                creep.memory.target = storage.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(outputLab, 1);
-                            }
-                            return;
-                        }
-                        else if(outputLab && (outputLab.mineralType == undefined || outputLab.mineralType == RESOURCE_CATALYZED_GHODIUM_ALKALIDE) && storage && storage.store[RESOURCE_CATALYZED_GHODIUM_ALKALIDE] >= creep.room.memory.labs.status.boost.lab7.amount) {
-                            if(creep.pos.isNearTo(storage)) {
-                                if(creep.room.memory.labs.status.boost.lab7.amount >= MaxStorage) {
-                                    creep.room.memory.labs.status.boost.lab7.amount -= MaxStorage;
-
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_GHODIUM_ALKALIDE);
-                                }
-                                else {
-                                    creep.withdraw(storage, RESOURCE_CATALYZED_GHODIUM_ALKALIDE, creep.room.memory.labs.status.boost.lab7.amount);
-                                    creep.room.memory.labs.status.boost.lab7.amount = 0;
-
-                                }
-                                creep.memory.target = outputLab.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(storage, 1);
-                            }
-                            return;
-                        }
-                    }
-                }
-
-                else if(number == 8 && creep.room.memory.labs.outputLab8 && creep.room.memory.labs.status && creep.room.memory.labs.status.boost && creep.room.memory.labs.status.boost.lab8 && creep.room.memory.labs.status.boost.lab8.use > 0) {
-                    let resource:ResourceConstant = RESOURCE_CATALYZED_KEANIUM_ACID;
-                    if(creep.room.memory.labs.lab8reserved) {
-                        resource = RESOURCE_UTRIUM_OXIDE;
-                    }
-                    if(creep.room.memory.labs.status.boost.lab8.amount == 0) {
-                        // do nothing
-                    }
-                    else {
-                        if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != resource)) {
-                            if(creep.pos.isNearTo(outputLab)) {
-                                creep.withdraw(outputLab, outputLab.mineralType);
-                                creep.memory.target = storage.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(outputLab, 1);
-                            }
-                            return;
-                        }
-                        else if(outputLab && (outputLab.mineralType == undefined || outputLab.mineralType == resource) && storage && storage.store[resource] >= creep.room.memory.labs.status.boost.lab8.amount) {
-                            if(creep.pos.isNearTo(storage)) {
-                                if(creep.room.memory.labs.status.boost.lab8.amount >= MaxStorage) {
-                                    creep.room.memory.labs.status.boost.lab8.amount -= MaxStorage;
-
-                                    creep.withdraw(storage, resource);
-                                }
-                                else {
-                                    creep.withdraw(storage, resource, creep.room.memory.labs.status.boost.lab8.amount);
-                                    creep.room.memory.labs.status.boost.lab8.amount = 0;
-
-                                }
-                                creep.memory.target = outputLab.id;
-                            }
-                            else {
-                                creep.MoveCostMatrixRoadPrio(storage, 1);
-                            }
-                            return;
-                        }
-                    }
-                }
-
-
-
-                else if(outputLab && (outputLab.mineralType != undefined && outputLab.mineralType != currentOutput || outputLab.mineralType == currentOutput && outputLab.store[outputLab.mineralType] > MaxStorage)) {
-                    if(creep.pos.isNearTo(outputLab)) {
+                // 1) If outputLab still contains old/different mineral: extract it first
+                if (outputLab.mineralType != undefined && outputLab.mineralType != resource) {
+                    if (creep.pos.isNearTo(outputLab)) {
                         creep.withdraw(outputLab, outputLab.mineralType);
                         creep.memory.target = storage.id;
-                    }
-                    else {
+                    } else {
                         creep.MoveCostMatrixRoadPrio(outputLab, 1);
                     }
-                    return;
+                    boostHandled = true;
+                    break;
                 }
 
+                // 2) OutputLab empty or already has the correct compound: load from storage
+                if ((outputLab.mineralType == undefined || outputLab.mineralType == resource) &&
+                    storage && storage.store[resource] >= boostRecord.amount) {
+                    if (creep.pos.isNearTo(storage)) {
+                        if (boostRecord.amount >= MaxStorage) {
+                            boostRecord.amount -= MaxStorage;
+                            creep.withdraw(storage, resource);
+                        } else {
+                            creep.withdraw(storage, resource, boostRecord.amount);
+                            boostRecord.amount = 0;
+                        }
+                        creep.memory.target = outputLab.id;
+                    } else {
+                        creep.MoveCostMatrixRoadPrio(storage, 1);
+                    }
+                    boostHandled = true;
+                    break;
+                }
             }
+            if (boostHandled) return;
 
             if((inputLab1 && inputLab1.mineralType == undefined || inputLab1 && inputLab1.mineralType == lab1Input && inputLab1.store[inputLab1.mineralType] < MaxStorage-20) &&
             storage && storage.store[lab1Input] >= MaxStorage) {
