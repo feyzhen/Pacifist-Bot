@@ -21,11 +21,24 @@ const BOOST_COMPOUND_TIERS: {
         tier2: RESOURCE_KEANIUM_ALKALIDE,
         tier1: RESOURCE_KEANIUM_OXIDE
     },
+    // harvest
     [WORK]: {
         tier3: RESOURCE_CATALYZED_UTRIUM_ALKALIDE,
         tier2: RESOURCE_UTRIUM_ALKALIDE,
         tier1: RESOURCE_UTRIUM_OXIDE
     },
+    // repair/build
+    // [WORK]: {
+    //     tier3: RESOURCE_CATALYZED_LEMERGIUM_ACID,
+    //     tier2: RESOURCE_LEMERGIUM_ACID,
+    //     tier1: RESOURCE_LEMERGIUM_HYDRIDE
+    // },
+    // // dismantle
+    // [WORK]: {
+    //     tier3: RESOURCE_CATALYZED_ZYNTHIUM_ACID,
+    //     tier2: RESOURCE_ZYNTHIUM_ACID,
+    //     tier1: RESOURCE_ZYNTHIUM_HYDRIDE
+    // },
     [TOUGH]: {
         tier3: RESOURCE_CATALYZED_GHODIUM_ALKALIDE,
         tier2: RESOURCE_GHODIUM_ALKALIDE,
@@ -48,34 +61,51 @@ const BOOST_COMPOUND_TIERS: {
     }
 };
 
+// WORK 化合物按动作分三套，boost 效果相同但动作不同。选择器通过角色语境决定用哪一套。
+const WORK_ACTION_BOOST_TIERS: Record<'harvest'|'build'|'dismantle', {tier3: ResourceConstant; tier2: ResourceConstant; tier1: ResourceConstant}> = {
+    harvest:  {tier3: RESOURCE_CATALYZED_UTRIUM_ALKALIDE, tier2: RESOURCE_UTRIUM_ALKALIDE,  tier1: RESOURCE_UTRIUM_OXIDE},
+    build:    {tier3: RESOURCE_CATALYZED_LEMERGIUM_ACID,   tier2: RESOURCE_LEMERGIUM_ACID,    tier1: RESOURCE_LEMERGIUM_HYDRIDE},
+    dismantle:{tier3: RESOURCE_CATALYZED_ZYNTHIUM_ACID,    tier2: RESOURCE_ZYNTHIUM_ACID,    tier1: RESOURCE_ZYNTHIUM_HYDRIDE},
+};
+
+/** 化合物最高可用等级，用于限制降级搜索范围。不填则默认从 tier3 开始降级到 tier1。 */
+export type MaxBoostTier = 'tier1' | 'tier2' | 'tier3';
+
 /**
- * 查找最佳可用的boost化合物（支持降级）
+ * 查找最佳可用的boost化合物（支持降级与等级上限）
  * @param storage 存储对象
  * @param bodyPart body部件类型
  * @param requiredAmount 需要的数量
+ * @param workAction 仅对 WORK 有效：'harvest'/'build'/'dismantle'，未提供时回退到 BOOST_COMPOUND_TIERS[WORK]（当前为 harvest）
+ * @param maxTier 只在此等级及以上范围内搜索，低于它的等级会被直接跳过。不填则默认从 tier3 向下检查。
  * @returns 最佳可用化合物信息，如果没有足够资源则返回null
  */
 function findBestAvailableBoost(
     storage: any,
     bodyPart: BodyPartConstant,
-    requiredAmount: number
+    requiredAmount: number,
+    workAction?: 'harvest' | 'build' | 'dismantle',
+    maxTier: MaxBoostTier = 'tier3'
 ): {resourceType: ResourceConstant; tier: number; amount: number} | null {
-    const tiers = BOOST_COMPOUND_TIERS[bodyPart];
+    // WORK 有三个独立的化合物树，按动作区分；非 WORK 一律使用 BOOST_COMPOUND_TIERS[bodyPart]
+    const tiers = bodyPart === WORK && workAction !== undefined
+        ? WORK_ACTION_BOOST_TIERS[workAction]
+        : BOOST_COMPOUND_TIERS[bodyPart];
     if (!tiers) return null;
 
-    // 优先检查三级（催化化合物）
-    if (storage.store[tiers.tier3] >= requiredAmount) {
-        return {resourceType: tiers.tier3, tier: 3, amount: requiredAmount};
-    }
+    const checkOrder: Array<{tierKey: string; resourceKey: keyof typeof tiers}> = [
+        {tierKey: 'tier3', resourceKey: 'tier3'},
+        {tierKey: 'tier2', resourceKey: 'tier2'},
+        {tierKey: 'tier1', resourceKey: 'tier1'}
+    ];
 
-    // 降级到二级
-    if (storage.store[tiers.tier2] >= requiredAmount) {
-        return {resourceType: tiers.tier2, tier: 2, amount: requiredAmount};
-    }
-
-    // 降级到一级
-    if (storage.store[tiers.tier1] >= requiredAmount) {
-        return {resourceType: tiers.tier1, tier: 1, amount: requiredAmount};
+    for (const entry of checkOrder) {
+        // maxTier 限制搜索起点，低于该等级的化合物全部跳过
+        const tierNum = parseInt(entry.tierKey.replace('tier', ''), 10);
+        if (tierNum > parseInt(maxTier.replace('tier', ''), 10)) continue;
+        if (storage.store[tiers[entry.resourceKey]] >= requiredAmount) {
+            return {resourceType: tiers[entry.resourceKey], tier: tierNum, amount: requiredAmount};
+        }
     }
 
     return null; // 没有足够资源
@@ -2055,7 +2085,9 @@ class BoostUtils {
     static calculateBoostRequirementsWithDowngrade(
         body: BodyPartConstant[],
         boostType: {[key: string]: BodyPartConstant},
-        storage: any
+        storage: any,
+        workAction?: 'harvest' | 'build' | 'dismantle',
+        maxTier?: MaxBoostTier
     ): {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} {
         const requirements: {[labName: string]: {resourceType: ResourceConstant; tier: number; amount: number}} = {};
 
@@ -2070,8 +2102,8 @@ class BoostUtils {
             const count = partCounts[bodyPart] || 0;
             if (count > 0) {
                 const requiredAmount = count * 30;
-                // 使用全局函数查找最佳可用化合物（支持降级）
-                const bestBoost = findBestAvailableBoost(storage, bodyPart, requiredAmount);
+                // 使用全局函数查找最佳可用化合物（支持降级与等级上限）
+                const bestBoost = findBestAvailableBoost(storage, bodyPart, requiredAmount, workAction, maxTier);
                 if (bestBoost) {
                     requirements[labName] = bestBoost;
                 }
