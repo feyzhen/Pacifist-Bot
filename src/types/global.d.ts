@@ -91,6 +91,7 @@ declare global {
     meetPos?: { x: number; y: number };
     squadReady?: boolean;
     atMeetPoint?: boolean;
+    partnerId?: string;       // 对方 creep 的 name，便于跨房快速恢复引用
     // followMove cache
     __followCache__?: any;
     __squadId__?: string[];

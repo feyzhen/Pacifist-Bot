@@ -1292,8 +1292,8 @@ class EnergyRoleGenerator {
                                     let boostEligible = false;
 
                                     const boostBody = danger
-                                        ? [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE]
-                                        : [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE];
+                                        ? [...Array(11).fill(WORK), ...Array(6).fill(CARRY), ...Array(14).fill(MOVE)]
+                                        : [...Array(12).fill(WORK), ...Array(6).fill(CARRY), ...Array(7).fill(MOVE)];
 
                                     if (Memory.CPU.reduce && storage && room.memory.labs?.outputLab8) {
                                         const boostRequirements = BoostUtils.calculateBoostRequirementsWithDowngrade(
@@ -1316,11 +1316,11 @@ class EnergyRoleGenerator {
 
                                         let body;
                                         if (danger) {
-                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, CARRY, MOVE];
+                                            body = [...Array(8).fill(WORK), ...Array(5).fill(CARRY), ...Array(8).fill(MOVE)];
                                         } else if (room.energyAvailable > 3000 && Game.cpu.bucket < 9000 && !Memory.pixelManager?.enabled) {
-                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, WORK, WORK, CARRY, MOVE];
+                                            body = [...Array(24).fill(WORK), ...Array(13).fill(MOVE), ...Array(7).fill(CARRY)];
                                         } else {
-                                            body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, WORK, WORK, CARRY, MOVE];
+                                            body = [...Array(12).fill(WORK), ...Array(5).fill(CARRY), ...Array(5).fill(MOVE)];
                                         }
                                         room.memory.spawn_list.unshift(body, newName,
                                             {memory: {role: 'EnergyMiner', sourceId, targetRoom: targetRoomName, homeRoom: room.name, danger: danger}});
