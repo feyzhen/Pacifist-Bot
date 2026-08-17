@@ -194,7 +194,7 @@ import { getLabThreshold } from "../constants/constants.labs";
 
                 // Determine which compound this lab needs.
                 // Priority: recorded resourceType (supports downgrade to tier1/tier2).
-                const resource: ResourceConstant | null = boostRecord.resourceType ?? null;
+                const resource: ResourceConstant | null = boostRecord.resourceType ?? LAB_TO_TIER3[labName] ?? null;
                 if (!resource) continue;
 
                 // 1) If outputLab still contains old/different mineral: extract it first
@@ -211,7 +211,8 @@ import { getLabThreshold } from "../constants/constants.labs";
 
                 // 2) OutputLab empty or already has the correct compound: load from storage
                 if ((outputLab.mineralType == undefined || outputLab.mineralType == resource) &&
-                    storage && storage.store[resource] >= boostRecord.amount) {
+                    storage && storage.store[resource] >= boostRecord.amount &&
+                    outputLab.store.getFreeCapacity(resource) > 0) {
                     if (creep.pos.isNearTo(storage)) {
                         if (boostRecord.amount >= MaxStorage) {
                             boostRecord.amount -= MaxStorage;
@@ -229,6 +230,40 @@ import { getLabThreshold } from "../constants/constants.labs";
                 }
             }
             if (boostHandled) return;
+
+            // 兜底清理：2bf48b3a 重构时丢失的通用 else-if 分支逻辑，负责处理非 boost 状态的 outputLab
+            // 1) 残留旧矿物（既非当前 boost 目标、也非当前反应输出）→ 清回 storage
+            // 2) 当前反应输出物存量超过 MaxStorage → 搬回 storage
+            for (const {labName, outputIdKey} of BOOST_OUTPUT_ORDER) {
+                if (!creep.room.memory.labs[outputIdKey]) continue;
+                const outputLab = Game.getObjectById(creep.room.memory.labs[outputIdKey]) as any;
+                if (!outputLab || outputLab.mineralType == undefined) continue;
+
+                const boostRecord = creep.room.memory.labs.status?.boost?.[labName];
+                const boostResource: ResourceConstant | null = boostRecord && boostRecord.use > 0
+                    ? (boostRecord.resourceType ?? LAB_TO_TIER3[labName])
+                    : null;
+
+                // 正在 boost 的 lab，其目标化合物由上方主循环处理，此处跳过避免误清
+                if (outputLab.mineralType != boostResource && outputLab.mineralType != currentOutput) {
+                    if (creep.pos.isNearTo(outputLab)) {
+                        creep.withdraw(outputLab, outputLab.mineralType);
+                        creep.memory.target = storage.id;
+                    } else {
+                        creep.MoveCostMatrixRoadPrio(outputLab, 1);
+                    }
+                    return;
+                }
+                if (outputLab.mineralType == currentOutput && outputLab.store[outputLab.mineralType] > MaxStorage) {
+                    if (creep.pos.isNearTo(outputLab)) {
+                        creep.withdraw(outputLab, outputLab.mineralType);
+                        creep.memory.target = storage.id;
+                    } else {
+                        creep.MoveCostMatrixRoadPrio(outputLab, 1);
+                    }
+                    return;
+                }
+            }
 
             if((inputLab1 && inputLab1.mineralType == undefined || inputLab1 && inputLab1.mineralType == lab1Input && inputLab1.store[inputLab1.mineralType] < MaxStorage-20) &&
             storage && storage.store[lab1Input] >= MaxStorage) {
